@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:endColor="@color/ui_button_gradient_end"
+        android:startColor="@color/ui_button_gradient_start" />
+    <corners android:radius="@dimen/ui_panel_radius" />
+    <stroke
+        android:width="1dp"
+        android:color="@color/ui_border" />
+</shape>

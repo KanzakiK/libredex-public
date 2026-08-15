@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp">
+
+        <TextView style="@style/LibreDeXSectionTitle" android:text="权限与系统" />
+
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <LinearLayout style="@style/LibreDeXRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Shizuku"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/shizukuStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="未授权"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <Button
+                    android:id="@+id/shizukuGrantButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:text="授权" />
+            </LinearLayout>
+            <LinearLayout style="@style/LibreDeXRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="悬浮窗权限"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/overlayStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="未授权"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <Button
+                    android:id="@+id/overlayGrantButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:text="授权" />
+            </LinearLayout>
+            <LinearLayout style="@style/LibreDeXRow">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="开机自启 Sunshine 服务"
+                    android:textColor="@color/ui_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <androidx.appcompat.widget.SwitchCompat
+                    android:id="@+id/autoStartBootSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+            </LinearLayout>
+            <LinearLayout style="@style/LibreDeXRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="文件访问权限"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/storageStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="未授予"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <Button
+                    android:id="@+id/storageGrantButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:text="授权" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView style="@style/LibreDeXSectionTitle" android:text="外观" />
+
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="主题"
+                android:textColor="@color/ui_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_libredex_seg_container"
+                android:orientation="horizontal"
+                android:padding="4dp">
+                <Button
+                    android:id="@+id/themeSystemButton"
+                    style="@style/LibreDeXSegButton"
+                    android:text="跟随系统" />
+                <Button
+                    android:id="@+id/themeLightButton"
+                    style="@style/LibreDeXSegButton"
+                    android:text="浅色" />
+                <Button
+                    android:id="@+id/themeDarkButton"
+                    style="@style/LibreDeXSegButton"
+                    android:layout_marginEnd="0dp"
+                    android:text="深色" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView style="@style/LibreDeXSectionTitle" android:text="开始使用" />
+
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/wizardEntry"
+                style="@style/LibreDeXEntryRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="初始化配置向导"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="授权与首次连接指引"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/ui_text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView style="@style/LibreDeXSectionTitle" android:text="调试" />
+
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/logsEntry"
+                style="@style/LibreDeXEntryRow">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="查看日志"
+                    android:textColor="@color/ui_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/ui_text_secondary" />
+            </LinearLayout>
+            <LinearLayout
+                android:id="@+id/exportLogsEntry"
+                style="@style/LibreDeXEntryRow">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="导出日志"
+                    android:textColor="@color/ui_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/ui_text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <TextView style="@style/LibreDeXSectionTitle" android:text="关于" />
+
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/aboutEntry"
+                style="@style/LibreDeXEntryRow">
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="关于 LibreDeX"
+                    android:textColor="@color/ui_text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/ui_text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

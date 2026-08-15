@@ -1,0 +1,80 @@
+# Local/editor state
+.vscode/
+.idea/
+.gradle/
+**/.gradle/
+.cxx/
+**/.cxx/
+*.log
+*.tmp
+*.bak
+
+# Build and release artifacts
+dist/
+*.zip
+*.apk
+*.apks
+*.aab
+*.jar
+*.dex
+*.odex
+*.vdex
+*.art
+*.idsig
+tools/*.jar
+tools/*.apk
+touchpad_logcat.txt
+
+# Gradle wrapper jar is required for out-of-the-box builds
+!gradle/wrapper/gradle-wrapper.jar
+
+# Public release APK artifact
+!libredex-public-release.apk
+
+# Proprietary firmware, decompiled system apps, and device pulls
+reference/decompiled/
+reference/device-pull/
+reference/firmware/
+lpunpack/
+tools/lpunpack/
+
+# DexHook is based on a decompiled APK; keep only the custom hook surface public.
+archive/DexHook/DexHook.apk
+archive/DexHook/decompiled/**
+!archive/DexHook/decompiled/
+!archive/DexHook/decompiled/AndroidManifest.xml
+!archive/DexHook/decompiled/apktool.yml
+!archive/DexHook/decompiled/assets/
+!archive/DexHook/decompiled/assets/xposed_init
+!archive/DexHook/decompiled/smali/
+!archive/DexHook/decompiled/smali/com/
+!archive/DexHook/decompiled/smali/com/dex/
+!archive/DexHook/decompiled/smali/com/dex/hook/
+!archive/DexHook/decompiled/smali/com/dex/hook/*.smali
+
+# Decompiled third-party APKs
+tools/fakescreen_decompiled/
+
+# Runtime/sensitive device state
+**/pin_b64
+**/daemon.log
+**/trigger.log
+**/status
+**/config
+**/screen_timeout_bak
+**/stay_on_bak
+
+# Generated unpack/check directories
+**/zip_*_snapshot/
+**/zip_*_check/
+
+# Android build outputs
+**/build/
+**/out/
+local.properties
+
+# Staging dir for prebuilt native libs copied from third-party APKs
+archive/dex-anywhere-sunshine/
+
+# Backup of original decompiled sources
+archive/DexHook/_original_check/

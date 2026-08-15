@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ui_background">#FF10141A</color>
+    <color name="ui_surface">#FF1A2027</color>
+    <color name="ui_surface_alt">#FF232B33</color>
+    <color name="ui_text_primary">#FFE9EDF0</color>
+    <color name="ui_text_secondary">#FF9AA6AF</color>
+    <color name="ui_border">#FF2D3740</color>
+    <color name="ui_divider">#FF2D3740</color>
+    <color name="ui_accent">#FF5FB3A8</color>
+    <color name="ui_accent_dark">#FF4FA396</color>
+    <color name="ui_accent_soft">#FF1E3533</color>
+    <color name="ui_service_ring">#FF000000</color>
+    <color name="ui_icon_muted">#FF8FA09B</color>
+    <color name="ui_warning">#FFD1A15E</color>
+    <color name="ui_success">#FF74B28E</color>
+    <color name="ui_danger">#FFD97B78</color>
+    <color name="ui_on_accent">#FF10141A</color>
+    <color name="ui_button_gradient_start">#FF242B29</color>
+    <color name="ui_button_gradient_end">#FF1B211F</color>
+    <color name="black">#FFE7ECEA</color>
+    <color name="white">#FF171C1B</color>
+    <color name="blue">#FF60A5FA</color>
+</resources>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="ui_top_bar_height">48dp</dimen>
+    <dimen name="ui_bottom_bar_height">54dp</dimen>
+    <dimen name="ui_small_button_width">68dp</dimen>
+    <dimen name="ui_small_button_height">30dp</dimen>
+    <dimen name="ui_home_button_width">82dp</dimen>
+    <dimen name="ui_home_button_height">36dp</dimen>
+    <dimen name="ui_panel_row_height">58dp</dimen>
+    <dimen name="ui_panel_radius">8dp</dimen>
+    <dimen name="ui_button_radius">4dp</dimen>
+    <dimen name="ui_shadow_small">4dp</dimen>
+    <dimen name="ui_shadow_top">8dp</dimen>
+    <dimen name="ui_top_bar_elevation">8dp</dimen>
+    <dimen name="ui_page_padding">16dp</dimen>
+    <dimen name="ui_section_gap">14dp</dimen>
+    <dimen name="ui_row_gap">14dp</dimen>
+    <dimen name="ui_row_side_padding">36dp</dimen>
+    <dimen name="ui_service_button_size">204dp</dimen>
+</resources>

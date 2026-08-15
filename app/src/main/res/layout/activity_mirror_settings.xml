@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <Button
+            android:textColor="@color/ui_text_primary"
+            android:id="@+id/initializationGuideButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="打开初始化配置向导" />
+
+        <Button
+            android:textColor="@color/ui_text_primary"
+            android:id="@+id/wallpaperButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:text="更换 DeX 壁纸" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:textColor="@color/ui_text_primary"
+                    android:id="@+id/shizukuStatusPrefix"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Shizuku 状态：" />
+
+                <TextView
+                    android:textColor="@color/ui_text_primary"
+                    android:id="@+id/shizukuStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:textColor="@color/ui_text_primary"
+                    android:id="@+id/shizukuPermissionBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="授权"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:textColor="@color/ui_text_primary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="悬浮窗状态：" />
+
+                <TextView
+                    android:textColor="@color/ui_text_primary"
+                    android:id="@+id/overlayStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:textColor="@color/ui_text_primary"
+                    android:id="@+id/overlayPermissionBtn"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="授权"
+                    android:visibility="gone" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/autoRotateCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="自动旋转"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/autoScaleCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="自动缩放去黑边"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/autoScreenOffCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="自动熄屏"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/useBlackImageCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="使用黑色图片模拟熄屏"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/disableUsbAudioCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="禁用 USB 外接屏音频输出"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/autoMatchAspectRatioCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="自动调整主屏宽高比以适配扩展屏"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/preventAutoLockCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="阻止自动锁屏"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/useAndroidCursorOverlayCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="显示安卓端叠加光标（兼容模式）"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/mapMouseToTouchCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="将鼠标事件映射为触控（兼容模式）"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/autoConnectClientCheckbox"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:text="自动连接 Moonlight 客户端"
+            android:textColor="@color/ui_text_primary"
+            android:textSize="16sp"
+            app:showText="false"
+            app:switchMinWidth="48dp"
+            app:thumbTint="#4CAF50"
+            app:trackTint="#664CAF50" />
+
+        <LinearLayout
+            android:id="@+id/clientConnectionContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone">
+
+            <Spinner
+                android:id="@+id/clientSpinner"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="8dp" />
+
+            <Button
+                android:textColor="@color/ui_text_primary"
+                android:id="@+id/connectClientButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="连接" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/encoderSettingsSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:textColor="@color/ui_text_primary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="编码设置"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/currentEncoderSettingsText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:textColor="@color/ui_text_secondary"
+                android:textSize="13sp" />
+
+            <Button
+                android:textColor="@color/ui_text_primary"
+                android:id="@+id/viewRecentHandshakeButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="查看最近握手信息" />
+
+            <Button
+                android:textColor="@color/ui_text_primary"
+                android:id="@+id/viewRecentControlInputButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="查看最近控制输入统计" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="说明：H.264 默认用于更好的实时性能和兼容性；H.265 更省带宽，但部分设备可能延迟更高。码率比例会按 Moonlight 请求码率缩放。最大 FPS 默认 60，可限制编码器负载。FEC 是网络纠错冗余，局域网稳定时建议 0，网络抖动时再提高。"
+                android:textColor="@color/ui_text_secondary"
+                android:textSize="13sp" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </LinearLayout>
+
+        <Button
+            android:textColor="@color/ui_text_primary"
+            android:id="@+id/aboutButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="关于"
+            android:textSize="16sp" />
+
+        <Button
+            android:textColor="@color/ui_text_primary"
+            android:id="@+id/screenSettingsButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="屏幕设置（实验性）"
+            android:textSize="16sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="实验性选项：不同 ROM 对显示参数接口兼容性不一致，修改外接屏分辨率、DPI、刷新率或旋转可能造成画面异常。内置屏幕只允许查看。"
+            android:textColor="@color/ui_warning"
+            android:textSize="13sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="注：系统无线投屏创建的无线屏幕，也可以在获得 Shizuku 权限后进行单应用投放。"
+            android:textColor="@color/ui_text_secondary"
+            android:textSize="14sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="注：USB 3.0 有线直连屏幕通常不需要 Shizuku 权限也能投单应用。"
+            android:textColor="@color/ui_text_secondary"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+</ScrollView>

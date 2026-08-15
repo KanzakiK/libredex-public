@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ui_background">#FFF5F7F8</color>
+    <color name="ui_surface">#FFFFFFFF</color>
+    <color name="ui_surface_alt">#FFEEF2F3</color>
+    <color name="ui_text_primary">#FF1C2228</color>
+    <color name="ui_text_secondary">#FF5D6A73</color>
+    <color name="ui_border">#FFE0E6E9</color>
+    <color name="ui_divider">#FFE0E6E9</color>
+    <color name="ui_accent">#FF0B6B61</color>
+    <color name="ui_accent_dark">#FF0A675D</color>
+    <color name="ui_accent_soft">#FFE2F0ED</color>
+    <color name="ui_service_ring">#FFFFFFFF</color>
+    <color name="ui_icon_muted">#FF7C8A86</color>
+    <color name="ui_warning">#FFA97A36</color>
+    <color name="ui_success">#FF3D7A5A</color>
+    <color name="ui_danger">#FFB0504E</color>
+    <color name="ui_on_accent">#FFFFFFFF</color>
+    <color name="libredex_icon_background">#FF121820</color>
+    <color name="ui_button_gradient_start">#FFFFFFFF</color>
+    <color name="ui_button_gradient_end">#FFF7F7F7</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="blue">#FF2563EB</color>
+</resources>
