@@ -1,0 +1,379 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="16dp"
+        android:paddingTop="16dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="24dp">
+
+        <LinearLayout
+            android:id="@+id/mirrorBanner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="12dp"
+            android:background="@drawable/bg_libredex_banner"
+            android:orientation="vertical"
+            android:padding="14dp"
+            android:visibility="gone">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="当前为纯镜像模式"
+                android:textColor="@color/ui_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:lineSpacingExtra="2dp"
+                android:text="DeX 专属功能在纯镜像下隐藏，通用会话与屏幕管理保持可用。"
+                android:textColor="@color/ui_text_secondary"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/dexContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="DeX 会话" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="DeX 会话"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/dexSessionBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_libredex_badge"
+                        android:gravity="center"
+                        android:minWidth="64dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:text="待机"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:maxLines="1"
+                        android:text="Display"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/dexDisplayValue"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.2"
+                        android:ellipsize="end"
+                        android:gravity="end"
+                        android:maxLines="1"
+                        android:text="--"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="SecondaryLauncher"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/dexLauncherValue"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="待启动"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="13sp" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="窗口 / 层级修复"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexLayerFixSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="DeX 触控板" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <LinearLayout style="@style/LibreDeXRow">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="DeX 触控板"
+                            android:textColor="@color/ui_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="打开系统 DeX 触控板"
+                            android:textColor="@color/ui_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <Button
+                        android:id="@+id/dexTouchpadButton"
+                        style="@style/LibreDeXButtonSoft"
+                        android:text="打开" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="会话操作" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <Button
+                    android:id="@+id/dexRestartButton"
+                    style="@style/LibreDeXButtonNeutral"
+                    android:text="重启会话" />
+                <Button
+                    android:id="@+id/dexReleaseButton"
+                    style="@style/LibreDeXButtonDanger"
+                    android:layout_marginTop="8dp"
+                    android:text="释放会话" />
+            </LinearLayout>
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="壁纸" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <ImageView
+                    android:id="@+id/wallpaperPreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="96dp"
+                    android:background="@drawable/bg_wallpaper_preview"
+                    android:scaleType="centerCrop" />
+                <Button
+                    android:id="@+id/dexChangeWallpaperButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:layout_marginTop="12dp"
+                    android:text="更换 DeX 壁纸" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/commonContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="显示与画面" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="自动旋转"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexAutoRotateSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="自动缩放去黑边"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexAutoScaleSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="自动匹配宽高比"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexAutoMatchSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <TextView style="@style/LibreDeXSectionTitle" android:text="屏幕管理" />
+
+            <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="自动熄屏"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexAutoScreenOffSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="黑色图片模拟熄屏"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexBlackImageSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="阻止自动锁屏"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexPreventLockSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="假熄屏（电源键不锁屏）"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexFakeScreenSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <LinearLayout style="@style/LibreDeXRow">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="阻止休眠"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexPreventSleepSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
+                <Button
+                    android:id="@+id/dexManualScreenOffButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:layout_marginTop="8dp"
+                    android:text="手动息屏" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/mirrorActionCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+            <Button
+                android:id="@+id/dexStopMirrorButton"
+                style="@style/LibreDeXButtonDanger"
+                android:text="停止镜像会话" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/dexExperimentalTitle"
+            style="@style/LibreDeXSectionTitle"
+            android:text="实验" />
+
+        <LinearLayout
+            android:id="@+id/dexExperimentalCard"
+            style="@style/LibreDeXCard"
+            android:orientation="vertical">
+            <LinearLayout
+                android:id="@+id/dexScreenSettingsEntry"
+                style="@style/LibreDeXEntryRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="屏幕设置（实验）"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="外接屏分辨率 / DPI / 刷新率 / 旋转"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:contentDescription="进入"
+                    android:src="@drawable/ic_chevron_right"
+                    app:tint="@color/ui_text_secondary" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

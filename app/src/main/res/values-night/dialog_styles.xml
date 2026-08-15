@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.LibreDeX.Dialog.Alert" parent="Theme.MaterialComponents.DayNight.Dialog.Alert">
+        <item name="colorPrimary">@color/ui_accent</item>
+        <item name="colorSecondary">@color/ui_accent</item>
+        <item name="colorAccent">@color/ui_accent</item>
+        <item name="android:colorAccent">@color/ui_accent</item>
+        <item name="android:windowBackground">@color/ui_surface</item>
+        <item name="android:textColorPrimary">@color/ui_text_primary</item>
+        <item name="android:textColorSecondary">@color/ui_text_secondary</item>
+    </style>
+</resources>

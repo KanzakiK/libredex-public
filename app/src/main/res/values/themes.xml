@@ -1,0 +1,21 @@
+<resources>
+    <!-- 基础应用主题 -->
+    <style name="X11Theme" parent="@style/Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
+    </style>
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/ui_surface</item>
+        <item name="colorPrimaryVariant">@color/ui_surface</item>
+        <item name="colorSecondary">@color/ui_accent</item>
+        <item name="colorAccent">@color/ui_accent</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.LibreDeX.MaterialAlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.LibreDeX.MaterialAlertDialog</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/ui_surface</item>
+        <item name="android:navigationBarColor">@color/ui_surface</item>
+    </style>
+</resources> 
