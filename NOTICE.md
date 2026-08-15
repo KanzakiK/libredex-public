@@ -1,9 +1,9 @@
 # NOTICE
 
 LibreDeX (application id `com.libredex`) is a combined and modified work
-distributed under AGPL-3.0. The full license text is in `LICENSE`. GPL-3.0
-upstream components (TNT-Anywhere, Sunshine) are compatible with AGPL-3.0
-when the combined work is distributed under AGPL-3.0.
+distributed under GPL-3.0. The full license text is in `LICENSE`. The
+upstream components (TNT-Anywhere, Sunshine) are also GPL-3.0 and are
+compatible with this combined distribution.
 
 ## Upstreams
 
@@ -69,5 +69,5 @@ is used under its own license as declared by its upstream.
 ## Source availability
 
 The complete source of this modified work is this repository. Upstream
-sources are linked above. Per AGPL-3.0, anyone who receives the program or a
+sources are linked above. Per GPL-3.0, anyone who receives the program or a
 derived binary may request the corresponding source, which is offered here.

@@ -38,7 +38,7 @@ public class AboutActivity extends AppCompatActivity {
         aboutContent.setText(
                 "LibreDeX 把 Galaxy Z Flip 5 变成不依赖 Miracast 的 DeX 串流主机：Moonlight 客户端配对后，通过 Sunshine 串流 fake DeX 桌面，并把鼠标、键盘、触摸等控制输入回流到设备。\n\n"
                         + "项目集成 LSPosed hooks（display flags / input / pointer / viewport / 层级修复）、Shizuku/UserService 系统接口、AudioPolicy loopback 音频采集，以及 Sunshine / Moonlight 兼容串流链路。\n\n"
-                        + "本项目为 AGPL-3.0 开源项目；上游来源与修改说明见仓库 NOTICE.md。");
+                        + "本项目为 GPL-3.0 开源项目；上游来源与修改说明见仓库 NOTICE.md。");
 
         TextView versionText = findViewById(R.id.versionText);
         try {
