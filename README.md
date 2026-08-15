@@ -12,7 +12,7 @@ LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用
 
 ## 发布件
 
-- `libredex-public-release.apk`：0.1.1 release 构建（arm64-v8a）。
+- `libredex-public-release.apk`：0.1.2 release 构建（arm64-v8a）。
 
 ## 环境要求
 
@@ -52,3 +52,7 @@ LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用
 - 本仓库整体按 AGPL-3.0 分发，见 `LICENSE`；GPL-3.0 上游（TNT-Anywhere / Sunshine）与 AGPL-3.0 兼容。
 - 上游来源与修改说明见 `NOTICE.md`。
 - 当前产品需要 root；DRM 受保护内容未测试。
+
+## 文档
+
+- 更新记录：`CHANGELOG.md`
