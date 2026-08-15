@@ -49,7 +49,7 @@ LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用
 
 ## 授权
 
-- 本仓库整体按 AGPL-3.0 分发，见 `LICENSE`；GPL-3.0 上游（TNT-Anywhere / Sunshine）与 AGPL-3.0 兼容。
+- 本仓库整体按 GPL-3.0 分发，见 `LICENSE`；上游 TNT-Anywhere / Sunshine 同为 GPL-3.0。
 - 上游来源与修改说明见 `NOTICE.md`。
 - 当前产品需要 root；DRM 受保护内容未测试。
 
