@@ -12,7 +12,7 @@ LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用
 
 ## 发布件
 
-- `libredex-public-release.apk`：0.1.6 release 构建（arm64-v8a）。
+- `libredex-public-release.apk`：0.1.8 release 构建（arm64-v8a）。
 
 ## 环境要求
 
