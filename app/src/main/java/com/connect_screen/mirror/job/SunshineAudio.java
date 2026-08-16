@@ -350,7 +350,7 @@ public class SunshineAudio {
                 audioManager.abandonAudioFocus(volumeChangeListener);
                 volumeChangeListener = null;
             }
-            State.log("串流停止后恢复手机音量");
+            State.log("投屏停止后恢复手机音量");
         }
     }
 }

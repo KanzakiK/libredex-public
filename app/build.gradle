@@ -4,6 +4,31 @@ plugins {
     id 'org.jetbrains.kotlin.android' version '1.9.23'
 }
 
+// Version is normally injected by scripts/build.ps1 via -PlibredexVersionName / -PlibredexVersionCode.
+// The fallbacks below only keep IDE and direct gradlew builds usable.
+def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.1.2'
+def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 3).toString().toInteger()
+
+def optionalTransportModule = project.findProperty('optionalTransportModule')
+if (optionalTransportModule == null && rootProject.file('local.properties').exists()) {
+    def localProperties = new Properties()
+    rootProject.file('local.properties').withInputStream { localProperties.load(it) }
+    optionalTransportModule = localProperties.getProperty('optionalTransportModule')
+}
+def optionalTransportProvider = project.findProperty('optionalTransportProvider')
+if (optionalTransportProvider == null && rootProject.file('local.properties').exists()) {
+    def localProperties = new Properties()
+    rootProject.file('local.properties').withInputStream { localProperties.load(it) }
+    optionalTransportProvider = localProperties.getProperty('optionalTransportProvider')
+}
+if (optionalTransportModule) {
+    android.sourceSets.main {
+        java.srcDirs += file("$optionalTransportModule/src")
+        res.srcDirs += file("$optionalTransportModule/res")
+        jniLibs.srcDirs += file("$optionalTransportModule/jniLibs")
+    }
+}
+
 android {
     namespace 'com.connect_screen.mirror'
     compileSdk 34
@@ -12,10 +37,12 @@ android {
         applicationId "com.libredex"
         minSdk 27
         targetSdk 34
-        versionCode 3
-        versionName "0.1.2"
+        versionCode libredexVersionCode
+        versionName libredexVersionName
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField 'String', 'OPTIONAL_TRANSPORT_PROVIDER',
+                '"' + (optionalTransportProvider ?: '') + '"'
 
         ndk {
             ndkVersion "28.0.13004108"

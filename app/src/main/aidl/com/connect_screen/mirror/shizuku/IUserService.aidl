@@ -51,4 +51,9 @@ interface IUserService {
    int startDpMirrorWithGeometry(int externalDisplayId, int sourceDisplayId, int outWidth, int outHeight,
                                  int orientation, in Rect layerStackRect, in Rect displayRect) = 32;
    int resetDpMirror(int externalDisplayId) = 33;
+   int mirrorPhoneToExternal(int externalDisplayId, int sourceDisplayId, int outWidth, int outHeight,
+                             int orientation, in Rect layerStackRect, in Rect displayRect) = 37;
+   String executeRootShellCommand(String command) = 34;
+   String getEnvironmentInfo() = 35;
+   int stopSecondaryLauncher(int displayId) = 36;
 }

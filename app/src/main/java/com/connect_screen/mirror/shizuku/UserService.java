@@ -27,8 +27,15 @@ import android.view.Surface;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,15 +62,34 @@ public class UserService extends IUserService.Stub  {
     private int dpMirrorSavedLayerStack = -1;
     private Rect dpMirrorRestoreRect;
     private int lastScreenOffDisplayId = Display.DEFAULT_DISPLAY;
+    private static volatile String cachedSuPath;
+    private static final String[] SU_BINARY_CANDIDATES = {
+            "/system/bin/su",
+            "/system/xbin/su",
+            "/sbin/su",
+            "/vendor/bin/su",
+            "/data/adb/ksu/bin/su",
+            "/data/adb/ap/bin/su"
+    };
+    private static final String LOG_DIRECTORY_NAME = "LibreDeX/logs";
+    private static final String LOG_FILE_PREFIX = "libredex-";
+    private static final String LOG_FILE_SUFFIX = ".log";
+    private static final String LOG_MARKER_FILE = ".last_logcat_time";
+    private static final long MAX_DAILY_LOG_BYTES = 24L * 1024 * 1024;
+    private static final long KEEP_DAILY_LOG_BYTES = 16L * 1024 * 1024;
+    private static final long MAX_TOTAL_LOG_BYTES = 64L * 1024 * 1024;
+    private static final int KEEP_LOG_DAYS = 7;
 
     public UserService() {
-        Ln.i("Start UserService without context: " + android.os.Process.myUid());
+        Ln.i("Start UserService without context: uid=" + android.os.Process.myUid()
+                + " sdk=" + Build.VERSION.SDK_INT + " su=" + findSuBinary());
     }
 
     @Keep
     public UserService(Context context) {
         this.context = context;
-        Ln.i("Start UserService with context: " + android.os.Process.myUid());
+        Ln.i("Start UserService with context: uid=" + android.os.Process.myUid()
+                + " sdk=" + Build.VERSION.SDK_INT + " su=" + findSuBinary());
     }
 
     /**
@@ -86,25 +112,184 @@ public class UserService extends IUserService.Stub  {
     }
 
     @Override
-    public String fetchLogs() throws RemoteException  {
+    public String fetchLogs() throws RemoteException {
         try {
-            Process process = Runtime.getRuntime().exec("logcat -d -f /sdcard/Download/libredex_logcat.log");
+            File logDir = getLogDirectory();
+            if (!logDir.exists() && !logDir.mkdirs()) {
+                throw new RemoteException("Failed to create log directory: " + logDir);
+            }
+            File markerFile = new File(logDir, LOG_MARKER_FILE);
+            String since = readLogMarker(markerFile);
+            java.util.List<String> cmd = new java.util.ArrayList<>();
+            cmd.add("logcat");
+            cmd.add("-d");
+            cmd.add("-v");
+            cmd.add("time");
+            if (since != null && !since.isEmpty()) {
+                cmd.add("-T");
+                cmd.add(since);
+            }
+            Process process = new ProcessBuilder(cmd).redirectErrorStream(true).start();
             java.io.BufferedReader reader = new java.io.BufferedReader(
                     new java.io.InputStreamReader(process.getInputStream()));
-
-            StringBuilder output = new StringBuilder();
+            java.util.Map<String, java.io.BufferedWriter> writers =
+                    new java.util.HashMap<>();
+            String lastTime = null;
             String line;
             while ((line = reader.readLine()) != null) {
-                output.append(line).append("\n");
+                if (line.length() < 18 || line.charAt(2) != '-' || line.charAt(5) != ' ') {
+                    continue;
+                }
+                String monthDay = line.substring(0, 5);
+                String day = getCurrentYear() + "-" + monthDay;
+                lastTime = line.substring(0, 18);
+                java.io.BufferedWriter writer = writers.get(day);
+                if (writer == null) {
+                    File daily = new File(logDir,
+                            LOG_FILE_PREFIX + day + LOG_FILE_SUFFIX);
+                    writer = new java.io.BufferedWriter(new java.io.FileWriter(daily, true));
+                    writers.put(day, writer);
+                }
+                writer.write(line);
+                writer.newLine();
             }
-
             reader.close();
-            process.waitFor();
-
-            return output.toString();
+            int exit = process.waitFor();
+            for (java.io.BufferedWriter writer : writers.values()) {
+                writer.close();
+            }
+            if (lastTime == null) {
+                lastTime = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US)
+                        .format(new Date());
+            }
+            writeLogMarker(markerFile, lastTime);
+            trimLogFiles(logDir);
+            Ln.i("fetchLogs done dir=" + logDir + " exit=" + exit
+                    + " since=" + since + " lines=" + writers.size());
+            return logDir.getAbsolutePath();
         } catch (Exception e) {
-            Log.e("UserService", "logcat -d failed", e);
-            throw new RemoteException("Failed to execute logcat -d: " + e.getMessage());
+            Log.e("UserService", "logcat export failed", e);
+            throw new RemoteException("Failed to export logcat: " + e.getMessage());
+        }
+    }
+
+    private static File getLogDirectory() {
+        return new File("/sdcard/Download/" + LOG_DIRECTORY_NAME);
+    }
+
+    private static String readLogMarker(File marker) {
+        if (!marker.exists()) {
+            return null;
+        }
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.FileReader(marker))) {
+            String line = reader.readLine();
+            return line == null ? null : line.trim();
+        } catch (IOException e) {
+            Ln.w("readLogMarker failed: " + e);
+            return null;
+        }
+    }
+
+    private static void writeLogMarker(File marker, String value) {
+        try (java.io.BufferedWriter writer = new java.io.BufferedWriter(
+                new java.io.FileWriter(marker, false))) {
+            writer.write(value);
+            writer.newLine();
+        } catch (IOException e) {
+            Ln.w("writeLogMarker failed: " + e);
+        }
+    }
+
+    private static String getCurrentYear() {
+        return String.valueOf(Calendar.getInstance().get(Calendar.YEAR));
+    }
+
+    private static void trimLogFiles(File dir) {
+        File[] files = dir.listFiles((d, name) ->
+                name.startsWith(LOG_FILE_PREFIX) && name.endsWith(LOG_FILE_SUFFIX));
+        if (files == null || files.length == 0) {
+            return;
+        }
+        java.util.Arrays.sort(files, java.util.Comparator.comparing(File::getName));
+        long cutoff = System.currentTimeMillis() - KEEP_LOG_DAYS * 86400000L;
+        for (File file : files) {
+            long fileTime = parseLogFileDate(file);
+            if (fileTime > 0 && fileTime < cutoff) {
+                file.delete();
+            }
+        }
+        for (File file : files) {
+            if (file.exists()) {
+                try {
+                    trimDailyFile(file);
+                } catch (IOException e) {
+                    Ln.w("trimDailyFile failed " + file + ": " + e);
+                }
+            }
+        }
+        long total = 0;
+        for (File file : files) {
+            if (file.exists()) {
+                total += file.length();
+            }
+        }
+        if (total > MAX_TOTAL_LOG_BYTES) {
+            for (File file : files) {
+                if (!file.exists()) {
+                    continue;
+                }
+                total -= file.length();
+                file.delete();
+                if (total <= MAX_TOTAL_LOG_BYTES) {
+                    break;
+                }
+            }
+        }
+    }
+
+    private static void trimDailyFile(File file) throws IOException {
+        long length = file.length();
+        if (length <= MAX_DAILY_LOG_BYTES) {
+            return;
+        }
+        long cut = length - KEEP_DAILY_LOG_BYTES;
+        if (cut <= 0) {
+            return;
+        }
+        try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
+            raf.seek(cut);
+            long pos = cut;
+            int ch;
+            while ((ch = raf.read()) != -1) {
+                pos++;
+                if (ch == '\n') {
+                    break;
+                }
+            }
+            if (pos >= length) {
+                pos = cut;
+            }
+            byte[] tail = new byte[(int) (length - pos)];
+            raf.seek(pos);
+            raf.readFully(tail);
+            raf.setLength(0);
+            raf.seek(0);
+            raf.write(tail);
+        }
+    }
+
+    private static long parseLogFileDate(File file) {
+        String name = file.getName();
+        int dateStart = LOG_FILE_PREFIX.length();
+        if (name.length() != dateStart + 10 + LOG_FILE_SUFFIX.length()) {
+            return -1;
+        }
+        String date = name.substring(dateStart, dateStart + 10);
+        try {
+            return new SimpleDateFormat("yyyy-MM-dd", Locale.US).parse(date).getTime();
+        } catch (java.text.ParseException e) {
+            return -1;
         }
     }
 
@@ -123,11 +308,65 @@ public class UserService extends IUserService.Stub  {
         try {
             ProcessBuilder builder = new ProcessBuilder("sh", "-c", command);
             builder.redirectErrorStream(true);
+            String suDir = suBinaryDirectory();
+            if (suDir != null) {
+                Map<String, String> env = builder.environment();
+                String path = env.get("PATH");
+                env.put("PATH", suDir + (path == null || path.isEmpty() ? "" : ":" + path));
+            }
             Process process = builder.start();
             return readProcessOutput(process, true);
         } catch (Exception e) {
             Log.e("UserService", "execute command failed: " + command, e);
             throw new RemoteException("Failed to execute command: " + command + " " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String executeRootShellCommand(String command) throws RemoteException {
+        String su = findSuBinary();
+        if (su == null) {
+            Ln.w("executeRootShellCommand: su binary not found, falling back to shell");
+            return executeShellCommand(command);
+        }
+        try {
+            ProcessBuilder builder = new ProcessBuilder(su, "-c", command);
+            builder.redirectErrorStream(true);
+            Process process = builder.start();
+            String out = readProcessOutput(process, true);
+            Ln.i("executeRootShellCommand exit=" + exitCodeFromOutput(out)
+                    + " cmd=" + command + " out=" + out.trim());
+            return out;
+        } catch (Exception e) {
+            Ln.e("executeRootShellCommand failed: " + command, e);
+            throw new RemoteException("Failed to execute root command: " + command + " " + e.getMessage());
+        }
+    }
+
+    @Override
+    public String getEnvironmentInfo() throws RemoteException {
+        StringBuilder sb = new StringBuilder();
+        sb.append("uid=").append(android.os.Process.myUid()).append('\n');
+        sb.append("su=").append(findSuBinary() == null ? "none" : findSuBinary()).append('\n');
+        sb.append("sdk=").append(Build.VERSION.SDK_INT).append('\n');
+        sb.append("release=").append(Build.VERSION.RELEASE).append('\n');
+        sb.append("incremental=").append(Build.VERSION.INCREMENTAL).append('\n');
+        sb.append("fingerprint=").append(Build.FINGERPRINT).append('\n');
+        sb.append("display=").append(Build.DISPLAY).append('\n');
+        sb.append("oneui=").append(readSystemProp("ro.build.version.oneui")).append('\n');
+        sb.append("secure=").append(readSystemProp("ro.secure")).append('\n');
+        sb.append("debuggable=").append(readSystemProp("ro.debuggable")).append('\n');
+        sb.append("verifiedboot=").append(readSystemProp("ro.boot.verifiedbootstate")).append('\n');
+        return sb.toString();
+    }
+
+    private String readSystemProp(String name) {
+        try {
+            String out = executeShellCommand("getprop " + name);
+            int idx = out == null ? -1 : out.indexOf("__EXIT_CODE=");
+            return (idx >= 0 ? out.substring(0, idx) : out == null ? "" : out).trim();
+        } catch (Throwable t) {
+            return "";
         }
     }
 
@@ -148,6 +387,90 @@ public class UserService extends IUserService.Stub  {
         }
 
         return output.toString();
+    }
+
+    private static String findSuBinary() {
+        String cached = cachedSuPath;
+        if (cached != null) {
+            return cached.isEmpty() ? null : cached;
+        }
+        String found = null;
+        String pathEnv = System.getenv("PATH");
+        if (pathEnv != null) {
+            for (String dir : pathEnv.split(":")) {
+                if (dir == null || dir.isEmpty()) {
+                    continue;
+                }
+                String candidate = dir.endsWith("/") ? dir + "su" : dir + "/su";
+                if (new File(candidate).canExecute()) {
+                    found = candidate;
+                    break;
+                }
+            }
+        }
+        if (found == null) {
+            for (String candidate : SU_BINARY_CANDIDATES) {
+                File f = new File(candidate);
+                if (f.canExecute() || f.isFile()) {
+                    found = candidate;
+                    break;
+                }
+            }
+        }
+        cachedSuPath = found == null ? "" : found;
+        return found;
+    }
+
+    private static String suBinaryDirectory() {
+        String su = findSuBinary();
+        if (su == null) {
+            return null;
+        }
+        int slash = su.lastIndexOf('/');
+        return slash > 0 ? su.substring(0, slash) : null;
+    }
+
+    private String runAsShell(String command) throws RemoteException {
+        if (android.os.Process.myUid() == 0) {
+            String su = findSuBinary();
+            if (su == null) {
+                throw new IllegalStateException("su binary not found");
+            }
+            try {
+                ProcessBuilder builder = new ProcessBuilder(su, "2000", "-c", command);
+                builder.redirectErrorStream(true);
+                Process process = builder.start();
+                process.waitFor();
+                String out = readProcessOutput(process, true);
+                Ln.i("runAsShell root shizuku exit=" + process.exitValue()
+                        + " out=" + out.trim());
+                return out;
+            } catch (Exception e) {
+                Ln.e("runAsShell root shizuku failed", e);
+                throw new IllegalStateException("runAsShell failed", e);
+            }
+        }
+        return executeShellCommand(command);
+    }
+
+    private int exitCodeFromOutput(String out) {
+        if (out == null) {
+            return -1;
+        }
+        int idx = out.indexOf("__EXIT_CODE=");
+        if (idx < 0) {
+            return -1;
+        }
+        String tail = out.substring(idx + 12).trim();
+        int nl = tail.indexOf('\n');
+        if (nl >= 0) {
+            tail = tail.substring(0, nl);
+        }
+        try {
+            return Integer.parseInt(tail.trim());
+        } catch (NumberFormatException e) {
+            return -1;
+        }
     }
 
     public boolean setScreenPower(int powerMode) {
@@ -431,7 +754,7 @@ public class UserService extends IUserService.Stub  {
 
     @Override
     public boolean isRooted() throws RemoteException {
-        return android.os.Process.myUid() == 0;
+        return android.os.Process.myUid() == 0 || findSuBinary() != null;
     }
 
     @Override
@@ -608,7 +931,7 @@ public class UserService extends IUserService.Stub  {
             java.lang.reflect.Constructor<?> ctor = builderClass.getConstructor(
                     String.class, int.class, int.class, int.class);
             Object builder = ctor.newInstance(name, width, height, 160);
-            // Mirror the reference fake-DeX display flags: trusted, focus-owning, always
+            // Mirror the upstream display flags: trusted, focus-owning, always
             // unlocked, touch-capable. DEVICE_DISPLAY_GROUP stays off so the
             // fake DeX display does not rejoin the default display group and
             // kick LibreDeX back to the main launcher.
@@ -660,7 +983,7 @@ public class UserService extends IUserService.Stub  {
             Object cb = cbCtor.newInstance(null, null);
             int rc = (Integer) dm.getClass().getMethod("createVirtualDisplay",
                     vdConfigClass, iCbClass, iProjClass, String.class)
-                    .invoke(dm, config, cb, null, "com.libredex");
+                    .invoke(dm, config, cb, null, FakeContext.PACKAGE_NAME);
             Ln.i("createDexMirror raw rc=" + rc);
             if (rc < 0) {
                 return rc;
@@ -698,11 +1021,9 @@ public class UserService extends IUserService.Stub  {
     public void restartSecondaryLauncher(int displayId, int width, int height) throws RemoteException {
         Ln.i("restartSecondaryLauncher: displayId=" + displayId);
         try {
-            Process p = new ProcessBuilder("su", "2000", "-c",
-                    "am force-stop com.sec.android.app.launcher")
-                    .redirectErrorStream(true).start();
-            p.waitFor();
-            Ln.i("restartSecondaryLauncher force-stop launcher exit=" + p.exitValue());
+            String out = runAsShell("am force-stop com.sec.android.app.launcher");
+            Ln.i("restartSecondaryLauncher force-stop launcher exit="
+                    + exitCodeFromOutput(out) + " out=" + out.trim());
         } catch (Throwable t) {
             Ln.e("restartSecondaryLauncher force-stop failed", t);
         }
@@ -718,6 +1039,86 @@ public class UserService extends IUserService.Stub  {
     public void startSecondaryLauncher(int displayId, int width, int height) throws RemoteException {
         Ln.i("startSecondaryLauncher: displayId=" + displayId + " " + width + "x" + height);
         ensureSecondaryLauncherOnDisplay(displayId, width, height);
+    }
+
+    @Override
+    public int stopSecondaryLauncher(int displayId) throws RemoteException {
+        Ln.i("stopSecondaryLauncher: displayId=" + displayId);
+        try {
+            if (displayId > 0) {
+                moveAppTasksToDefaultDisplay(displayId);
+            }
+            String stackId = findSecondaryLauncherRootTaskId();
+            if (stackId != null && !stackId.isEmpty()) {
+                String out = executeShellCommand("am stack remove " + stackId);
+                Ln.i("stopSecondaryLauncher am stack remove " + stackId
+                        + " -> " + out.trim());
+                Thread.sleep(700);
+            }
+            String taskId = findSecondaryLauncherTaskId();
+            if (taskId != null && !taskId.isEmpty()) {
+                removeTaskById(Integer.parseInt(taskId));
+                Thread.sleep(700);
+            }
+            if (isSecondaryLauncherOnDisplay(displayId)) {
+                String out = runAsShell("am force-stop com.sec.android.app.launcher");
+                Ln.i("stopSecondaryLauncher force-stop fallback -> " + out.trim());
+                Thread.sleep(1200);
+            }
+            boolean gone = !isSecondaryLauncherOnDisplay(displayId);
+            Ln.i("stopSecondaryLauncher done displayId=" + displayId + " gone=" + gone);
+            return gone ? 0 : -1;
+        } catch (Throwable t) {
+            Ln.e("stopSecondaryLauncher failed", t);
+            return -1;
+        }
+    }
+
+    private void removeTaskById(int taskId) {
+        try {
+            Class<?> atmClass = Class.forName("android.app.ActivityTaskManager");
+            Object service = atmClass.getMethod("getService").invoke(null);
+            service.getClass().getMethod("removeTask", int.class).invoke(service, taskId);
+            Ln.i("removeTaskById success taskId=" + taskId);
+        } catch (Throwable t) {
+            Ln.e("removeTaskById failed taskId=" + taskId, t);
+        }
+    }
+
+    private void moveAppTasksToDefaultDisplay(int displayId) {
+        try {
+            String out = executeShellCommand("dumpsys activity activities");
+            int exitIdx = out.indexOf("__EXIT_CODE");
+            if (exitIdx >= 0) {
+                out = out.substring(0, exitIdx);
+            }
+            java.util.Set<String> stackIds = new java.util.LinkedHashSet<>();
+            boolean inTarget = false;
+            for (String line : out.split("\n")) {
+                String t = line.trim();
+                if (t.startsWith("Display #") && t.contains("(activities from top to bottom)")) {
+                    inTarget = t.startsWith("Display #" + displayId + " ");
+                    continue;
+                }
+                if (!inTarget) {
+                    continue;
+                }
+                Matcher m = Pattern.compile(
+                        "Task\\{[^}]*#\\d+ type=standard[^}]*rootTaskId=(\\d+)")
+                        .matcher(t);
+                if (m.find()) {
+                    stackIds.add(m.group(1));
+                }
+            }
+            for (String stackId : stackIds) {
+                String rc = executeShellCommand("am display move-stack " + stackId + " 0");
+                Ln.i("moveAppTasksToDefaultDisplay stack " + stackId
+                        + " -> 0: " + rc.trim());
+                Thread.sleep(300);
+            }
+        } catch (Throwable t) {
+            Ln.e("moveAppTasksToDefaultDisplay failed", t);
+        }
     }
 
     @Override
@@ -978,10 +1379,9 @@ public class UserService extends IUserService.Stub  {
                         + " --activityType 2 --windowingMode 1"
                         + " -a android.intent.action.MAIN -c android.intent.category.SECONDARY_HOME"
                         + " -n com.sec.android.app.launcher/com.honeyspace.dexservice.SecondaryLauncher";
-                Process p = new ProcessBuilder("su", "2000", "-c", cmd)
-                        .redirectErrorStream(true).start();
-                p.waitFor();
-                Ln.i("started SecondaryLauncher on display " + vdId + " exit=" + p.exitValue());
+                String out = runAsShell(cmd);
+                Ln.i("started SecondaryLauncher on display " + vdId
+                        + " exit=" + exitCodeFromOutput(out) + " out=" + out.trim());
             } catch (Throwable t) {
                 Ln.e("startSecondaryLauncher failed", t);
             }
@@ -1050,6 +1450,23 @@ public class UserService extends IUserService.Stub  {
             return id.isEmpty() ? null : id;
         } catch (Throwable t) {
             Ln.e("findSecondaryLauncherTaskId failed", t);
+            return null;
+        }
+    }
+
+    private String findSecondaryLauncherRootTaskId() {
+        try {
+            String out = executeShellCommand(
+                    "dumpsys activity activities 2>/dev/null | grep 'Task{.*SecondaryLauncher' | head -1"
+                            + " | grep -oE 'rootTaskId=[0-9]+' | head -1 | cut -d= -f2");
+            String id = out == null ? "" : out.trim();
+            int exitIdx = id.indexOf("__EXIT_CODE");
+            if (exitIdx >= 0) {
+                id = id.substring(0, exitIdx).trim();
+            }
+            return id.isEmpty() ? null : id;
+        } catch (Throwable t) {
+            Ln.e("findSecondaryLauncherRootTaskId failed", t);
             return null;
         }
     }
@@ -1390,6 +1807,60 @@ public class UserService extends IUserService.Stub  {
     }
 
     @Override
+    public int mirrorPhoneToExternal(int externalDisplayId, int sourceDisplayId,
+                                     int outWidth, int outHeight, int orientation,
+                                     Rect layerStackRect, Rect displayRect) throws RemoteException {
+        Ln.i("mirrorPhoneToExternal: external=" + externalDisplayId + " source=" + sourceDisplayId
+                + " out=" + outWidth + "x" + outHeight + " orientation=" + orientation
+                + " layerStack=" + layerStackRect + " display=" + displayRect);
+        try {
+            IBinder extToken = getDisplayToken(externalDisplayId);
+            if (extToken == null) {
+                Ln.e("mirrorPhoneToExternal: external display token unavailable displayId="
+                        + externalDisplayId);
+                return -1;
+            }
+            IDisplayManager dm = IDisplayManager.Stub.asInterface(
+                    SystemServiceHelper.getSystemService(Context.DISPLAY_SERVICE));
+            android.view.DisplayInfo srcInfo = dm.getDisplayInfo(sourceDisplayId);
+            if (srcInfo == null) {
+                Ln.e("mirrorPhoneToExternal: source display info missing displayId="
+                        + sourceDisplayId);
+                return -1;
+            }
+            int srcLayerStack;
+            try {
+                srcLayerStack = srcInfo.layerStack;
+            } catch (NoSuchFieldError e) {
+                Ln.w("mirrorPhoneToExternal: layerStack field unavailable, parsing dumpsys");
+                srcLayerStack = getLayerStackFromDumpsys(sourceDisplayId);
+            }
+            if (srcLayerStack < 0) {
+                Ln.e("mirrorPhoneToExternal: bad source layer stack=" + srcLayerStack);
+                return -1;
+            }
+            Rect activeLayerStackRect = layerStackRect;
+            Rect activeDisplayRect = displayRect;
+            if (activeLayerStackRect == null || activeLayerStackRect.isEmpty()) {
+                activeLayerStackRect = getSourceDisplayRect(srcInfo, outWidth, outHeight);
+            }
+            if (activeDisplayRect == null || activeDisplayRect.isEmpty()) {
+                activeDisplayRect = getAspectFitRect(activeLayerStackRect, outWidth, outHeight);
+            }
+            applyDisplayProjectionAndLayerStack(
+                    extToken, orientation, activeLayerStackRect, activeDisplayRect, srcLayerStack);
+            dpMirrorSavedLayerStack = -1;
+            dpMirrorRestoreRect = null;
+            Ln.i("mirrorPhoneToExternal: success external=" + externalDisplayId
+                    + " layerStack=" + activeLayerStackRect + " display=" + activeDisplayRect);
+            return 0;
+        } catch (Throwable t) {
+            Ln.e("mirrorPhoneToExternal failed", t);
+            return -1;
+        }
+    }
+
+    @Override
     public int resetDpMirror(int externalDisplayId) throws RemoteException {
         Ln.i("resetDpMirror: external=" + externalDisplayId);
         try {
@@ -1535,7 +2006,7 @@ public class UserService extends IUserService.Stub  {
         };
     }
 
-    /** Android 13+ privileged AudioPolicy loopback capture. */
+    /** Mirrors the Android 13+ privileged AudioPolicy loopback capture used by streaming. */
     private AudioRecord createPlaybackMixAudioRecord() {
         try {
             Binder.clearCallingIdentity();

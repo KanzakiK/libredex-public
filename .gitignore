@@ -9,13 +9,30 @@
 *.tmp
 *.bak
 
+# Local worktrees and migration backups under the main repo
+/public/
+/.backup/
+/.git-private-archive/
+/.tmp/
+/.logs-*/
+
+# Internal research/prototype material not published
+/docs/
+/archive/
+/reference/
+/prototype/
+/scripts/export-public.ps1
+/tools/
+
 # Build and release artifacts
 dist/
 *.zip
 *.apk
+!libredex-public-release.apk
 *.apks
 *.aab
 *.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.dex
 *.odex
 *.vdex
@@ -24,12 +41,6 @@ dist/
 tools/*.jar
 tools/*.apk
 touchpad_logcat.txt
-
-# Gradle wrapper jar is required for out-of-the-box builds
-!gradle/wrapper/gradle-wrapper.jar
-
-# Public release APK artifact
-!libredex-public-release.apk
 
 # Proprietary firmware, decompiled system apps, and device pulls
 reference/decompiled/

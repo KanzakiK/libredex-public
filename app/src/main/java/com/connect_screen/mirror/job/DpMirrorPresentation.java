@@ -19,7 +19,7 @@ import java.util.concurrent.CountDownLatch;
 /**
  * Renders the shared mirror-transform pipeline onto a fullscreen Presentation
  * on the wired DP display. This gives DP the same GL rotate/scale/black-bar
- * behavior as Moonlight instead of only low-level projection.
+ * behavior as Moonlight and other output transports instead of only low-level projection.
  */
 public final class DpMirrorPresentation {
     private static final long SHOW_TIMEOUT_MS = 4000L;
@@ -38,6 +38,7 @@ public final class DpMirrorPresentation {
     private volatile AutoRotateAndScaleForMoonlight pipeline;
     private volatile boolean stopping;
     private volatile boolean ready;
+    private volatile boolean plain;
 
     private DpMirrorPresentation(Context context, Display display, CurrentScreen source,
                                  int width, int height, int frameRate) {
@@ -54,6 +55,19 @@ public final class DpMirrorPresentation {
                                              int width, int height, int frameRate) {
         DpMirrorPresentation mirror = new DpMirrorPresentation(
                 context, display, source, width, height, frameRate);
+        if (!mirror.showAndWait()) {
+            mirror.stop();
+            return null;
+        }
+        return mirror;
+    }
+
+    public static DpMirrorPresentation startPlain(Context context, Display display,
+                                                  CurrentScreen source,
+                                                  int width, int height, int frameRate) {
+        DpMirrorPresentation mirror = new DpMirrorPresentation(
+                context, display, source, width, height, frameRate);
+        mirror.plain = true;
         if (!mirror.showAndWait()) {
             mirror.stop();
             return null;
@@ -106,10 +120,42 @@ public final class DpMirrorPresentation {
         });
     }
 
+    public void stopAndWait() {
+        stopping = true;
+        AutoRotateAndScaleForMoonlight activePipeline = pipeline;
+        if (activePipeline != null) {
+            activePipeline.stop();
+        }
+        java.util.concurrent.CountDownLatch dismissed = new java.util.concurrent.CountDownLatch(1);
+        mainHandler.post(() -> {
+            try {
+                if (presentation != null) {
+                    try {
+                        presentation.dismiss();
+                    } catch (Throwable t) {
+                        State.log("DpMirrorPresentation: dismiss failed: " + t);
+                    }
+                    presentation = null;
+                }
+            } finally {
+                dismissed.countDown();
+            }
+        });
+        try {
+            dismissed.await(3000, java.util.concurrent.TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     private final SurfaceHolder.Callback surfaceCallback = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-            if (stopping || ready) {
+            if (stopping) {
+                return;
+            }
+            if (ready) {
+                State.log("DpMirrorPresentation: surface recreated after pipeline ready");
                 return;
             }
             final Surface surface = holder.getSurface();
@@ -126,7 +172,8 @@ public final class DpMirrorPresentation {
                             frameRate,
                             "LibreDeXDP",
                             "DP mirror failed to mirror the current screen",
-                            false);
+                            false,
+                            plain);
                     ready = pipeline != null;
                     if (stopping && pipeline != null) {
                         pipeline.stop();
@@ -149,6 +196,7 @@ public final class DpMirrorPresentation {
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
+            State.log("DpMirrorPresentation: surface destroyed");
             readyLatch.countDown();
         }
     };

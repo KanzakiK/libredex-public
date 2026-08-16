@@ -5,9 +5,6 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.Intent;
 import android.hardware.display.DisplayManager;
-import android.media.projection.MediaProjection;
-import android.media.projection.MediaProjectionConfig;
-import android.media.projection.MediaProjectionManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -42,11 +39,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.connect_screen.mirror.job.CreateVirtualDisplay;
 import com.connect_screen.mirror.job.ConnectToClient;
+import com.connect_screen.mirror.job.ExitAll;
 import com.connect_screen.mirror.job.ExternalDisplayMonitor;
 import com.connect_screen.mirror.job.OutputSource;
 import com.connect_screen.mirror.job.ProjectViaDp;
 import com.connect_screen.mirror.job.SunshineServer;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
+import com.connect_screen.mirror.transport.OptionalTransportProvider;
+import com.connect_screen.mirror.transport.TransportRegistry;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.util.Set;
@@ -83,6 +83,7 @@ public class ConnectionFragment extends Fragment {
 
     private Button transportMoonlight;
     private Button transportDp;
+    private Button transportOptional;
     private Button sourceDexButton;
     private Button sourceMirrorButton;
     private Button quickTouchpad;
@@ -123,6 +124,8 @@ public class ConnectionFragment extends Fragment {
     private Spinner clientSpinner;
     private FrameLayout subPageContainer;
     private View transportTabsLayout;
+    private FrameLayout optionalTransportContainer;
+    private Fragment optionalTransportFragment;
     private TextView entryEncoderSub;
     private ScrollView rootScroll;
     private View fragmentRootView;
@@ -193,6 +196,24 @@ public class ConnectionFragment extends Fragment {
         transportTabsLayout = view.findViewById(R.id.transportTabs);
         entryEncoderSub = view.findViewById(R.id.entryEncoderSub);
 
+        TransportRegistry.discover();
+        OptionalTransportProvider optionalTransport = TransportRegistry.optional();
+        if (optionalTransport != null) {
+            transportOptional = new Button(requireContext());
+            transportOptional.setText(optionalTransport.label());
+            transportOptional.setAllCaps(false);
+            transportOptional.setTextSize(14);
+            transportOptional.setPadding(12, 8, 12, 8);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+            transportOptional.setLayoutParams(params);
+            if (transportTabsLayout instanceof LinearLayout) {
+                ((LinearLayout) transportTabsLayout).addView(transportOptional);
+            }
+            transportOptional.setOnClickListener(v -> setTransport(optionalTransport.id()));
+        }
+        optionalTransportContainer = view.findViewById(R.id.optionalTransportContainer);
+
         transportMoonlight.setOnClickListener(v -> setTransport("moonlight"));
         transportDp.setOnClickListener(v -> setTransport("dp"));
         sourceDexButton.setOnClickListener(v -> setSource("dex"));
@@ -223,8 +244,9 @@ public class ConnectionFragment extends Fragment {
                 android.R.layout.simple_spinner_dropdown_item,
                 new String[]{"192.168.50.50 · Moonlight"}));
 
-        applyTransport();
+        syncTransportWithActiveSession();
         applySource();
+        updateTransportTabAvailability();
         refreshIpAddress();
         updateDebugInfo(State.streamingDebugInfo.getValue());
         updateUiState(State.uiState.getValue());
@@ -418,12 +440,46 @@ public class ConnectionFragment extends Fragment {
         applyTransport();
     }
 
+    void syncTransportWithActiveSession() {
+        String target = "moonlight";
+        if (ProjectViaDp.isActive()) {
+            target = "dp";
+        } else if (TransportRegistry.isOptionalActive()) {
+            OptionalTransportProvider optional = TransportRegistry.optional();
+            if (optional != null) {
+                target = optional.id();
+            }
+        } else if (SunshineService.getLifecycleState() != SunshineService.LifecycleState.STOPPED) {
+            target = "moonlight";
+        }
+        if (!target.equals(currentTransport)) {
+            setTransport(target);
+        } else {
+            applyTransport();
+        }
+    }
+
     private void applyTransport() {
         setTabButton(transportMoonlight, "moonlight".equals(currentTransport));
         setTabButton(transportDp, "dp".equals(currentTransport));
+        OptionalTransportProvider optional = TransportRegistry.optional();
+        boolean optionalSelected = optional != null && optional.id().equals(currentTransport);
+        setTabButton(transportOptional, optionalSelected);
         boolean moonlight = "moonlight".equals(currentTransport);
         moonlightContent.setVisibility(moonlight ? View.VISIBLE : View.GONE);
-        placeholderContent.setVisibility(moonlight ? View.GONE : View.VISIBLE);
+        if (optionalSelected) {
+            attachOptionalFragment();
+            if (optionalTransportContainer != null) {
+                optionalTransportContainer.setVisibility(View.VISIBLE);
+            }
+            placeholderContent.setVisibility(View.GONE);
+        } else {
+            detachOptionalFragment();
+            if (optionalTransportContainer != null) {
+                optionalTransportContainer.setVisibility(View.GONE);
+            }
+            placeholderContent.setVisibility(moonlight ? View.GONE : View.VISIBLE);
+        }
         if ("dp".equals(currentTransport)) {
             placeholderTitle.setText("DP / HDMI 有线");
             placeholderSub.setText("外接屏直连 DeX");
@@ -431,8 +487,52 @@ public class ConnectionFragment extends Fragment {
         refreshPlaceholderState();
     }
 
+    private void attachOptionalFragment() {
+        OptionalTransportProvider provider = TransportRegistry.optional();
+        if (provider == null || optionalTransportContainer == null || optionalTransportFragment != null) {
+            return;
+        }
+        optionalTransportFragment = provider.createFragment();
+        getChildFragmentManager().beginTransaction()
+                .replace(R.id.optionalTransportContainer, optionalTransportFragment)
+                .commitNow();
+    }
+
+    private void detachOptionalFragment() {
+        if (optionalTransportFragment != null) {
+            getChildFragmentManager().beginTransaction()
+                    .remove(optionalTransportFragment)
+                    .commitNow();
+            optionalTransportFragment = null;
+        }
+        if (optionalTransportContainer != null) {
+            optionalTransportContainer.removeAllViews();
+        }
+    }
+
+    private void updateTransportTabAvailability() {
+        if (transportMoonlight == null || transportDp == null) {
+            return;
+        }
+        boolean sessionActive = ProjectViaDp.isActive()
+                || TransportRegistry.isOptionalActive()
+                || SunshineServer.isMoonlightSessionActive();
+        SunshineService.LifecycleState lifecycleState = SunshineService.getLifecycleState();
+        boolean moonlightActive = SunshineServer.isMoonlightSessionActive()
+                || lifecycleState == SunshineService.LifecycleState.STARTING
+                || lifecycleState == SunshineService.LifecycleState.RUNNING
+                || lifecycleState == SunshineService.LifecycleState.STOPPING;
+        sessionActive = sessionActive || moonlightActive;
+        setEnabled(transportMoonlight, !sessionActive || "moonlight".equals(currentTransport));
+        setEnabled(transportDp, !sessionActive || "dp".equals(currentTransport));
+        OptionalTransportProvider optional = TransportRegistry.optional();
+        setEnabled(transportOptional, !sessionActive
+                || (optional != null && optional.id().equals(currentTransport)));
+    }
+
     @Override
     public void onDestroyView() {
+        detachOptionalFragment();
         super.onDestroyView();
     }
 
@@ -445,6 +545,7 @@ public class ConnectionFragment extends Fragment {
             dm.registerDisplayListener(externalDisplayListener, new Handler(Looper.getMainLooper()));
         }
         ExternalDisplayMonitor.refreshState(requireContext());
+        syncTransportWithActiveSession();
         refreshPlaceholderState();
     }
 
@@ -468,8 +569,21 @@ public class ConnectionFragment extends Fragment {
 
     private void onPlaceholderActionClicked() {
         if ("dp".equals(currentTransport)) {
-            toggleDpOutput();
+            if (ProjectViaDp.isActive()) {
+                toggleDpOutput();
+            } else if (SunshineServer.isMoonlightSessionActive()
+                    || TransportRegistry.isOptionalActive()) {
+                stopAllOutputs();
+            } else {
+                toggleDpOutput();
+            }
         }
+    }
+
+    private void stopAllOutputs() {
+        ExitAll.stopServices(requireContext());
+        showToast("已停止全部输出");
+        refreshPlaceholderState();
     }
 
     private void toggleDpOutput() {
@@ -556,11 +670,6 @@ public class ConnectionFragment extends Fragment {
                 .show();
     }
 
-    private void keepMainActivityForeground() {
-        State.bringMainActivityToFront();
-        State.bringMainActivityToFrontLater(2500);
-    }
-
     private void refreshPlaceholderState() {
         if (getContext() == null || !isAdded()) {
             return;
@@ -569,6 +678,7 @@ public class ConnectionFragment extends Fragment {
             return;
         }
         updateQuickActions();
+        updateTransportTabAvailability();
         boolean dp = "dp".equals(currentTransport);
         placeholderActionButton.setVisibility(dp ? View.VISIBLE : View.GONE);
         if (placeholderModeButton != null) {
@@ -610,6 +720,11 @@ public class ConnectionFragment extends Fragment {
             placeholderStatusText.setText("运行中 · 屏幕 " + State.externalDisplayId);
             setButton(placeholderActionButton, "停止 DP 输出", R.color.ui_danger,
                     R.color.ui_on_accent, true);
+        } else if (SunshineServer.isMoonlightSessionActive()
+                || TransportRegistry.isOptionalActive()) {
+            placeholderStatusText.setText("其他输出运行中 · 外接屏 " + State.externalDisplayId);
+            setButton(placeholderActionButton, "停止服务", R.color.ui_danger,
+                    R.color.ui_on_accent, true);
         } else if (State.externalDisplayId > 0) {
             placeholderStatusText.setText("外接屏 " + State.externalDisplayId
                     + " · " + State.externalDisplayWidth + "x" + State.externalDisplayHeight);
@@ -636,8 +751,14 @@ public class ConnectionFragment extends Fragment {
     }
 
     private void setSource(String source) {
+        boolean changed = !source.equals(currentSource);
         currentSource = source;
         OutputSource.setActive(OutputSource.fromId(source));
+        if (changed && ProjectViaDp.isActive()) {
+            ProjectViaDp.stop();
+            State.startNewJob(new ProjectViaDp(!OutputSource.isMirrorActive()));
+            showToast("已切换 DP 输出源");
+        }
         applySource();
     }
 
@@ -691,7 +812,8 @@ public class ConnectionFragment extends Fragment {
     private void openTouchpad() {
         boolean dex = "dex".equals(currentSource);
         boolean connected = SunshineServer.isMoonlightSessionActive()
-                || ProjectViaDp.isActive();
+                || ProjectViaDp.isActive()
+                || TransportRegistry.isOptionalActive();
         if (dex && connected) {
             DexTouchpadLauncher.launch(requireContext());
         } else {
@@ -710,14 +832,14 @@ public class ConnectionFragment extends Fragment {
             case STARTING:
                 serviceSub.setText("Sunshine 服务启动中");
                 setBadge(serviceBadge, "处理中", false);
-                setButton(serviceActionButton, "处理中…", R.color.ui_surface,
-                        R.color.ui_text_secondary, false);
+                setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                        R.color.ui_on_accent, true);
                 break;
             case STOPPING:
                 serviceSub.setText("Sunshine 服务关闭中");
                 setBadge(serviceBadge, "处理中", false);
-                setButton(serviceActionButton, "处理中…", R.color.ui_surface,
-                        R.color.ui_text_secondary, false);
+                setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                        R.color.ui_on_accent, true);
                 break;
             case RUNNING:
                 if (connected) {
@@ -749,6 +871,11 @@ public class ConnectionFragment extends Fragment {
         if (connected) {
             mirrorStatusText.setText("镜像中");
             setButton(mirrorActionButton, "停止镜像", R.color.ui_danger,
+                    R.color.ui_on_accent, true);
+        } else if (lifecycleState == SunshineService.LifecycleState.STARTING
+                || lifecycleState == SunshineService.LifecycleState.STOPPING) {
+            mirrorStatusText.setText("服务切换中");
+            setButton(mirrorActionButton, "停止服务", R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (serviceRunning) {
             mirrorStatusText.setText("服务已启动 · 等待连接");
@@ -803,7 +930,8 @@ public class ConnectionFragment extends Fragment {
 
     private void updateQuickActions() {
         boolean connected = SunshineServer.isMoonlightSessionActive()
-                || ProjectViaDp.isActive();
+                || ProjectViaDp.isActive()
+                || TransportRegistry.isOptionalActive();
         boolean dex = "dex".equals(currentSource);
         boolean mirror = "mirror".equals(currentSource);
         boolean sessionActive = connected
@@ -1043,6 +1171,9 @@ public class ConnectionFragment extends Fragment {
         if (ProjectViaDp.isActive() && State.externalDisplayId > 0) {
             return State.externalDisplayId;
         }
+        if (TransportRegistry.isOptionalActive()) {
+            return TransportRegistry.activeDisplayId();
+        }
         return -1;
     }
 
@@ -1061,6 +1192,19 @@ public class ConnectionFragment extends Fragment {
             } catch (Throwable e) {
                 showToast("DP 会话重启失败：" + e.getMessage());
             }
+            return;
+        }
+        if (TransportRegistry.restartActive(!OutputSource.isMirrorActive(), (displayId, error) -> {
+                if (getContext() == null) {
+                    return;
+                }
+                if (error != null) {
+                    showToast("会话重启失败：" + error);
+                } else {
+                    showToast("会话已重启");
+                }
+                refreshPlaceholderState();
+            })) {
             return;
         }
         showToast("没有可重启的 DeX 会话");

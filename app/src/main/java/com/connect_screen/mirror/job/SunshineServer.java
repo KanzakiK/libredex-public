@@ -556,6 +556,9 @@ public class SunshineServer {
 
     // 添加显示编码器错误的方法
     public static void showEncoderError(String errorMessage) {
+        State.log("[SunshineServer] encoder error: " + errorMessage);
+        Log.e("SunshineServer", "encoder error: " + errorMessage,
+                new Throwable("encoder error origin"));
         boolean autoFellBack = fallbackEncoderCodecOnFailure();
         if (autoFellBack) {
             errorMessage = errorMessage

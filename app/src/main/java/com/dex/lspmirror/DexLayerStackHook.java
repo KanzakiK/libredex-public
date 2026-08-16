@@ -34,21 +34,32 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final Set<Integer> DEX_ELIGIBLE_NOTIFIED = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> DEX_DEXCONTROLLER_NOTIFIED = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> WALLPAPER_ATTACH_DONE = ConcurrentHashMap.newKeySet();
+    private static volatile boolean dexControllerGuardInstalled;
+    private static volatile boolean dpMirrorGuardArmed;
+    private static volatile int dpExternalStackId = -1;
+    private static volatile boolean homeSupportGuardInstalled;
     private static Object inputManagerService;
     private static Object systemUiTouchpadController;
     private static Object windowManagerService;
     private static Object logicalDisplayMapper;
+    private static ClassLoader systemServerClassLoader;
     private static volatile int lastConfiguredDpDisplayId = -1;
+    private static volatile boolean tdaDisplayIdFallbackLogged;
+    private static volatile boolean tdaDisplayIdDiagnosticsLogged;
+    private static volatile boolean bootDpStateCleanupDone;
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) {
         if ("com.android.systemui".equals(lpparam.packageName)) {
             hookSystemUiTouchpad(lpparam.classLoader);
+            installSystemUiDexMirrorGuard(lpparam.classLoader);
             return;
         }
         if (!"android".equals(lpparam.packageName)) {
             return;
         }
+        systemServerClassLoader = lpparam.classLoader;
+        cleanupStaleDpStateAtBoot();
         XposedBridge.log(TAG + ": hooking system_server");
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
@@ -136,6 +147,8 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                                     int displayId = (Integer) param.args[0];
                                     if (configured == displayId) {
                                         boolean first = DEX_FLAG_DISPLAY_IDS.add(displayId);
+                                        dpMirrorGuardArmed = true;
+                                        dpExternalStackId = displayId;
                                         java.lang.reflect.Field flagsField =
                                                 info.getClass().getField("flags");
                                         java.lang.reflect.Field typeField =
@@ -492,14 +505,102 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                                                 + " stack=" + old);
                                     }
                                 }
+                                forcePhoneMirrorLayerStack(token, param);
                             } catch (Throwable t) {
                                 XposedBridge.log(TAG + ": setDisplayLayerStack hook failed: " + t);
                             }
                         }
                     });
+            try {
+                Method staticSetLayerStack = Class.forName(
+                        "android.view.SurfaceControl", false, cl)
+                        .getMethod("setDisplayLayerStack", IBinder.class, int.class);
+                XposedBridge.hookMethod(staticSetLayerStack, new XC_MethodHook() {
+                            @Override
+                            protected void beforeHookedMethod(MethodHookParam param) {
+                                try {
+                                    forcePhoneMirrorLayerStack(
+                                            (IBinder) param.args[0], param);
+                                } catch (Throwable t) {
+                                    XposedBridge.log(TAG
+                                            + ": static setDisplayLayerStack hook failed: "
+                                            + t);
+                                }
+                            }
+                        });
+                XposedBridge.log(TAG + ": static layer stack hook installed");
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": static layer stack hook setup failed: " + t);
+            }
+            try {
+                Class<?> txnClass = Class.forName(
+                        "android.view.SurfaceControl$Transaction", false, cl);
+                Class<?> scClass = Class.forName(
+                        "android.view.SurfaceControl", false, cl);
+                for (Method m : txnClass.getDeclaredMethods()) {
+                    if (!"setLayerStack".equals(m.getName())
+                            || m.getParameterTypes().length != 2
+                            || m.getParameterTypes()[0] != scClass
+                            || m.getParameterTypes()[1] != int.class) {
+                        continue;
+                    }
+                    XposedBridge.hookMethod(m, new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) {
+                                    try {
+                                        int old = (Integer) param.args[1];
+                                        if (dpMirrorGuardArmed
+                                                && configuredDpDisplayId() < 0
+                                                && old == dpExternalStackId) {
+                                            param.args[1] = 0;
+                                            XposedBridge.log(TAG
+                                                    + ": txn surface layer stack forced "
+                                                    + old + " -> 0");
+                                        }
+                                    } catch (Throwable t) {
+                                        XposedBridge.log(TAG
+                                                + ": txn setLayerStack hook failed: " + t);
+                                    }
+                                }
+                            });
+                    XposedBridge.log(TAG + ": txn setLayerStack hook installed");
+                    break;
+                }
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": txn setLayerStack hook setup failed: " + t);
+            }
             XposedBridge.log(TAG + ": hooks installed");
+            logLayerStackApis(cl);
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": setup failed: " + t);
+        }
+    }
+
+    private static void logLayerStackApis(ClassLoader cl) {
+        try {
+            for (String name : new String[]{
+                    "android.view.SurfaceControl",
+                    "android.view.SurfaceControl$Transaction",
+                    "com.android.server.display.DisplayDevice",
+                    "com.android.server.display.DisplayManagerService"}) {
+                try {
+                    Class<?> c = Class.forName(name, false, cl);
+                    StringBuilder sb = new StringBuilder();
+                    for (Method m : c.getDeclaredMethods()) {
+                        String n = m.getName().toLowerCase();
+                        if (n.contains("layerstack") || n.contains("layer_stack")) {
+                            sb.append(m.getName()).append('(')
+                              .append(java.util.Arrays.toString(m.getParameterTypes()))
+                              .append(") ");
+                        }
+                    }
+                    XposedBridge.log(TAG + ": layerStackApis " + name + " -> " + sb);
+                } catch (Throwable t) {
+                    XposedBridge.log(TAG + ": layerStackApis class missing " + name + " " + t);
+                }
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": logLayerStackApis failed " + t);
         }
     }
 
@@ -677,6 +778,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             windowManagerService = wms;
             Object atm = XposedHelpers.getObjectField(wms, "mAtmService");
             Object dexController = XposedHelpers.getObjectField(atm, "mDexController");
+            installDexControllerGuard(dexController.getClass());
             // The physical DP display is already registered, so the official
             // method can run and also switches the TaskDisplayArea to the DeX
             // windowing mode. The fake virtual display is not registered yet,
@@ -730,6 +832,106 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         return null;
     }
 
+    private static void installDexControllerGuard(Class<?> dexControllerClass) {
+        if (dexControllerGuardInstalled) {
+            return;
+        }
+        Method setExternal = findSetExternalDesktopDisplayId(dexControllerClass);
+        if (setExternal == null) {
+            return;
+        }
+        XposedBridge.hookMethod(setExternal, new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                int displayId = (Integer) param.args[0];
+                if (displayId >= 0 && !isActiveDexDisplay(displayId)) {
+                    param.setResult(null);
+                    XposedBridge.log(TAG + ": dex controller registration blocked displayId="
+                            + displayId);
+                }
+            }
+        });
+        dexControllerGuardInstalled = true;
+        XposedBridge.log(TAG + ": dex controller guard installed");
+    }
+
+    private static boolean isActiveDexDisplay(int displayId) {
+        return DEX_FLAG_DISPLAY_IDS.contains(displayId)
+                || configuredDpDisplayId() == displayId;
+    }
+
+    private static void forcePhoneMirrorLayerStack(
+            IBinder token, XC_MethodHook.MethodHookParam param) {
+        if (!dpMirrorGuardArmed || configuredDpDisplayId() >= 0) {
+            return;
+        }
+        int old = (Integer) param.args[1];
+        if (old == dpExternalStackId) {
+            param.args[1] = 0;
+            XposedBridge.log(TAG + ": dp mirror stack forced token="
+                    + token + " " + old + " -> 0");
+        }
+    }
+
+    private static void installSystemUiDexMirrorGuard(ClassLoader cl) {
+        if (!aggressiveHooksEnabled()) {
+            return;
+        }
+        try {
+            Class<?> dmClass = Class.forName(
+                    "android.hardware.display.DisplayManager", false, cl);
+            for (Method m : dmClass.getDeclaredMethods()) {
+                if (!"isExternalDesktopDisplay".equals(m.getName())) {
+                    continue;
+                }
+                XposedBridge.hookMethod(m, new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) {
+                        try {
+                            Object info = param.args[0];
+                            int displayId = -1;
+                            try {
+                                displayId = info.getClass()
+                                        .getField("displayId").getInt(info);
+                            } catch (Throwable ignored) {
+                            }
+                            if (displayId >= 0
+                                    && wasManagedDpDisplay(displayId)
+                                    && configuredDpDisplayId() < 0) {
+                                param.setResult(Boolean.FALSE);
+                                XposedBridge.log(TAG + ": sysui dex display blocked displayId="
+                                        + displayId);
+                            }
+                        } catch (Throwable t) {
+                            XposedBridge.log(TAG + ": sysui dex guard hook failed: " + t);
+                        }
+                    }
+                });
+                XposedBridge.log(TAG + ": sysui dex guard installed");
+                return;
+            }
+            XposedBridge.log(TAG + ": sysui isExternalDesktopDisplay not found");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": sysui dex guard setup failed: " + t);
+        }
+    }
+
+    private static boolean wasManagedDpDisplay(int displayId) {
+        try {
+            Class<?> atClass = Class.forName("android.app.ActivityThread");
+            Object at = atClass.getMethod("currentActivityThread").invoke(null);
+            Object systemContext = atClass.getMethod("getSystemContext").invoke(at);
+            android.content.ContentResolver resolver = (android.content.ContentResolver)
+                    systemContext.getClass().getMethod("getContentResolver")
+                            .invoke(systemContext);
+            String value = android.provider.Settings.Global.getString(
+                    resolver, "libredex_dp_managed_display");
+            return value != null && String.valueOf(displayId).equals(value.trim());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private static void syncConfiguredDpDisplay() {
         int configured = configuredDpDisplayId();
         int previous = lastConfiguredDpDisplayId;
@@ -743,6 +945,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             DEX_DEXCONTROLLER_NOTIFIED.remove(previous);
             WALLPAPER_ATTACH_DONE.remove(previous);
             setLogicalDisplayCanHostTasks(previous, false);
+            unmarkHomeSupported(previous);
             resetDexController(previous);
             restoreDpTaskDisplayArea(previous);
             XposedBridge.log(TAG + ": dp dex cleared displayId=" + previous);
@@ -750,19 +953,101 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         lastConfiguredDpDisplayId = configured;
     }
 
+    private static void removeHomeRootTask(int displayId) {
+        if (displayId <= 0) {
+            return;
+        }
+        try {
+            Object wms = windowManagerService;
+            if (wms == null) {
+                return;
+            }
+            Object root = XposedHelpers.getObjectField(wms, "mRoot");
+            Object displayContent = root.getClass().getMethod(
+                    "getDisplayContent", int.class).invoke(root, displayId);
+            if (displayContent == null) {
+                XposedBridge.log(TAG + ": removeHomeRootTask displayContent null displayId="
+                        + displayId);
+                return;
+            }
+            Object tda = null;
+            try {
+                tda = displayContent.getClass().getMethod(
+                        "getDefaultTaskDisplayArea").invoke(displayContent);
+            } catch (Throwable ignored) {
+            }
+            if (tda == null) {
+                try {
+                    tda = XposedHelpers.getObjectField(displayContent, "mTaskDisplayArea");
+                } catch (Throwable ignored) {
+                }
+            }
+            if (tda == null) {
+                try {
+                    tda = displayContent.getClass().getMethod(
+                            "getDisplayArea").invoke(displayContent);
+                } catch (Throwable ignored) {
+                }
+            }
+            if (tda == null) {
+                XposedBridge.log(TAG + ": removeHomeRootTask TDA null displayId=" + displayId);
+                return;
+            }
+            Object homeRoot = null;
+            try {
+                homeRoot = tda.getClass().getMethod(
+                        "getRootTask", int.class, int.class).invoke(tda, 1, 2);
+            } catch (Throwable ignored) {
+            }
+            if (homeRoot == null) {
+                XposedBridge.log(TAG + ": removeHomeRootTask home root null displayId="
+                        + displayId);
+                return;
+            }
+            try {
+                tda.getClass().getMethod("removeRootTask", homeRoot.getClass())
+                        .invoke(tda, homeRoot);
+                XposedBridge.log(TAG + ": removeHomeRootTask removed home root displayId="
+                        + displayId);
+                return;
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": removeRootTask failed displayId="
+                        + displayId + " " + t);
+            }
+            try {
+                homeRoot.getClass().getMethod("removeIfPossible").invoke(homeRoot);
+                XposedBridge.log(TAG + ": removeHomeRootTask removeIfPossible displayId="
+                        + displayId);
+            } catch (Throwable t) {
+                XposedBridge.log(TAG + ": removeHomeRootTask removeIfPossible failed displayId="
+                        + displayId + " " + t);
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": removeHomeRootTask failed displayId="
+                    + displayId + " " + t);
+        }
+    }
+
     private static void forceDpTaskDisplayAreaFreeform(Object tda, int displayId) {
+        forceTaskDisplayAreaFreeform(tda, displayId, true);
+    }
+
+    private static void forceTaskDisplayAreaFreeform(
+            Object tda, int displayId, boolean trackRestore) {
         try {
             Method getMode = tda.getClass().getMethod("getWindowingMode");
             int mode = (Integer) getMode.invoke(tda);
             if (mode != 4) {
                 tda.getClass().getMethod("setWindowingMode", int.class)
                         .invoke(tda, 4);
-                XposedBridge.log(TAG + ": dp TDA freeform forced displayId="
+                XposedBridge.log(TAG + ": dex TDA freeform forced displayId="
                         + displayId + " old=" + mode);
             }
-            DP_TASK_DISPLAY_AREAS.put(displayId, tda);
+            if (trackRestore) {
+                DP_TASK_DISPLAY_AREAS.put(displayId, tda);
+            }
         } catch (Throwable t) {
-            XposedBridge.log(TAG + ": forceDpTaskDisplayAreaFreeform failed: " + t);
+            XposedBridge.log(TAG + ": forceTaskDisplayAreaFreeform failed: " + t);
         }
     }
 
@@ -772,7 +1057,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             return;
         }
         try {
-            int id = (Integer) tda.getClass().getMethod("getDisplayId").invoke(tda);
+            int id = taskDisplayAreaDisplayId(tda);
             if (id != displayId) {
                 return;
             }
@@ -785,6 +1070,147 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": restoreDpTaskDisplayArea failed: " + t);
         }
+    }
+
+    private static int taskDisplayAreaDisplayId(Object tda) {
+        if (tda == null) {
+            return -1;
+        }
+        try {
+            return XposedHelpers.getIntField(tda, "mDisplayId");
+        } catch (Throwable ignored) {
+        }
+        try {
+            return (Integer) invokeNoArg(tda, "getDisplayId");
+        } catch (Throwable ignored) {
+        }
+        for (Class<?> c = tda.getClass(); c != null; c = c.getSuperclass()) {
+            try {
+                Method m = c.getDeclaredMethod("getDisplayId");
+                m.setAccessible(true);
+                logTdaDisplayIdFallback();
+                return (Integer) m.invoke(tda);
+            } catch (Throwable ignored) {
+            }
+        }
+        Object dc = null;
+        try {
+            dc = invokeNoArg(tda, "getDisplayContent");
+        } catch (Throwable ignored) {
+        }
+        if (dc == null) {
+            try {
+                dc = XposedHelpers.getObjectField(tda, "mDisplayContent");
+            } catch (Throwable ignored) {
+            }
+        }
+        if (dc == null) {
+            try {
+                dc = XposedHelpers.getObjectField(tda, "mDisplay");
+            } catch (Throwable ignored) {
+            }
+        }
+        if (dc == null) {
+            for (String name : new String[]{"mDisplayContent", "mDisplay", "mDisplayId"}) {
+                try {
+                    Field f = findDeclaredField(tda.getClass(), name);
+                    if (f == null) {
+                        continue;
+                    }
+                    Object value = f.get(tda);
+                    if (value instanceof Integer) {
+                        logTdaDisplayIdFallback();
+                        return (Integer) value;
+                    }
+                    if (value != null && dc == null) {
+                        dc = value;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+        }
+        if (dc != null) {
+            try {
+                logTdaDisplayIdFallback();
+                return (Integer) invokeNoArg(dc, "getDisplayId");
+            } catch (Throwable ignored) {
+            }
+            for (Class<?> c = dc.getClass(); c != null; c = c.getSuperclass()) {
+                try {
+                    Method m = c.getDeclaredMethod("getDisplayId");
+                    m.setAccessible(true);
+                    logTdaDisplayIdFallback();
+                    return (Integer) m.invoke(dc);
+                } catch (Throwable ignored) {
+                }
+            }
+            try {
+                return XposedHelpers.getIntField(dc, "mDisplayId");
+            } catch (Throwable ignored) {
+            }
+        }
+        logTdaDisplayIdUnavailable(tda);
+        return -1;
+    }
+
+    private static Field findDeclaredField(Class<?> clazz, String name) {
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            try {
+                Field f = c.getDeclaredField(name);
+                f.setAccessible(true);
+                return f;
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
+    }
+
+    private static Object invokeNoArg(Object target, String name) throws Exception {
+        for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
+            try {
+                Method m = c.getDeclaredMethod(name);
+                m.setAccessible(true);
+                return m.invoke(target);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+        throw new NoSuchMethodException(name);
+    }
+
+    private static void logTdaDisplayIdFallback() {
+        if (tdaDisplayIdFallbackLogged) {
+            return;
+        }
+        tdaDisplayIdFallbackLogged = true;
+        XposedBridge.log(TAG + ": TaskDisplayArea.getDisplayId resolved via fallback");
+    }
+
+    private static void logTdaDisplayIdUnavailable(Object tda) {
+        if (tdaDisplayIdDiagnosticsLogged) {
+            return;
+        }
+        tdaDisplayIdDiagnosticsLogged = true;
+        StringBuilder methods = new StringBuilder();
+        StringBuilder fields = new StringBuilder();
+        for (Class<?> c = tda.getClass(); c != null; c = c.getSuperclass()) {
+            try {
+                for (Method m : c.getDeclaredMethods()) {
+                    String name = m.getName().toLowerCase();
+                    if (name.contains("display") || name.contains("content")) {
+                        methods.append(m.getName()).append(' ');
+                    }
+                }
+                for (Field f : c.getDeclaredFields()) {
+                    String name = f.getName().toLowerCase();
+                    if (name.contains("display") || name.contains("content")) {
+                        fields.append(f.getName()).append(' ');
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        XposedBridge.log(TAG + ": tda displayId unavailable class=" + tda.getClass().getName()
+                + " displayMethods=" + methods + " displayFields=" + fields);
     }
 
     private static void resetDexController(int displayId) {
@@ -907,14 +1333,16 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     // invariant it can sit above the activatable root and cover every app window.
     private static void ensureDexRootOrder(Object tda) {
         try {
-            int displayId = (Integer) tda.getClass().getMethod("getDisplayId")
-                    .invoke(tda);
+            int displayId = taskDisplayAreaDisplayId(tda);
+            if (displayId < 0) {
+                XposedBridge.log(TAG + ": ensureDexRootOrder tda displayId unavailable");
+                return;
+            }
             if (!DEX_FLAG_DISPLAY_IDS.contains(displayId)) {
                 return;
             }
-            if (configuredDpDisplayId() == displayId) {
-                forceDpTaskDisplayAreaFreeform(tda, displayId);
-            }
+            forceTaskDisplayAreaFreeform(
+                    tda, displayId, configuredDpDisplayId() == displayId);
             Object home = tda.getClass().getMethod(
                     "getOrCreateRootHomeTask", boolean.class).invoke(tda, false);
             if (home == null) {
@@ -1062,7 +1490,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             Class<?> sp = Class.forName("android.os.SystemProperties");
             java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
             String value = (String) get.invoke(
-                    null, "persist.dex.lspmirror.session_active", "0");
+                    null, "dex.lspmirror.session_active", "0");
             return "1".equals(value);
         } catch (Throwable t) {
             return false;
@@ -1092,7 +1520,74 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         }
     }
 
+    private static void cleanupStaleDpStateAtBoot() {
+        if (bootDpStateCleanupDone) {
+            return;
+        }
+        bootDpStateCleanupDone = true;
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method set = sp.getMethod("set", String.class, String.class);
+            set.invoke(null, "persist.dex.lspmirror.dp_display_id", "");
+            set.invoke(null, "dex.lspmirror.dp_session_active", "");
+            set.invoke(null, "dex.lspmirror.session_active", "");
+            set.invoke(null, "persist.dex.lspmirror.session_active", "0");
+            XposedBridge.log(TAG + ": boot cleanup cleared dp display property");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": boot cleanup property failed: " + t);
+        }
+        try {
+            android.content.ContentResolver resolver = systemContextContentResolver();
+            if (resolver != null) {
+                for (String key : new String[]{
+                        "libredex_dp_display_id", "libredex_dp_managed_display"}) {
+                    resolver.delete(android.provider.Settings.Global.getUriFor(key), null, null);
+                }
+                XposedBridge.log(TAG + ": boot cleanup cleared dp display settings");
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": boot cleanup settings failed: " + t);
+        }
+    }
+
+    private static android.content.ContentResolver systemContextContentResolver() {
+        try {
+            Class<?> atClass = Class.forName("android.app.ActivityThread");
+            Object at = atClass.getMethod("currentActivityThread").invoke(null);
+            Object systemContext = atClass.getMethod("getSystemContext").invoke(at);
+            return (android.content.ContentResolver) systemContext.getClass()
+                    .getMethod("getContentResolver").invoke(systemContext);
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static boolean aggressiveHooksEnabled() {
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
+            String value = (String) get.invoke(null, "persist.dex.lspmirror.aggressive_hooks", "0");
+            return value != null && "1".equals(value.trim());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    private static boolean isDpSessionActiveThisBoot() {
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
+            String value = (String) get.invoke(null, "dex.lspmirror.dp_session_active", "");
+            return value != null && "1".equals(value.trim());
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     private static int configuredDpDisplayId() {
+        if (!isDpSessionActiveThisBoot()) {
+            return -1;
+        }
         try {
             Class<?> sp = Class.forName("android.os.SystemProperties");
             java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
@@ -1103,14 +1598,90 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             // Property not configured or unreadable; treat as disabled.
         }
+        try {
+            android.content.ContentResolver resolver = null;
+            try {
+                Class<?> atClass = Class.forName("android.app.ActivityThread");
+                Object at = atClass.getMethod("currentActivityThread").invoke(null);
+                Object systemContext = at.getClass().getMethod("getSystemContext").invoke(at);
+                resolver = (android.content.ContentResolver) systemContext.getClass()
+                        .getMethod("getContentResolver").invoke(systemContext);
+            } catch (Throwable ignored) {
+            }
+            if (resolver != null) {
+                String value = android.provider.Settings.Global.getString(
+                        resolver, "libredex_dp_display_id");
+                if (value != null && !value.trim().isEmpty()) {
+                    return Integer.parseInt(value.trim());
+                }
+            }
+        } catch (Throwable t) {
+            // Global setting unavailable; fall through to disabled.
+        }
         return -1;
+    }
+
+    private static void unmarkHomeSupported(int displayId) {
+        try {
+            ClassLoader cl = systemServerClassLoader;
+            if (cl == null) {
+                cl = DexLayerStackHook.class.getClassLoader();
+            }
+            Class<?> localServices = Class.forName("com.android.server.LocalServices", false, cl);
+            Class<?> wmInternal = Class.forName(
+                    "com.android.server.wm.WindowManagerInternal", false, cl);
+            Object wmService = localServices.getMethod("getService", Class.class)
+                    .invoke(null, wmInternal);
+            installHomeSupportGuard(wmService);
+            wmService.getClass().getMethod(
+                    "setHomeSupportedOnDisplay", String.class, int.class, boolean.class)
+                    .invoke(wmService, "com.sec.android.app.launcher", displayId, Boolean.FALSE);
+            XposedBridge.log(TAG + ": home supported cleared displayId=" + displayId);
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": home supported clear failed displayId=" + displayId + " " + t);
+        }
+    }
+
+    private static void installHomeSupportGuard(Object wmService) {
+        if (homeSupportGuardInstalled || wmService == null) {
+            return;
+        }
+        Method setHome = null;
+        for (Method m : wmService.getClass().getDeclaredMethods()) {
+            if ("setHomeSupportedOnDisplay".equals(m.getName())
+                    && m.getParameterTypes().length == 3) {
+                setHome = m;
+                break;
+            }
+        }
+        if (setHome == null) {
+            return;
+        }
+        setHome.setAccessible(true);
+        XposedBridge.hookMethod(setHome, new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) {
+                int displayId = (Integer) param.args[1];
+                boolean value = (Boolean) param.args[2];
+                if (value && dpMirrorGuardArmed
+                        && configuredDpDisplayId() < 0
+                        && displayId == dpExternalStackId) {
+                    param.args[2] = Boolean.FALSE;
+                    XposedBridge.log(TAG + ": home support re-add blocked displayId="
+                            + displayId);
+                }
+            }
+        });
+        homeSupportGuardInstalled = true;
+        XposedBridge.log(TAG + ": home support guard installed");
     }
 
     private static void scheduleWallpaperAttach(ClassLoader cl, int displayId) {
         for (int i = 0; i < 3; i++) {
             final int attempt = i;
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (WALLPAPER_ATTACH_DONE.contains(displayId)) {
+                if (WALLPAPER_ATTACH_DONE.contains(displayId)
+                        || !isActiveDexDisplay(displayId)) {
                     return;
                 }
                 forceWallpaperAttach(cl, displayId, attempt);
@@ -1122,6 +1693,11 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     // so WMS never attaches a wallpaper window. Mark it home-capable and call
     // the wallpaper service's display-added callback directly.
     private static void forceWallpaperAttach(ClassLoader cl, int displayId, int attempt) {
+        if (!isActiveDexDisplay(displayId)) {
+            XposedBridge.log(TAG + ": wallpaper attach skipped (inactive) displayId="
+                    + displayId);
+            return;
+        }
         try {
             Class<?> localServices = Class.forName(
                     "com.android.server.LocalServices", false, cl);

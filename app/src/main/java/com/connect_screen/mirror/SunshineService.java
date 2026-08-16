@@ -24,6 +24,7 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import com.connect_screen.mirror.BuildConfig;
 import com.connect_screen.mirror.job.SunshineServer;
 import com.connect_screen.mirror.shizuku.PermissionManager;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
@@ -61,6 +62,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceInfo;
@@ -78,13 +80,15 @@ public class SunshineService extends Service {
     private static volatile LifecycleState lifecycleState = LifecycleState.STOPPED;
     private static final AtomicBoolean startupInitInFlight = new AtomicBoolean(false);
     private static volatile boolean stopRequested = false;
-    private static volatile boolean nativeThreadRunning = false;
+    private static final AtomicInteger serviceGeneration = new AtomicInteger(0);
+    private static volatile Thread activeNativeThread;
     private static final String CHANNEL_ID = "SunshineServiceChannelV2";
     private static final int NOTIFICATION_ID = 2;
     private static final String TAG = "SunshineService";
     private static final String CERT_FILE_NAME = "cacert.pem";
     private static final String KEY_FILE_NAME = "cakey.pem";
     private Thread nativeThread;
+    private int instanceGeneration;
 
     private int currentTimeout;
     private PowerManager.WakeLock cpuWakeLock;
@@ -122,7 +126,8 @@ public class SunshineService extends Service {
     }
 
     public static boolean isNativeThreadRunning() {
-        return nativeThreadRunning;
+        Thread thread = activeNativeThread;
+        return thread != null && thread.isAlive();
     }
 
     private static void setLifecycleState(LifecycleState state) {
@@ -134,6 +139,7 @@ public class SunshineService extends Service {
     public void onCreate() {
         super.onCreate();
         instance = this;
+        instanceGeneration = serviceGeneration.get();
         try {
             org.lsposed.hiddenapibypass.HiddenApiBypass.addHiddenApiExemptions("");
             Log.i(TAG, "HiddenApiBypass enabled for input injection");
@@ -151,11 +157,19 @@ public class SunshineService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
+        if (instance == this) {
+            instance = null;
+        }
+        if (instanceGeneration != serviceGeneration.get()) {
+            // An old service instance is finishing after a newer start; do not
+            // touch the current lifecycle, startup flag, or user service.
+            releaseWakeLock();
+            return;
+        }
         startupInitInFlight.set(false);
-        instance = null;
         if (lifecycleState == LifecycleState.STOPPED) {
             State.refreshMainActivity();
-        } else if (nativeThreadRunning || (nativeThread != null && nativeThread.isAlive())) {
+        } else if (nativeThread != null && nativeThread.isAlive()) {
             setLifecycleState(LifecycleState.STOPPING);
         } else {
             setLifecycleState(LifecycleState.STOPPED);
@@ -185,6 +199,10 @@ public class SunshineService extends Service {
             State.refreshMainActivity();
             return START_NOT_STICKY;
         }
+        State.log("SunshineService start v" + BuildConfig.VERSION_NAME
+                + " sdk=" + Build.VERSION.SDK_INT
+                + " device=" + Build.MANUFACTURER + " " + Build.MODEL);
+        final int generation = serviceGeneration.incrementAndGet();
         stopRequested = false;
         setLifecycleState(LifecycleState.STARTING);
         if (intent != null && intent.hasExtra("data")) {
@@ -221,23 +239,26 @@ public class SunshineService extends Service {
                 applyVideoCodecPreference();
                 if (!writeCertAndKey(SunshineService.this)) {
                     State.log("Sunshine certificate/private key preparation failed");
-                    setLifecycleState(LifecycleState.STOPPED);
-                    stopSelf();
+                    if (generation == serviceGeneration.get()) {
+                        setLifecycleState(LifecycleState.STOPPED);
+                    }
+                    stopSelf(startId);
                     return;
                 }
                 List<JmDNS> dnsServers = new ArrayList<>();
                 registerJmDns(ipAddresses, dnsServers);
-                if (stopRequested) {
-                    State.log("SunshineService stop requested before native start");
-                    setLifecycleState(LifecycleState.STOPPING);
-                    stopSelf();
+                if (stopRequested || generation != serviceGeneration.get()) {
+                    State.log("SunshineService startup aborted for stale/stopped generation");
+                    if (generation == serviceGeneration.get()) {
+                        setLifecycleState(LifecycleState.STOPPING);
+                    }
+                    stopSelf(startId);
                     return;
                 }
                 nativeThread = new Thread(() -> {
-                    nativeThreadRunning = true;
                     try {
-                        if (stopRequested) {
-                            State.log("SunshineService stop requested, skip RUNNING state");
+                        if (stopRequested || generation != serviceGeneration.get()) {
+                            State.log("SunshineService start aborted for stale/stopped generation");
                             SunshineServer.exitServer();
                             return;
                         }
@@ -246,7 +267,6 @@ public class SunshineService extends Service {
                     } catch (Throwable e) {
                         Log.e("SunshineService", "thread quit", e);
                     } finally {
-                        nativeThreadRunning = false;
                         for (JmDNS server : dnsServers) {
                             try {
                                 server.close();
@@ -254,10 +274,16 @@ public class SunshineService extends Service {
                                 Log.w("SunshineService", "JmDNS close failed", e);
                             }
                         }
-                        setLifecycleState(LifecycleState.STOPPED);
-                        stopSelf();
+                        if (generation == serviceGeneration.get()) {
+                            activeNativeThread = null;
+                            setLifecycleState(LifecycleState.STOPPED);
+                            stopSelf();
+                        } else {
+                            State.log("SunshineService stale native thread finished, current service untouched");
+                        }
                     }
                 }, "SunshineNativeThread");
+                activeNativeThread = nativeThread;
                 nativeThread.start();
                 if (ipAddresses.isEmpty()) {
                     State.log("Cannot get Wi-Fi IP address");
@@ -269,10 +295,14 @@ public class SunshineService extends Service {
                 }
             } catch (Exception e) {
                 Log.e("SunshineService", "Failed to initialize network service", e);
-                setLifecycleState(LifecycleState.STOPPED);
-                stopSelf();
+                if (generation == serviceGeneration.get()) {
+                    setLifecycleState(LifecycleState.STOPPED);
+                }
+                stopSelf(startId);
             } finally {
-                startupInitInFlight.set(false);
+                if (generation == serviceGeneration.get()) {
+                    startupInitInFlight.set(false);
+                }
             }
         }).start();
 

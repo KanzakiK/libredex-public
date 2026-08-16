@@ -30,6 +30,7 @@
                 android:id="@+id/transportDp"
                 style="@style/LibreDeXTransportTab"
                 android:text="DP / HDMI" />
+
         </LinearLayout>
 
         <LinearLayout
@@ -648,6 +649,12 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/optionalTransportContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:visibility="gone" />
 
         <FrameLayout
             android:id="@+id/subPageContainer"

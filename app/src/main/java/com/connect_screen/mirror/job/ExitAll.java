@@ -12,7 +12,9 @@ import com.connect_screen.mirror.BuildConfig;
 import com.connect_screen.mirror.PureBlackActivity;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.SunshineService;
+import com.connect_screen.mirror.TransportOutputService;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
+import com.connect_screen.mirror.transport.TransportRegistry;
 
 public class ExitAll {
     public static void execute(Context context, boolean restart) {
@@ -41,39 +43,60 @@ public class ExitAll {
     }
 
     public static boolean stopServices(Context context) {
-        SunshineService.markStopping();
-        ScreenSession.setActive(false);
-        State.cancelCurrentJob("SunshineService stopping");
-        if (SunshineService.instance != null) {
-            SunshineService.instance.releaseWakeLock();
+        State.stoppingAllSessions = true;
+        boolean wasSunshineStarted;
+        try {
+            SunshineService.markStopping();
+            State.cancelCurrentJob("SunshineService stopping");
+            if (SunshineService.instance != null) {
+                SunshineService.instance.releaseWakeLock();
+            }
+            CreateVirtualDisplay.restoreAspectRatio();
+            SunshineAudio.restoreVolume(context);
+
+            // Stop every transport before tearing down the shared services, so a
+            // UserService rebind cannot resurrect a stale session marker.
+            SunshineServer.stopVirtualDisplay();
+            ProjectViaDp.stop();
+            if (context != null) {
+                TransportOutputService.stop(context);
+            }
+            TransportRegistry.stopAll();
+            if (State.isUserServiceAlive()) {
+                try {
+                    State.userService.destroyExternalMirror();
+                } catch (Throwable t) {
+                    State.log("destroyExternalMirror failed: " + t.getMessage());
+                }
+            }
+
+            if (State.mirrorVirtualDisplay != null) {
+                State.mirrorVirtualDisplay.release();
+                State.mirrorVirtualDisplay = null;
+            }
+            State.lastSingleAppDisplay = 0;
+            State.externalDisplayId = -1;
+            State.externalControlDisplayId = -1;
+
+            wasSunshineStarted = SunshineServer.exitServer();
+            if (State.mediaProjectionInUse != null) {
+                State.mediaProjectionInUse.stop();
+                State.mediaProjectionInUse = null;
+            }
+            State.setMediaProjection(null);
+
+            if (context != null) {
+                context.stopService(new Intent(context, SunshineService.class));
+                scheduleStopRetry(context.getApplicationContext(), 1);
+            }
+            if (SunshineService.instance == null && !wasSunshineStarted) {
+                SunshineService.markStopped();
+            }
+            ScreenSession.setActive(false);
+        } finally {
+            State.stoppingAllSessions = false;
         }
-        CreateVirtualDisplay.restoreAspectRatio();
-        SunshineAudio.restoreVolume(context);
-        SunshineServer.stopVirtualDisplay();
-        boolean wasSunshineStarted = SunshineServer.exitServer();
         State.unbindUserService();
-        if (State.mediaProjectionInUse != null) {
-            State.mediaProjectionInUse.stop();
-            State.mediaProjectionInUse = null;
-        }
-        State.setMediaProjection(null);
-
-        if (State.mirrorVirtualDisplay != null) {
-            State.mirrorVirtualDisplay.release();
-            State.mirrorVirtualDisplay = null;
-        }
-        State.lastSingleAppDisplay = 0;
-        State.externalDisplayId = -1;
-        State.externalControlDisplayId = -1;
-        ProjectViaDp.stop();
-
-        if (context != null) {
-            context.stopService(new Intent(context, SunshineService.class));
-            scheduleStopRetry(context.getApplicationContext(), 1);
-        }
-        if (SunshineService.instance == null && !wasSunshineStarted) {
-            SunshineService.markStopped();
-        }
         State.refreshMainActivity();
         return wasSunshineStarted;
     }
@@ -82,6 +105,12 @@ public class ExitAll {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             SunshineService.LifecycleState state = SunshineService.getLifecycleState();
             if (state == SunshineService.LifecycleState.STOPPED) {
+                return;
+            }
+            if (state == SunshineService.LifecycleState.RUNNING
+                    || state == SunshineService.LifecycleState.STARTING
+                    || !SunshineService.isStopRequested()) {
+                State.log("SunshineService stop watchdog cancelled: service was restarted");
                 return;
             }
             if (SunshineService.instance == null && !SunshineService.isNativeThreadRunning()) {
@@ -103,9 +132,15 @@ public class ExitAll {
             context.stopService(new Intent(context, SunshineService.class));
             State.refreshMainActivity();
             if (attempt >= 2) {
-                State.log("SunshineService stop watchdog: force STOPPED state after cleanup");
-                SunshineService.markStopped();
-                State.refreshMainActivity();
+                SunshineService.LifecycleState current = SunshineService.getLifecycleState();
+                if (current != SunshineService.LifecycleState.RUNNING
+                        && current != SunshineService.LifecycleState.STARTING) {
+                    State.log("SunshineService stop watchdog: force STOPPED state after cleanup");
+                    SunshineService.markStopped();
+                    State.refreshMainActivity();
+                } else {
+                    State.log("SunshineService stop watchdog cancelled: restarted while stopping");
+                }
             } else {
                 scheduleStopRetry(context, attempt + 1);
             }

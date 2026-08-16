@@ -1,6 +1,6 @@
-# LibreDeX Public
+# LibreDeX
 
-LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用桌面模式。本仓库是公开构建版，包含 Moonlight 串流与 USB-C DP/HDMI 有线输出。
+LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用桌面模式。本仓库是公开主仓库，包含 Moonlight 串流与 USB-C DP/HDMI 有线输出。
 
 ## 功能
 
@@ -12,7 +12,7 @@ LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用
 
 ## 发布件
 
-- `libredex-public-release.apk`：0.1.2 release 构建（arm64-v8a）。
+- `libredex-public-release.apk`：0.1.5 release 构建（arm64-v8a）。
 
 ## 环境要求
 
