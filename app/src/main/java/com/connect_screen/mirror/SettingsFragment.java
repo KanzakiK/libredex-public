@@ -35,10 +35,12 @@ public class SettingsFragment extends Fragment {
     private TextView overlayStatus;
     private TextView storageStatus;
     private TextView userServiceStatus;
+    private TextView rootShizukuStatus;
     private Button shizukuGrantButton;
     private Button overlayGrantButton;
     private Button storageGrantButton;
     private Button restartUserServiceButton;
+    private Button rootShizukuButton;
     private Button themeSystemButton;
     private Button themeLightButton;
     private Button themeDarkButton;
@@ -69,10 +71,12 @@ public class SettingsFragment extends Fragment {
         overlayStatus = view.findViewById(R.id.overlayStatus);
         storageStatus = view.findViewById(R.id.storageStatus);
         userServiceStatus = view.findViewById(R.id.userServiceStatus);
+        rootShizukuStatus = view.findViewById(R.id.rootShizukuStatus);
         shizukuGrantButton = view.findViewById(R.id.shizukuGrantButton);
         overlayGrantButton = view.findViewById(R.id.overlayGrantButton);
         storageGrantButton = view.findViewById(R.id.storageGrantButton);
         restartUserServiceButton = view.findViewById(R.id.restartUserServiceButton);
+        rootShizukuButton = view.findViewById(R.id.rootShizukuButton);
         themeSystemButton = view.findViewById(R.id.themeSystemButton);
         themeLightButton = view.findViewById(R.id.themeLightButton);
         themeDarkButton = view.findViewById(R.id.themeDarkButton);
@@ -96,6 +100,7 @@ public class SettingsFragment extends Fragment {
             }
         });
         restartUserServiceButton.setOnClickListener(v -> restartUserService());
+        rootShizukuButton.setOnClickListener(v -> restartRootShizuku());
 
         themeSystemButton.setOnClickListener(v -> setThemeMode("system"));
         themeLightButton.setOnClickListener(v -> setThemeMode("light"));
@@ -128,10 +133,12 @@ public class SettingsFragment extends Fragment {
         if (userServiceStatus != null) {
             userServiceStatus.setText(State.isUserServiceAlive() ? "online" : "offline");
         }
+        updateRootShizukuStatus();
         shizukuStatus.setText(shizuku ? "已授权 · UserService 在线" : "未授权");
         overlayStatus.setText(overlay ? "已授权" : "未授权");
         storageStatus.setText(storage ? "已授予" : "未授予");
         shizukuGrantButton.setVisibility(shizuku ? View.GONE : View.VISIBLE);
+        rootShizukuButton.setVisibility(shizuku ? View.VISIBLE : View.GONE);
         overlayGrantButton.setVisibility(overlay ? View.GONE : View.VISIBLE);
         storageGrantButton.setVisibility(storage ? View.GONE : View.VISIBLE);
 
@@ -193,6 +200,44 @@ public class SettingsFragment extends Fragment {
             return Environment.isExternalStorageManager();
         }
         return true;
+    }
+
+    private void updateRootShizukuStatus() {
+        if (rootShizukuStatus == null) {
+            return;
+        }
+        if (!ShizukuUtils.hasPermission() || !State.isUserServiceAlive()) {
+            rootShizukuStatus.setText("Root: -");
+            return;
+        }
+        try {
+            rootShizukuStatus.setText(State.userService.isRooted()
+                    ? "Root: root" : "Root: shell");
+        } catch (Throwable t) {
+            rootShizukuStatus.setText("Root: -");
+        }
+    }
+
+    private void restartRootShizuku() {
+        if (!ShizukuUtils.hasPermission()) {
+            Toast.makeText(requireContext(), "需要 Shizuku 权限", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Toast.makeText(requireContext(), "正在以 root 重启 Shizuku…", Toast.LENGTH_SHORT).show();
+        rootShizukuButton.setEnabled(false);
+        new Thread(() -> {
+            boolean ok = AcquireShizuku.fixRootShizuku();
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    rootShizukuButton.setEnabled(true);
+                    Toast.makeText(requireContext(),
+                            ok ? "Shizuku restarted as root"
+                                    : "Failed to restart Shizuku as root",
+                            Toast.LENGTH_LONG).show();
+                    refreshStatus();
+                });
+            }
+        }).start();
     }
 
     private void setThemeMode(String mode) {

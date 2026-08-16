@@ -192,7 +192,7 @@ public final class InitializationGuideDialog {
     }
 
     private void finishSetup() {
-        activity.getSharedPreferences(MirrorSettingsActivity.PREF_NAME, Activity.MODE_PRIVATE)
+        activity.getSharedPreferences(Pref.PREF_NAME, Activity.MODE_PRIVATE)
                 .edit()
                 .putBoolean(Pref.KEY_INITIAL_SETUP_COMPLETE, true)
                 .apply();

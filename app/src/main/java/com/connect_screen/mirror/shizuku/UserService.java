@@ -68,6 +68,8 @@ public class UserService extends IUserService.Stub  {
             "/system/xbin/su",
             "/sbin/su",
             "/vendor/bin/su",
+            "/product/bin/su",
+            "/product/xbin/su",
             "/data/adb/ksu/bin/su",
             "/data/adb/ap/bin/su"
     };
@@ -391,7 +393,7 @@ public class UserService extends IUserService.Stub  {
 
     private static String findSuBinary() {
         String cached = cachedSuPath;
-        if (cached != null) {
+        if (cached != null && !cached.isEmpty()) {
             return cached.isEmpty() ? null : cached;
         }
         String found = null;
@@ -417,7 +419,9 @@ public class UserService extends IUserService.Stub  {
                 }
             }
         }
-        cachedSuPath = found == null ? "" : found;
+        if (found != null) {
+            cachedSuPath = found;
+        }
         return found;
     }
 
@@ -448,6 +452,24 @@ public class UserService extends IUserService.Stub  {
             } catch (Exception e) {
                 Ln.e("runAsShell root shizuku failed", e);
                 throw new IllegalStateException("runAsShell failed", e);
+            }
+        }
+        String su = findSuBinary();
+        if (su != null) {
+            try {
+                // Same recipe as the root-spawned shell: root must fork the
+                // command, otherwise WMS rejects SECONDARY_HOME on another
+                // display and falls back to display 0.
+                ProcessBuilder builder = new ProcessBuilder(
+                        su, "-c", "su 2000 -c " + command);
+                builder.redirectErrorStream(true);
+                Process process = builder.start();
+                String out = readProcessOutput(process, true);
+                Ln.i("runAsShell nested su exit=" + exitCodeFromOutput(out)
+                        + " out=" + out.trim());
+                return out;
+            } catch (Exception e) {
+                Ln.w("runAsShell nested su failed, falling back to shell", e);
             }
         }
         return executeShellCommand(command);

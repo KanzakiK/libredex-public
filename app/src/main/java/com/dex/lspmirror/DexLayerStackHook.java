@@ -34,6 +34,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final Set<Integer> DEX_ELIGIBLE_NOTIFIED = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> DEX_DEXCONTROLLER_NOTIFIED = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> WALLPAPER_ATTACH_DONE = ConcurrentHashMap.newKeySet();
+    private static final Set<String> TDA_DISPLAY_ID_DIAGNOSED = ConcurrentHashMap.newKeySet();
     private static volatile boolean dexControllerGuardInstalled;
     private static volatile boolean dpMirrorGuardArmed;
     private static volatile int dpExternalStackId = -1;
@@ -45,7 +46,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static ClassLoader systemServerClassLoader;
     private static volatile int lastConfiguredDpDisplayId = -1;
     private static volatile boolean tdaDisplayIdFallbackLogged;
-    private static volatile boolean tdaDisplayIdDiagnosticsLogged;
     private static volatile boolean bootDpStateCleanupDone;
 
     @Override
@@ -1077,19 +1077,28 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             return -1;
         }
         try {
-            return XposedHelpers.getIntField(tda, "mDisplayId");
+            int id = XposedHelpers.getIntField(tda, "mDisplayId");
+            if (id >= 0) {
+                return id;
+            }
         } catch (Throwable ignored) {
         }
         try {
-            return (Integer) invokeNoArg(tda, "getDisplayId");
+            int id = (Integer) invokeNoArg(tda, "getDisplayId");
+            if (id >= 0) {
+                return id;
+            }
         } catch (Throwable ignored) {
         }
         for (Class<?> c = tda.getClass(); c != null; c = c.getSuperclass()) {
             try {
                 Method m = c.getDeclaredMethod("getDisplayId");
                 m.setAccessible(true);
-                logTdaDisplayIdFallback();
-                return (Integer) m.invoke(tda);
+                int id = (Integer) m.invoke(tda);
+                if (id >= 0) {
+                    logTdaDisplayIdFallback();
+                    return id;
+                }
             } catch (Throwable ignored) {
             }
         }
@@ -1131,21 +1140,31 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         }
         if (dc != null) {
             try {
-                logTdaDisplayIdFallback();
-                return (Integer) invokeNoArg(dc, "getDisplayId");
+                int id = (Integer) invokeNoArg(dc, "getDisplayId");
+                if (id >= 0) {
+                    logTdaDisplayIdFallback();
+                    return id;
+                }
             } catch (Throwable ignored) {
             }
             for (Class<?> c = dc.getClass(); c != null; c = c.getSuperclass()) {
                 try {
                     Method m = c.getDeclaredMethod("getDisplayId");
                     m.setAccessible(true);
-                    logTdaDisplayIdFallback();
-                    return (Integer) m.invoke(dc);
+                    int id = (Integer) m.invoke(dc);
+                    if (id >= 0) {
+                        logTdaDisplayIdFallback();
+                        return id;
+                    }
                 } catch (Throwable ignored) {
                 }
             }
             try {
-                return XposedHelpers.getIntField(dc, "mDisplayId");
+                int id = XposedHelpers.getIntField(dc, "mDisplayId");
+                if (id >= 0) {
+                    logTdaDisplayIdFallback();
+                    return id;
+                }
             } catch (Throwable ignored) {
             }
         }
@@ -1186,10 +1205,9 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     }
 
     private static void logTdaDisplayIdUnavailable(Object tda) {
-        if (tdaDisplayIdDiagnosticsLogged) {
+        if (!TDA_DISPLAY_ID_DIAGNOSED.add(tda.getClass().getName())) {
             return;
         }
-        tdaDisplayIdDiagnosticsLogged = true;
         StringBuilder methods = new StringBuilder();
         StringBuilder fields = new StringBuilder();
         for (Class<?> c = tda.getClass(); c != null; c = c.getSuperclass()) {
@@ -1335,7 +1353,8 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         try {
             int displayId = taskDisplayAreaDisplayId(tda);
             if (displayId < 0) {
-                XposedBridge.log(TAG + ": ensureDexRootOrder tda displayId unavailable");
+                XposedBridge.log(TAG + ": ensureDexRootOrder tda displayId unavailable tda="
+                        + tda.getClass().getName());
                 return;
             }
             if (!DEX_FLAG_DISPLAY_IDS.contains(displayId)) {
