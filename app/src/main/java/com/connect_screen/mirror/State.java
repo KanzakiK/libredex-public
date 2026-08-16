@@ -26,6 +26,7 @@ import com.connect_screen.mirror.shizuku.IUserService;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
 import com.connect_screen.mirror.shizuku.SurfaceControl;
 import com.connect_screen.mirror.shizuku.UserService;
+import com.connect_screen.mirror.transport.TransportRegistry;
 import com.topjohnwu.superuser.Shell;
 import com.topjohnwu.superuser.ShellUtils;
 
@@ -55,6 +56,7 @@ public class State {
     public static int externalDisplayWidth;
     public static int externalDisplayHeight;
     public static volatile int currentScreenDisplayId = -1;
+    public static volatile boolean stoppingAllSessions;
     public static VirtualDisplay mirrorVirtualDisplay;
     public static IBinder mirrorExternalToken;
     public static Activity isInPureBlackActivity = null;
@@ -104,13 +106,36 @@ public class State {
                 }
             }
             // Restore the session marker from live session state. A UserService
-            // rebind during an active DP/Moonlight session must not
+            // rebind during an active DP/Moonlight/optional transport session must not
             // clear the marker, or the fake-screen hook would stop intercepting
             // power presses and the system could lock (and on DP DeX can crash
             // PowerManagerService) instead.
-            boolean activeSession = SunshineServer.isMoonlightSessionActive()
-                    || ProjectViaDp.isActive();
-            ScreenSession.setActive(activeSession);
+            if (!stoppingAllSessions) {
+                boolean activeSession = SunshineServer.isMoonlightSessionActive()
+                        || ProjectViaDp.isActive()
+                        || TransportRegistry.isOptionalActive();
+                ScreenSession.setActive(activeSession);
+            }
+            if (!ProjectViaDp.isActive() && Pref.getDpSessionStarted()) {
+                Pref.setDpSessionStarted(false);
+                try {
+                    State.userService.executeShellCommand(
+                            "setprop persist.dex.lspmirror.dp_display_id \"\"");
+                    State.userService.executeShellCommand(
+                            "setprop dex.lspmirror.dp_session_active \"\"");
+                    State.userService.executeShellCommand(
+                            "setprop dex.lspmirror.session_active \"\"");
+                    State.userService.executeShellCommand(
+                            "settings delete global libredex_dp_display_id");
+                } catch (Throwable ignored) {
+                }
+                try {
+                    int displayId = State.externalDisplayId > 0
+                            ? State.externalDisplayId : 0;
+                    State.userService.stopSecondaryLauncher(displayId);
+                } catch (Throwable ignored) {
+                }
+            }
             try {
                 State.userService.executeShellCommand(
                         "setprop persist.dex.lspmirror.fake_screen "

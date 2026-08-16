@@ -56,9 +56,24 @@ public final class MirrorTransformPolicy {
             String mirrorName,
             String failureMessage,
             boolean showControlHint) {
+        return startSurfacePipeline(outputSurface, screen, outWidth, outHeight,
+                frameRate, mirrorName, failureMessage, showControlHint, false);
+    }
+
+    public static AutoRotateAndScaleForMoonlight startSurfacePipeline(
+            Surface outputSurface,
+            CurrentScreen screen,
+            int outWidth,
+            int outHeight,
+            int frameRate,
+            String mirrorName,
+            String failureMessage,
+            boolean showControlHint,
+            boolean plain) {
         AutoRotateAndScaleForMoonlight pipeline = new AutoRotateAndScaleForMoonlight(
                 new VirtualDisplayArgs(mirrorName, outWidth, outHeight, frameRate, 160, false));
         pipeline.showControlHint = showControlHint;
+        pipeline.forcePlainOutput = plain;
         try {
             pipeline.start(outputSurface, screen.displayId, mirrorName, failureMessage);
         } catch (Throwable t) {

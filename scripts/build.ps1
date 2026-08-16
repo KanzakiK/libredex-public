@@ -1,10 +1,15 @@
 # dex-anywhere one-shot build: clean -> assembleDebug/assembleRelease -> verify APK -> optional install.
 # Release requires signing env vars (see gen-keystore.ps1 and signing/README.md).
+# Version entry: change -VersionName / -VersionCode (or the defaults below) once for a release.
 param(
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Debug',
     [switch]$Install,
-    [string]$Apksigner = ''
+    [string]$Apksigner = '',
+    [string]$VersionName = '0.1.5',
+    [int]$VersionCode = 5,
+    [string]$OptionalTransportModule = '',
+    [string]$OptionalTransportProvider = ''
 )
 
 $ErrorActionPreference = 'Continue'
@@ -19,7 +24,16 @@ if ($Configuration -eq 'Release') {
     }
 }
 
-& .\gradlew.bat clean "assemble$Configuration"
+$gradleArgs = @('clean', "assemble$Configuration",
+    "-PlibredexVersionName=$VersionName",
+    "-PlibredexVersionCode=$VersionCode")
+if ($OptionalTransportModule) {
+    $gradleArgs += "-PoptionalTransportModule=$OptionalTransportModule"
+}
+if ($OptionalTransportProvider) {
+    $gradleArgs += "-PoptionalTransportProvider=$OptionalTransportProvider"
+}
+& .\gradlew.bat @gradleArgs
 if ($LASTEXITCODE -ne 0) { throw 'Gradle build failed' }
 
 $variant = $Configuration.ToLowerInvariant()
@@ -48,15 +62,33 @@ if (-not (Test-Path $Apksigner)) { throw "apksigner not found: $Apksigner" }
 & $Apksigner verify --print-certs $apk.FullName | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'apksigner verification failed' }
 
-$versionName = (Select-String -Path app\build.gradle -Pattern 'versionName "([^"]+)"').Matches[0].Groups[1].Value
 $aapt = Join-Path (Split-Path $Apksigner) 'aapt.exe'
 $badging = (& $aapt dump badging $apk.FullName) -join "`n"
-if ($badging -notmatch "versionName='$versionName'") {
-    throw "versionName mismatch, expected $versionName"
+if ($badging -notmatch "versionName='$VersionName'") {
+    throw "versionName mismatch, expected $VersionName"
 }
-Write-Output "APK checks passed (exists, signature, versionName=$versionName)"
+if ($badging -notmatch "versionCode='$VersionCode'") {
+    throw "versionCode mismatch, expected $VersionCode"
+}
+Write-Output "APK checks passed (exists, signature, versionName=$VersionName, versionCode=$VersionCode)"
+
+$outputApk = $apk.FullName
+if ($Configuration -eq 'Release') {
+    $distDir = Join-Path $root 'dist'
+    if (-not (Test-Path -LiteralPath $distDir)) {
+        New-Item -ItemType Directory -Path $distDir | Out-Null
+    }
+    $outputApk = Join-Path $distDir "libredex-$VersionName-$variant.apk"
+    Copy-Item -LiteralPath $apk.FullName -Destination $outputApk -Force
+    Write-Output "Output APK: $outputApk"
+}
 
 if ($Install) {
-    adb install -r $apk.FullName
+    adb install -r $outputApk
     if ($LASTEXITCODE -ne 0) { throw 'adb install failed' }
+    $installedBadging = (& adb shell dumpsys package com.libredex) -join "`n"
+    if ($installedBadging -notmatch "versionName=$VersionName") {
+        throw "installed version mismatch, expected $VersionName"
+    }
+    Write-Output "Installed and verified $VersionName on device"
 }

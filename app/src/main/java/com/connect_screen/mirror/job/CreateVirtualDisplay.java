@@ -98,7 +98,7 @@ public class CreateVirtualDisplay {
     }
 
     public static void doPowerOffScreen(Context context) {
-        if (Pref.getFakeScreen() && State.userService != null) {
+        if (Pref.getFakeScreen() && State.userService != null && !State.stoppingAllSessions) {
             ScreenSession.setActive(true);
             try {
                 State.userService.pressPowerKey();
@@ -257,7 +257,7 @@ public class CreateVirtualDisplay {
     }
 
     public static void powerOnScreen() {
-        if (Pref.getFakeScreen() && State.userService != null) {
+        if (Pref.getFakeScreen() && State.userService != null && !State.stoppingAllSessions) {
             ScreenSession.setActive(true);
             try {
                 State.userService.pressPowerKey();

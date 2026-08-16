@@ -47,6 +47,7 @@ public class AutoRotateAndScaleForMoonlight {
     private boolean autoRotate;
     private boolean autoScale;
     private boolean dynamicFrameRate;
+    public boolean forcePlainOutput;
     private OrientationChangeCallback orientationChangeCallback;
     private boolean isLandscape;
     private volatile boolean stopping;
@@ -158,6 +159,10 @@ public class AutoRotateAndScaleForMoonlight {
             // fill the connected screen, so force the fill/scale path even when
             // the separate auto-scale switch is off.
             autoScale = true;
+        }
+        if (forcePlainOutput) {
+            autoRotate = false;
+            autoScale = false;
         }
         dynamicFrameRate = Pref.getEncoderDynamicFrameRate();
 
@@ -457,6 +462,16 @@ public class AutoRotateAndScaleForMoonlight {
         activeInputSurface = null;
         activeInputWidth = 0;
         activeInputHeight = 0;
+        if (State.isUserServiceAlive()) {
+            try {
+                State.userService.destroyExternalMirror();
+                State.log("AutoRotateAndScaleForMoonlight mirror display destroyed");
+            } catch (RemoteException e) {
+                State.log("AutoRotateAndScaleForMoonlight destroyExternalMirror failed: "
+                        + e.getMessage());
+                State.userService = null;
+            }
+        }
         Context context = State.getContext();
         if (orientationChangeCallback != null && context != null) {
             DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);

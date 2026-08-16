@@ -31,6 +31,7 @@ import com.connect_screen.mirror.job.ExitAll;
 import com.connect_screen.mirror.job.OutputSource;
 import com.connect_screen.mirror.job.ProjectViaDp;
 import com.connect_screen.mirror.job.SunshineServer;
+import com.connect_screen.mirror.transport.TransportRegistry;
 
 import java.io.File;
 
@@ -166,7 +167,8 @@ public class DexManageFragment extends Fragment {
         }
         boolean mirror = OutputSource.isMirrorActive();
         boolean connected = SunshineServer.isMoonlightSessionActive()
-                || ProjectViaDp.isActive();
+                || ProjectViaDp.isActive()
+                || TransportRegistry.isOptionalActive();
         mirrorBanner.setVisibility(mirror ? View.VISIBLE : View.GONE);
         dexContent.setVisibility(mirror ? View.GONE : View.VISIBLE);
         mirrorActionCard.setVisibility(mirror ? View.VISIBLE : View.GONE);
@@ -214,6 +216,9 @@ public class DexManageFragment extends Fragment {
         }
         if (ProjectViaDp.isActive() && State.externalDisplayId > 0) {
             return State.externalDisplayId;
+        }
+        if (TransportRegistry.isOptionalActive()) {
+            return TransportRegistry.activeDisplayId();
         }
         return -1;
     }
@@ -300,6 +305,18 @@ public class DexManageFragment extends Fragment {
             } catch (Throwable e) {
                 showToast("DP 会话重启失败：" + e.getMessage());
             }
+        } else if (TransportRegistry.restartActive(true, (displayId, error) -> {
+                if (getContext() == null) {
+                    return;
+                }
+                if (error != null) {
+                    showToast("会话重启失败：" + error);
+                } else {
+                    showToast("会话已重启");
+                }
+                refreshStatus();
+            })) {
+            // optional transport restart handled above
         }
         new Handler(Looper.getMainLooper()).postDelayed(this::refreshStatus, 1200);
         showToast("会话已重启");

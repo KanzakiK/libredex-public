@@ -262,7 +262,10 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         }
         if (lifecycleState == SunshineService.LifecycleState.STARTING
                 || lifecycleState == SunshineService.LifecycleState.STOPPING) {
-            State.log("SunshineService 正在切换状态，请稍候");
+            State.log("SunshineService 正在切换状态，重试停止以强制结束");
+            SunshineService.markStopping();
+            refresh();
+            ExitAll.stopServices(this);
             refresh();
             return;
         }
@@ -398,6 +401,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         if (homePageFragment != null) {
             homePageFragment.updateUiState(State.uiState.getValue());
             homePageFragment.updateDebugInfo(State.streamingDebugInfo.getValue());
+            homePageFragment.syncTransportWithActiveSession();
         }
     }
 
@@ -405,6 +409,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         captureHomeFragment();
         if (homePageFragment != null) {
             homePageFragment.updateUiState(state);
+            homePageFragment.syncTransportWithActiveSession();
         }
     }
 

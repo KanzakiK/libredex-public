@@ -19,7 +19,6 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SET_WALLPAPER" />
 
     <application
@@ -52,6 +51,7 @@
             android:exported="true"
             android:icon="@mipmap/ic_launcher_v2"
             android:label="@string/app_name"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode"
             android:theme="@style/AppTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -96,14 +96,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver
-            android:name=".BootReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter>
-        </receiver>
-
         <provider
             android:name="rikka.shizuku.ShizukuProvider"
             android:authorities="${applicationId}.shizuku"
@@ -130,6 +122,15 @@
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="sunshine_moonlight_streaming" />
+        </service>
+        <service
+            android:name=".TransportOutputService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="specialUse|mediaProjection">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="screen_mirroring_transport" />
         </service>
         
     </application>

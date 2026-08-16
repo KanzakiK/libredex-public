@@ -72,20 +72,6 @@
                     android:text="授权" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXRow">
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="开机自启 Sunshine 服务"
-                    android:textColor="@color/ui_text_primary"
-                    android:textSize="15sp"
-                    android:textStyle="bold" />
-                <androidx.appcompat.widget.SwitchCompat
-                    android:id="@+id/autoStartBootSwitch"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
-            </LinearLayout>
-            <LinearLayout style="@style/LibreDeXRow">
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -111,6 +97,33 @@
                     android:id="@+id/storageGrantButton"
                     style="@style/LibreDeXButtonSoft"
                     android:text="授权" />
+            </LinearLayout>
+            <LinearLayout style="@style/LibreDeXRow">
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="UserService"
+                        android:textColor="@color/ui_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:id="@+id/userServiceStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="未运行"
+                        android:textColor="@color/ui_text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+                <Button
+                    android:id="@+id/restartUserServiceButton"
+                    style="@style/LibreDeXButtonSoft"
+                    android:text="重启" />
             </LinearLayout>
         </LinearLayout>
 

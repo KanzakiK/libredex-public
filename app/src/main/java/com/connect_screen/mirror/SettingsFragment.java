@@ -17,7 +17,6 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
@@ -35,9 +34,11 @@ public class SettingsFragment extends Fragment {
     private TextView shizukuStatus;
     private TextView overlayStatus;
     private TextView storageStatus;
+    private TextView userServiceStatus;
     private Button shizukuGrantButton;
     private Button overlayGrantButton;
     private Button storageGrantButton;
+    private Button restartUserServiceButton;
     private Button themeSystemButton;
     private Button themeLightButton;
     private Button themeDarkButton;
@@ -67,9 +68,11 @@ public class SettingsFragment extends Fragment {
         shizukuStatus = view.findViewById(R.id.shizukuStatus);
         overlayStatus = view.findViewById(R.id.overlayStatus);
         storageStatus = view.findViewById(R.id.storageStatus);
+        userServiceStatus = view.findViewById(R.id.userServiceStatus);
         shizukuGrantButton = view.findViewById(R.id.shizukuGrantButton);
         overlayGrantButton = view.findViewById(R.id.overlayGrantButton);
         storageGrantButton = view.findViewById(R.id.storageGrantButton);
+        restartUserServiceButton = view.findViewById(R.id.restartUserServiceButton);
         themeSystemButton = view.findViewById(R.id.themeSystemButton);
         themeLightButton = view.findViewById(R.id.themeLightButton);
         themeDarkButton = view.findViewById(R.id.themeDarkButton);
@@ -77,10 +80,6 @@ public class SettingsFragment extends Fragment {
         tintButton(shizukuGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
         tintButton(overlayGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
         tintButton(storageGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
-
-        SwitchCompat autoStartBootSwitch = view.findViewById(R.id.autoStartBootSwitch);
-        autoStartBootSwitch.setChecked(Pref.getAutoStartBoot());
-        autoStartBootSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> Pref.setAutoStartBoot(isChecked));
 
         shizukuGrantButton.setOnClickListener(v ->
                 Shizuku.requestPermission(AcquireShizuku.SHIZUKU_PERMISSION_REQUEST_CODE));
@@ -96,6 +95,7 @@ public class SettingsFragment extends Fragment {
                         new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
             }
         });
+        restartUserServiceButton.setOnClickListener(v -> restartUserService());
 
         themeSystemButton.setOnClickListener(v -> setThemeMode("system"));
         themeLightButton.setOnClickListener(v -> setThemeMode("light"));
@@ -125,6 +125,9 @@ public class SettingsFragment extends Fragment {
         boolean shizuku = ShizukuUtils.hasPermission();
         boolean overlay = Settings.canDrawOverlays(requireContext());
         boolean storage = isStorageAccessReady();
+        if (userServiceStatus != null) {
+            userServiceStatus.setText(State.isUserServiceAlive() ? "online" : "offline");
+        }
         shizukuStatus.setText(shizuku ? "已授权 · UserService 在线" : "未授权");
         overlayStatus.setText(overlay ? "已授权" : "未授权");
         storageStatus.setText(storage ? "已授予" : "未授予");
@@ -158,6 +161,31 @@ public class SettingsFragment extends Fragment {
 
     private void startLogExport() {
         State.startNewJob(new FetchLogAndShare(requireContext()));
+    }
+
+    private void restartUserService() {
+        if (!ShizukuUtils.hasPermission()) {
+            Toast.makeText(requireContext(), "需要 Shizuku 权限", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        Toast.makeText(requireContext(), "正在重启 UserService…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            try {
+                if (State.userService != null) {
+                    State.userService.exit();
+                }
+            } catch (Throwable ignored) {
+            }
+            State.unbindUserService();
+            State.userService = null;
+            State.ensureUserServiceBound();
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> {
+                    Toast.makeText(requireContext(), "UserService 已重启", Toast.LENGTH_SHORT).show();
+                    refreshStatus();
+                });
+            }
+        }).start();
     }
 
     private boolean isStorageAccessReady() {

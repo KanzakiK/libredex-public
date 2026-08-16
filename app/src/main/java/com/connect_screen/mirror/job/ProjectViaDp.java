@@ -5,6 +5,7 @@ import android.graphics.Rect;
 import android.os.RemoteException;
 import android.view.Display;
 
+import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
@@ -17,11 +18,16 @@ import com.connect_screen.mirror.shizuku.ShizukuUtils;
 public class ProjectViaDp implements Job {
     private static final String TAG = "ProjectViaDp";
     private static final String DP_DISPLAY_PROP = "persist.dex.lspmirror.dp_display_id";
+    private static final String DP_SESSION_ACTIVE_PROP = "dex.lspmirror.dp_session_active";
+    private static final String DP_SETTINGS_KEY = "libredex_dp_display_id";
+    private static final String DP_MANAGED_SETTINGS_KEY = "libredex_dp_managed_display";
 
     private static volatile boolean active;
     private static volatile int activeDisplayId = -1;
     private static volatile boolean activeMirror;
     private static volatile DpMirrorPresentation activeMirrorPresentation;
+    private static volatile DpMirrorPresentation plainMirrorPresentation;
+    private static volatile long plainMirrorGeneration;
 
     private final boolean dexSource;
 
@@ -34,27 +40,101 @@ public class ProjectViaDp implements Job {
     }
 
     public static void stop() {
+        stop(true);
+    }
+
+    public static void stop(boolean startPlainMirror) {
         active = false;
         if (activeMirror) {
             DpMirrorPresentation mirrorPresentation = activeMirrorPresentation;
             activeMirrorPresentation = null;
             if (mirrorPresentation != null) {
-                mirrorPresentation.stop();
+                // Keep the live GL pipeline rendering: dismissing it makes the
+                // HDMI sink freeze and only a physical replug recovers it.
+                plainMirrorPresentation = mirrorPresentation;
+                State.log(TAG + ": keep mirror presentation alive for phone mirror");
             }
-            stopDpMirror();
         }
         activeMirror = false;
         activeDisplayId = -1;
+        clearConfiguredDisplayId();
         if (State.externalDisplayId > 0) {
-            resetDpMirror(State.externalDisplayId);
+            // The live GL mirror stays on the external screen. Do not re-project
+            // the phone display underneath it or force-stop the launcher here:
+            // both paths rebuild the display stack (activity relaunch plus
+            // launcher restart), which blanks the Presentation window and
+            // resurrects the DeX UI. DeX teardown belongs to the LSPosed hook.
+            forceDisplayInfoQuery(State.externalDisplayId);
+        }
+        if (startPlainMirror && State.externalDisplayId > 0) {
+            final int displayId = State.externalDisplayId;
+            final int width = State.externalDisplayWidth > 0
+                    ? State.externalDisplayWidth : 1920;
+            final int height = State.externalDisplayHeight > 0
+                    ? State.externalDisplayHeight : 1080;
+            final long generation = ++plainMirrorGeneration;
+            new Thread(() -> startPlainPhoneMirror(
+                    displayId, width, height, generation),
+                    TAG + "-plain").start();
         }
         SessionLifecycle.stop(State.getContext(), ProjectViaDp.class);
-        clearConfiguredDisplayId();
         ExternalDisplayMonitor.stop();
+        Pref.setDpSessionStarted(false);
+    }
+
+    private static void startPlainPhoneMirror(
+            int displayId, int width, int height, long generation) {
+        try {
+            if (plainMirrorPresentation != null) {
+                State.log(TAG + ": plain phone mirror already alive display="
+                        + displayId);
+                return;
+            }
+            Context context = State.getContext();
+            if (context == null) {
+                return;
+            }
+            Display externalDisplay =
+                    ExternalDisplayMonitor.getPrimaryExternalDisplay(context);
+            CurrentScreen source = CurrentScreen.detect(context);
+            if (externalDisplay == null || source == null) {
+                State.log(TAG + ": plain phone mirror unavailable display=" + displayId);
+                return;
+            }
+            int refresh = 60;
+            if (externalDisplay.getMode() != null) {
+                refresh = Math.round(externalDisplay.getMode().getRefreshRate());
+            }
+            DpMirrorPresentation plain = DpMirrorPresentation.startPlain(
+                    context, externalDisplay, source, width, height, refresh);
+            if (generation != plainMirrorGeneration) {
+                if (plain != null) {
+                    plain.stop();
+                }
+                State.log(TAG + ": plain phone mirror superseded display=" + displayId);
+                return;
+            }
+            plainMirrorPresentation = plain;
+            State.log(TAG + ": plain phone mirror started display=" + displayId
+                    + " ok=" + (plain != null));
+        } catch (Throwable t) {
+            State.log(TAG + ": plain phone mirror failed: " + t.getMessage());
+        }
+    }
+
+    private static void stopPlainPhoneMirror() {
+        plainMirrorGeneration++;
+        DpMirrorPresentation plain = plainMirrorPresentation;
+        plainMirrorPresentation = null;
+        if (plain != null) {
+            plain.stopAndWait();
+            State.log(TAG + ": plain phone mirror stopped");
+        }
     }
 
     @Override
     public void start() throws YieldException {
+        stopPlainPhoneMirror();
         Context context = State.getContext();
         if (context == null) {
             State.log(TAG + ": context unavailable");
@@ -92,6 +172,7 @@ public class ProjectViaDp implements Job {
         active = true;
         activeDisplayId = displayId;
         activeMirror = false;
+        Pref.setDpSessionStarted(true);
         final int targetDisplayId = displayId;
         final int targetWidth = width;
         final int targetHeight = height;
@@ -128,8 +209,8 @@ public class ProjectViaDp implements Job {
                 boolean aspectChanged = MirrorTransformPolicy.prepareAspectRatio(
                         State.getContext(), source, width, height);
                 if (aspectChanged) {
-                    // Let the newly forced display size settle before the
-                    // mirror pipeline starts reading it.
+                    // Same settle delay used by other output paths before the
+                    // mirror starts reading the newly forced display size.
                     Thread.sleep(600);
                 }
                 boolean presentationStarted = false;
@@ -199,22 +280,17 @@ public class ProjectViaDp implements Job {
     }
 
     private static void setConfiguredDisplayId(int displayId) {
+        runShell("setprop " + DP_SESSION_ACTIVE_PROP + " 1");
         runShell("setprop " + DP_DISPLAY_PROP + " " + displayId);
+        runShell("settings put global " + DP_SETTINGS_KEY + " " + displayId);
+        runShell("settings put global " + DP_MANAGED_SETTINGS_KEY + " " + displayId);
     }
 
     private static void clearConfiguredDisplayId() {
+        runShell("setprop " + DP_SESSION_ACTIVE_PROP + " \"\"");
         runShell("setprop " + DP_DISPLAY_PROP + " \"\"");
-    }
-
-    private static void stopDpMirror() {
-        try {
-            if (State.userService != null && State.externalDisplayId > 0) {
-                int rc = State.userService.stopDpMirror(State.externalDisplayId);
-                State.log(TAG + ": stopDpMirror rc=" + rc);
-            }
-        } catch (Throwable t) {
-            State.log(TAG + ": stopDpMirror failed: " + t.getMessage());
-        }
+        runShell("settings delete global " + DP_SETTINGS_KEY);
+        runShell("settings delete global " + DP_MANAGED_SETTINGS_KEY);
     }
 
     private static void resetDpMirror(int displayId) {
@@ -233,11 +309,12 @@ public class ProjectViaDp implements Job {
             return;
         }
         try {
-            String actual = command;
+            String out;
             if (State.userService.isRooted()) {
-                actual = "su -c '" + command.replace("'", "'\\''") + "'";
+                out = State.userService.executeRootShellCommand(command);
+            } else {
+                out = State.userService.executeShellCommand(command);
             }
-            String out = State.userService.executeShellCommand(actual);
             State.log(TAG + ": " + command + " -> " + (out == null ? "" : out.trim()));
         } catch (RemoteException e) {
             State.log(TAG + ": shell command failed: " + e.getMessage());

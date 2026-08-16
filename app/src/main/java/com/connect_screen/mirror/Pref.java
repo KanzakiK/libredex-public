@@ -26,7 +26,6 @@ public class Pref {
     public static final String KEY_DARK_MODE = "dark_mode";
     public static final String KEY_THEME_MODE = "theme_mode";
     public static final String KEY_DEX_LAYER_FIX = "dex_layer_fix_enabled";
-    public static final String KEY_AUTO_START_BOOT = "auto_start_on_boot";
     public static final String KEY_ENCODER_CODEC = "encoder_codec";
     public static final String KEY_ENCODER_BITRATE_PERCENT = "encoder_bitrate_percent";
     public static final String KEY_ENCODER_BITRATE_MODE = "encoder_bitrate_mode";
@@ -41,6 +40,8 @@ public class Pref {
     public static final String KEY_ENCODER_AVC_BASELINE = "encoder_avc_baseline";
     public static final String KEY_INITIAL_SETUP_COMPLETE = "initial_setup_complete";
     public static final String KEY_FIRST_USE_HIDDEN = "first_use_hidden";
+    public static final String KEY_LAST_RUN_VERSION_CODE = "last_run_version_code";
+    public static final String KEY_DP_SESSION_STARTED = "dp_session_started";
     public static final int ENCODER_CODEC_H264 = 0;
     public static final int ENCODER_CODEC_H265 = 1;
     public static boolean doNotAutoStartMoonlight;
@@ -142,17 +143,6 @@ public class Pref {
         return getBoolean(KEY_DEX_LAYER_FIX, true);
     }
 
-    public static boolean getAutoStartBoot() {
-        return getBoolean(KEY_AUTO_START_BOOT, false);
-    }
-
-    public static void setAutoStartBoot(boolean enabled) {
-        SharedPreferences preferences = getPreferences();
-        if (preferences != null) {
-            preferences.edit().putBoolean(KEY_AUTO_START_BOOT, enabled).apply();
-        }
-    }
-
     public static int getEncoderCodec() {
         return getInt(KEY_ENCODER_CODEC, ENCODER_CODEC_H264);
     }
@@ -214,6 +204,22 @@ public class Pref {
         if (preferences != null) {
             preferences.edit().putBoolean(KEY_FIRST_USE_HIDDEN, hidden).apply();
         }
+    }
+
+    public static int getLastRunVersionCode() {
+        return getInt(KEY_LAST_RUN_VERSION_CODE, 0);
+    }
+
+    public static void setLastRunVersionCode(int versionCode) {
+        getPreferences().edit().putInt(KEY_LAST_RUN_VERSION_CODE, versionCode).apply();
+    }
+
+    public static boolean getDpSessionStarted() {
+        return getBoolean(KEY_DP_SESSION_STARTED, false);
+    }
+
+    public static void setDpSessionStarted(boolean started) {
+        getPreferences().edit().putBoolean(KEY_DP_SESSION_STARTED, started).apply();
     }
 
     public static void setInitialSetupComplete(boolean complete) {

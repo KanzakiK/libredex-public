@@ -2,14 +2,27 @@ package com.connect_screen.mirror;
 
 import android.app.Application;
 
+import com.connect_screen.mirror.transport.TransportRegistry;
+
 import rikka.shizuku.Shizuku;
 
 public class LibreDeXApp extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
+        TransportRegistry.discover();
         Pref.init(this);
-        recycleStaleUserService();
+        int lastVersion = Pref.getLastRunVersionCode();
+        int currentVersion = BuildConfig.VERSION_CODE;
+        if (lastVersion != currentVersion) {
+            Pref.setLastRunVersionCode(currentVersion);
+            recycleStaleUserServiceAfterUpdate();
+        } else {
+            recycleStaleUserService();
+        }
+        if (Pref.getDpSessionStarted()) {
+            State.ensureUserServiceBound();
+        }
     }
 
     private void recycleStaleUserService() {
@@ -21,5 +34,28 @@ public class LibreDeXApp extends Application {
             Shizuku.unbindUserService(State.userServiceArgs, State.userServiceConnection, true);
         } catch (Throwable ignored) {
         }
+    }
+
+    private void recycleStaleUserServiceAfterUpdate() {
+        new Thread(() -> {
+            try {
+                State.bindUserService();
+                long deadline = System.currentTimeMillis() + 3000;
+                while (State.userService == null
+                        && System.currentTimeMillis() < deadline) {
+                    Thread.sleep(50);
+                }
+                if (State.userService != null) {
+                    try {
+                        State.userService.exit();
+                    } catch (Throwable ignored) {
+                    }
+                }
+            } catch (Throwable ignored) {
+            }
+            State.unbindUserService();
+            State.userService = null;
+            State.ensureUserServiceBound();
+        }).start();
     }
 }

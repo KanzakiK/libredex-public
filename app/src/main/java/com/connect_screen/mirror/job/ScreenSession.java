@@ -11,7 +11,9 @@ import com.connect_screen.mirror.State;
  * projection.
  */
 public final class ScreenSession {
-    private static final String SESSION_ACTIVE_PROP = "persist.dex.lspmirror.session_active";
+    // Runtime-only marker: after a reboot it is gone, so a stale session can
+    // never keep the fake-screen power hook intercepting the power key.
+    private static final String SESSION_ACTIVE_PROP = "dex.lspmirror.session_active";
 
     private ScreenSession() {
     }
