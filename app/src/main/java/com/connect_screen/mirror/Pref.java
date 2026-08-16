@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 
 public class Pref {
     private static volatile Context appContext;
+    public static final String PREF_NAME = "mirror_settings";
 
     public static final String KEY_AUTO_ROTATE = "auto_rotate";
     public static final String KEY_AUTO_SCALE = "auto_scale";
@@ -261,7 +262,7 @@ public class Pref {
         if (context == null) {
             return null;
         }
-        return context.getSharedPreferences(MirrorSettingsActivity.PREF_NAME, Context.MODE_PRIVATE);
+        return context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
 
     }
 }

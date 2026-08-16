@@ -60,12 +60,6 @@
         </activity>
         
         <activity
-            android:name=".MirrorSettingsActivity"
-            android:launchMode="singleTask"
-            android:exported="false"
-            android:theme="@style/AppTheme" />
-
-        <activity
             android:name=".ScreenSettingsActivity"
             android:launchMode="singleTask"
             android:exported="false"

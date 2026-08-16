@@ -193,6 +193,26 @@ public class ProjectViaDp implements Job {
                 stop();
                 return;
             }
+            if (dexSource) {
+                try {
+                    if (!State.userService.isRooted()) {
+                        State.log(TAG + ": DeX path needs root UserService, "
+                                + "restarting Shizuku as root");
+                        if (!AcquireShizuku.fixRootShizuku()) {
+                            State.showErrorStatus(
+                                    TAG + ": DP DeX 需要以 root 启动 Shizuku");
+                            stop();
+                            State.refreshMainActivity();
+                            return;
+                        }
+                    }
+                } catch (Throwable t) {
+                    State.log(TAG + ": root check failed: " + t.getMessage());
+                    stop();
+                    State.refreshMainActivity();
+                    return;
+                }
+            }
             int resetRc = State.userService.resetDpMirror(displayId);
             State.log(TAG + ": resetDpMirror rc=" + resetRc);
             if (dexSource) {
@@ -309,11 +329,19 @@ public class ProjectViaDp implements Job {
             return;
         }
         try {
-            String out;
-            if (State.userService.isRooted()) {
-                out = State.userService.executeRootShellCommand(command);
-            } else {
-                out = State.userService.executeShellCommand(command);
+            // executeRootShellCommand falls back to plain shell when su is
+            // unavailable; persist.* setprops only succeed through root.
+            String out = State.userService.executeRootShellCommand(command);
+            if (command.startsWith("setprop")
+                    && (out == null
+                    || out.contains("Failed to set property")
+                    || out.contains("Permission")
+                    || !out.contains("__EXIT_CODE=0"))) {
+                String rootOut = AcquireShizuku.runRootCommand(command);
+                if (rootOut != null) {
+                    State.log(TAG + ": app root fallback " + command
+                            + " -> " + rootOut.trim());
+                }
             }
             State.log(TAG + ": " + command + " -> " + (out == null ? "" : out.trim()));
         } catch (RemoteException e) {
