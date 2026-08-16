@@ -199,14 +199,11 @@ public class ConnectionFragment extends Fragment {
         TransportRegistry.discover();
         OptionalTransportProvider optionalTransport = TransportRegistry.optional();
         if (optionalTransport != null) {
-            transportOptional = new Button(requireContext());
+            transportOptional = (Button) LayoutInflater.from(requireContext())
+                    .inflate(R.layout.item_optional_transport_tab,
+                            transportTabsLayout instanceof ViewGroup
+                                    ? (ViewGroup) transportTabsLayout : null, false);
             transportOptional.setText(optionalTransport.label());
-            transportOptional.setAllCaps(false);
-            transportOptional.setTextSize(14);
-            transportOptional.setPadding(12, 8, 12, 8);
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
-            transportOptional.setLayoutParams(params);
             if (transportTabsLayout instanceof LinearLayout) {
                 ((LinearLayout) transportTabsLayout).addView(transportOptional);
             }
