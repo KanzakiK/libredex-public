@@ -113,7 +113,14 @@ public class FetchLogAndShare implements Job {
                 environmentInfo = State.userService.getEnvironmentInfo();
             } catch (Throwable ignored) {
             }
-            createLogZip(logs, zipFile, environmentInfo);
+            String lspLogs = null;
+            try {
+                lspLogs = State.userService.fetchLspLogs();
+            } catch (Throwable ignored) {
+                // LSPosed log collection is best-effort; never block export.
+            }
+            String deviceInfo = buildDeviceInfo(logs, environmentInfo);
+            createLogZip(logs, zipFile, deviceInfo, lspLogs);
 
             File cacheDir = State.getContext().getCacheDir();
             File cacheCopyFile = new File(cacheDir, zipFile.getName());
@@ -136,20 +143,52 @@ public class FetchLogAndShare implements Job {
         }
     }
 
-    private static void createLogZip(File[] logs, File zipFile, String environmentInfo) throws IOException {
+    private static void createLogZip(File[] logs, File zipFile, String deviceInfo, String lspLogs)
+            throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(
                 new BufferedOutputStream(new FileOutputStream(zipFile)))) {
+            // Sort so the exported set is deterministic and the newest is last.
+            Arrays.sort(logs, Comparator.comparing(File::getName));
             for (File log : logs) {
                 zos.putNextEntry(new ZipEntry(log.getName()));
-                try (InputStream in = new BufferedInputStream(new FileInputStream(log))) {
-                    copyStream(in, zos);
-                }
+                // Embed the correlation header inside every log file so a single
+                // log can be matched back to the app version / device / env that
+                // produced it, instead of only living in device_info.txt.
+                writeWithHeader(new FileInputStream(log), deviceInfo, zos);
+                zos.closeEntry();
+            }
+            if (lspLogs != null && !lspLogs.trim().isEmpty()) {
+                String stamp = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+                zos.putNextEntry(new ZipEntry("lspd-" + stamp + ".log"));
+                zos.write(lspLogs.getBytes(StandardCharsets.UTF_8));
                 zos.closeEntry();
             }
             zos.putNextEntry(new ZipEntry("device_info.txt"));
-            zos.write(buildDeviceInfo(logs, environmentInfo).getBytes(StandardCharsets.UTF_8));
+            zos.write(deviceInfo.getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();
         }
+    }
+
+    private static void writeWithHeader(InputStream in, String deviceInfo, OutputStream out)
+            throws IOException {
+        out.write("########################################################################\n"
+                .getBytes(StandardCharsets.UTF_8));
+        out.write("# This log was captured with the LibreDeX build / device below.\n"
+                .getBytes(StandardCharsets.UTF_8));
+        out.write("# See device_info.txt in the same archive for the full field set.\n"
+                .getBytes(StandardCharsets.UTF_8));
+        out.write("########################################################################\n"
+                .getBytes(StandardCharsets.UTF_8));
+        // Header lines look like "LibreDeX 0.1.9 (versionCode 9)", "Device ...",
+        // etc. Prefix with "# " so they read as comments inside the logcat text.
+        for (String line : deviceInfo.split("\n")) {
+            if (line.trim().isEmpty()) {
+                continue;
+            }
+            out.write(("# " + line + "\n").getBytes(StandardCharsets.UTF_8));
+        }
+        out.write("\n".getBytes(StandardCharsets.UTF_8));
+        copyStream(in, out);
     }
 
     private static void copyStream(InputStream in, OutputStream out) throws IOException {
