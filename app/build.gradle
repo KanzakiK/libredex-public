@@ -6,8 +6,8 @@ plugins {
 
 // Version is normally injected by scripts/build.ps1 via -PlibredexVersionName / -PlibredexVersionCode.
 // The fallbacks below only keep IDE and direct gradlew builds usable.
-def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.1.10'
-def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 10).toString().toInteger()
+def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.1.11'
+def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 11).toString().toInteger()
 
 def optionalTransportModule = project.findProperty('optionalTransportModule')
 if (optionalTransportModule == null && rootProject.file('local.properties').exists()) {
