@@ -1064,11 +1064,27 @@ public class UserService extends IUserService.Stub  {
             builderClass.getMethod("setFlags", int.class).invoke(builder, flags);
             builderClass.getMethod("setSurface", Surface.class).invoke(builder, surface);
             builderClass.getMethod("setDisplayIdToMirror", int.class).invoke(builder, -1);
+            // Mark the fake DeX display as home-supported so the system treats
+            // it as a real DeX desktop. On One UI 8.5 / Android 16 the builder
+            // API was renamed setIsHomeSupported -> setHomeSupported (see
+            // firmware firmware.jar: VirtualDisplayConfig$Builder), so try the
+            // new name first and fall back to the legacy one on older builds.
+            boolean homeFlagSet = false;
             try {
-                builderClass.getMethod("setIsHomeSupported", boolean.class).invoke(builder, true);
-                Ln.i("createDexMirror setIsHomeSupported=true OK");
-            } catch (Throwable t) {
-                Ln.w("createDexMirror setIsHomeSupported unavailable: " + t);
+                builderClass.getMethod("setHomeSupported", boolean.class).invoke(builder, true);
+                Ln.i("createDexMirror setHomeSupported=true OK");
+                homeFlagSet = true;
+            } catch (Throwable t8) {
+                Ln.w("createDexMirror setHomeSupported unavailable: " + t8);
+            }
+            if (!homeFlagSet) {
+                try {
+                    builderClass.getMethod("setIsHomeSupported", boolean.class).invoke(builder, true);
+                    Ln.i("createDexMirror setIsHomeSupported=true OK (legacy)");
+                    homeFlagSet = true;
+                } catch (Throwable tLegacy) {
+                    Ln.w("createDexMirror setIsHomeSupported unavailable: " + tLegacy);
+                }
             }
             try {
                 float refreshRate = frameRate > 0 ? Math.min(frameRate, 120f) : 60f;

@@ -30,6 +30,11 @@ public final class DexWallpaperHook implements IXposedHookLoadPackage {
     private static FileObserver wallpaperObserver;
     private static long lastApplyElapsed;
     private static long lastAppliedMtime;
+    // Cap the missing-wallpaper retry burst so a missing/deferred wallpaper
+    // PNG cannot grow into an unbounded self-multiplying relayout/log storm that
+    // pegs the launcher main thread (saw 97% CPU + ANR on One UI 8.5).
+    private static int missingRetries;
+    private static final int MAX_MISSING_RETRIES = 6;
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) {
@@ -109,22 +114,34 @@ public final class DexWallpaperHook implements IXposedHookLoadPackage {
                     : null;
             View decor = activity.getWindow().getDecorView();
             if (bitmap != null) {
+                missingRetries = 0;
                 decor.setBackground(new BitmapDrawable(
                         activity.getResources(), bitmap));
                 lastAppliedMtime = mtime;
-                XposedBridge.log(TAG + ": wallpaper applied display="
-                        + displayIdOf(activity) + " source=" + source);
+                if (!"refresh".equals(source)) {
+                    XposedBridge.log(TAG + ": wallpaper applied display="
+                            + displayIdOf(activity) + " source=" + source);
+                }
             } else {
-                decor.setBackgroundColor(0xFF1B7F79);
-                XposedBridge.log(TAG + ": teal fallback display="
-                        + displayIdOf(activity) + " source=" + source);
-                View d = decor;
-                d.postDelayed(
-                        () -> applyWallpaperInternal(activity, "retry", true), 250L);
-                d.postDelayed(
-                        () -> applyWallpaperInternal(activity, "retry", true), 600L);
-                d.postDelayed(
-                        () -> applyWallpaperInternal(activity, "retry", true), 1200L);
+                // Missing/deferred wallpaper: teal once, then retry with a hard
+                // cap. Do not force-redraw or dump the view tree on retries —
+                // that work is exactly what saturated the launcher main thread
+                // (97% CPU + ANR on One UI 8.5) when the retry grew unbounded.
+                if (!"retry".equals(source)) {
+                    decor.setBackgroundColor(0xFF1B7F79);
+                    XposedBridge.log(TAG + ": teal fallback display="
+                            + displayIdOf(activity) + " source=" + source);
+                }
+                if (missingRetries < MAX_MISSING_RETRIES) {
+                    missingRetries++;
+                    View d = decor;
+                    long[] timings = {250L, 600L, 1200L};
+                    for (long t : timings) {
+                        d.postDelayed(
+                                () -> applyWallpaperInternal(activity, "retry", true), t);
+                    }
+                }
+                return; // skip forceRedraw / logBottomViews during missing fallback
             }
             clearHotseatBackground(decor);
             if (!"refresh".equals(source)) {
