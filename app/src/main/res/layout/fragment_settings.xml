@@ -58,7 +58,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Restart Shizuku as root" />
+                android:text="以 root 重启 Shizuku" />
             <LinearLayout style="@style/LibreDeXRow">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -81,10 +81,6 @@
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
-                <Button
-                    android:id="@+id/overlayGrantButton"
-                    style="@style/LibreDeXButtonSoft"
-                    android:text="授权" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXRow">
                 <LinearLayout
@@ -108,10 +104,6 @@
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
-                <Button
-                    android:id="@+id/storageGrantButton"
-                    style="@style/LibreDeXButtonSoft"
-                    android:text="授权" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXRow">
                 <LinearLayout
