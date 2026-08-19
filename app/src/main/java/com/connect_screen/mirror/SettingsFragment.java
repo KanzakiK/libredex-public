@@ -2,7 +2,6 @@ package com.connect_screen.mirror;
 
 import android.content.Intent;
 import android.content.res.ColorStateList;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -37,8 +36,6 @@ public class SettingsFragment extends Fragment {
     private TextView userServiceStatus;
     private TextView rootShizukuStatus;
     private Button shizukuGrantButton;
-    private Button overlayGrantButton;
-    private Button storageGrantButton;
     private Button restartUserServiceButton;
     private Button rootShizukuButton;
     private Button themeSystemButton;
@@ -73,8 +70,6 @@ public class SettingsFragment extends Fragment {
         userServiceStatus = view.findViewById(R.id.userServiceStatus);
         rootShizukuStatus = view.findViewById(R.id.rootShizukuStatus);
         shizukuGrantButton = view.findViewById(R.id.shizukuGrantButton);
-        overlayGrantButton = view.findViewById(R.id.overlayGrantButton);
-        storageGrantButton = view.findViewById(R.id.storageGrantButton);
         restartUserServiceButton = view.findViewById(R.id.restartUserServiceButton);
         rootShizukuButton = view.findViewById(R.id.rootShizukuButton);
         themeSystemButton = view.findViewById(R.id.themeSystemButton);
@@ -82,23 +77,9 @@ public class SettingsFragment extends Fragment {
         themeDarkButton = view.findViewById(R.id.themeDarkButton);
 
         tintButton(shizukuGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
-        tintButton(overlayGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
-        tintButton(storageGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
 
         shizukuGrantButton.setOnClickListener(v ->
                 Shizuku.requestPermission(AcquireShizuku.SHIZUKU_PERMISSION_REQUEST_CODE));
-        overlayGrantButton.setOnClickListener(v -> {
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + requireContext().getPackageName()));
-            startActivity(intent);
-        });
-        storageGrantButton.setOnClickListener(v -> {
-            pendingLogExport = false;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                storagePermissionLauncher.launch(
-                        new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
-            }
-        });
         restartUserServiceButton.setOnClickListener(v -> restartUserService());
         rootShizukuButton.setOnClickListener(v -> restartRootShizuku());
 
@@ -139,8 +120,6 @@ public class SettingsFragment extends Fragment {
         storageStatus.setText(storage ? "已授予" : "未授予");
         shizukuGrantButton.setVisibility(shizuku ? View.GONE : View.VISIBLE);
         rootShizukuButton.setVisibility(shizuku ? View.VISIBLE : View.GONE);
-        overlayGrantButton.setVisibility(overlay ? View.GONE : View.VISIBLE);
-        storageGrantButton.setVisibility(storage ? View.GONE : View.VISIBLE);
 
         String mode = Pref.getThemeMode();
         setSegButton(themeSystemButton, "system".equals(mode));
@@ -231,8 +210,8 @@ public class SettingsFragment extends Fragment {
                 getActivity().runOnUiThread(() -> {
                     rootShizukuButton.setEnabled(true);
                     Toast.makeText(requireContext(),
-                            ok ? "Shizuku restarted as root"
-                                    : "Failed to restart Shizuku as root",
+                            ok ? "Shizuku 已以 root 重启"
+                                    : "以 root 重启 Shizuku 失败",
                             Toast.LENGTH_LONG).show();
                     refreshStatus();
                 });
