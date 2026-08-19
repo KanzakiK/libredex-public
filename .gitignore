@@ -97,3 +97,8 @@ archive/dex-anywhere-sunshine/
 
 # Backup of original decompiled sources
 archive/DexHook/_original_check/
+
+# Local-only working dirs (agent memory, runtime logs, build output)
+.workbuddy/
+libredex_logs/
+xposed-stubs/bin/
