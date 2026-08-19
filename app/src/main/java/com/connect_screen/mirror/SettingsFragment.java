@@ -248,6 +248,12 @@ public class SettingsFragment extends Fragment {
                 ? AppCompatDelegate.MODE_NIGHT_NO
                 : AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
         refreshStatus();
+        // setDefaultNightMode alone only affects the next activity creation; the
+        // already-live settings UI needs a recreate for the theme to apply in real time.
+        try {
+            requireActivity().recreate();
+        } catch (Throwable ignored) {
+        }
     }
 
     private void setSegButton(Button button, boolean active) {

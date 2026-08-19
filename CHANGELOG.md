@@ -1,5 +1,11 @@
 # LibreDeX 更新记录
 
+## 0.1.13（2026-08-19）
+
+### 修复
+
+- **主题切换不实时生效**：切换主题后仅调 `AppCompatDelegate.setDefaultNightMode` 不会立刻作用于已存在的界面。现在 `SettingsFragment.setThemeMode` 与 `MirrorMainActivity.toggleTheme` 在切换后调用 `recreate()` 实时重绘，主题立即生效。
+
 ## 0.1.12（2026-08-19）
 
 ### 修复（One UI 8.5 卡死）

@@ -287,6 +287,9 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         AppCompatDelegate.setDefaultNightMode(dark
                 ? AppCompatDelegate.MODE_NIGHT_NO
                 : AppCompatDelegate.MODE_NIGHT_YES);
+        // setDefaultNightMode only affects the next activity creation; recreate
+        // so the theme switch takes effect immediately.
+        recreate();
     }
 
     @Override
