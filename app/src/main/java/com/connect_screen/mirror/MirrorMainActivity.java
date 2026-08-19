@@ -49,6 +49,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private DisplayManager.DisplayListener displayListener;
+    private boolean autoAcquiredShizuku;
 
     private ViewPager2 mainPager;
     private BottomNavigationView bottomNavigation;
@@ -180,6 +181,11 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         if (InitializationGuideDialog.needsSetup(this)) {
             new android.os.Handler(android.os.Looper.getMainLooper())
                     .postDelayed(() -> InitializationGuideDialog.show(this), 200);
+        } else if (!autoAcquiredShizuku) {
+            // 初次打开且配置已完成：自动尝试拉起 Shizuku 授权/以 root 运行。
+            // 用户每次打开 App 只自动试一次，避免反复弹窗。
+            autoAcquiredShizuku = true;
+            State.startNewJob(new AcquireShizuku());
         }
     }
 

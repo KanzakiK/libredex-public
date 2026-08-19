@@ -98,10 +98,40 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    private android.os.Handler statusHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+    private final Runnable statusPoller = new Runnable() {
+        @Override
+        public void run() {
+            refreshStatus();
+            statusHandler.postDelayed(this, 3000L);
+        }
+    };
+    private boolean statusPolling;
+
     @Override
     public void onResume() {
         super.onResume();
         refreshStatus();
+        startStatusPolling();
+    }
+
+    @Override
+    public void onPause() {
+        stopStatusPolling();
+        super.onPause();
+    }
+
+    private void startStatusPolling() {
+        if (statusPolling) {
+            return;
+        }
+        statusPolling = true;
+        statusHandler.postDelayed(statusPoller, 3000L);
+    }
+
+    private void stopStatusPolling() {
+        statusPolling = false;
+        statusHandler.removeCallbacks(statusPoller);
     }
 
     private void refreshStatus() {
