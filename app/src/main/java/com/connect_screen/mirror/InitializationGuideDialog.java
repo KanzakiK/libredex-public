@@ -29,14 +29,14 @@ public final class InitializationGuideDialog {
 
     private final Activity activity;
     private AlertDialog dialog;
-    private Button doneButton;   // positive "完成"
+    private Button doneButton;   // "完成"
     private LinearLayout content;
     private TextView pageTitle;
     private View[] pages;
+    private LinearLayout framePage; // 当前页容器
     private int page = 0;
     private Button prevButton;
     private Button nextButton;
-    private Button finishButton;
 
     // 各页状态（刷新用）
     private TextView rootStatusText;
@@ -96,33 +96,49 @@ public final class InitializationGuideDialog {
         };
 
         doneButton = null;
+        prevButton = new Button(activity);
+        nextButton = new Button(activity);
+        doneButton = new Button(activity);
+
+        LinearLayout nav = new LinearLayout(activity);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.setPadding(0, dp(8), 0, dp(4));
+        prevButton.setText("上一步");
+        nextButton.setText("下一步");
+        doneButton.setText("完成");
+        styleSmallButton(prevButton);
+        styleSmallButton(nextButton);
+        styleSmallButton(doneButton);
+
+        prevButton.setOnClickListener(v -> goToPage(page - 1));
+        nextButton.setOnClickListener(v -> goToPage(page + 1));
+        doneButton.setOnClickListener(v -> finishSetup());
+
+        nav.addView(prevButton, wrapParams());
+        LinearLayout.LayoutParams gap = wrapParams();
+        gap.setMarginStart(dp(8));
+        nav.addView(nextButton, gap);
+        LinearLayout.LayoutParams doneP = wrapParams();
+        doneP.setMarginStart(dp(8));
+        doneP.weight = 1;
+        nav.addView(doneButton, doneP);
+
+        framePage = new LinearLayout(activity);
+        framePage.setOrientation(LinearLayout.VERTICAL);
+        content.addView(framePage, matchWrapParams());
+        content.addView(nav, matchWrapParams());
+
         dialog = new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setTitle("连接向导")
                 .setView(content)
-                .setNegativeButton("上一步", null)
-                .setNeutralButton("下一步", null)
-                .setPositiveButton("完成", null)
+                .setCancelable(false)
                 .create();
         showing = true;
         dialog.setOnDismissListener(d -> {
             showing = false;
             Pref.setInitialSetupComplete(true);
         });
-        dialog.setOnShowListener(d -> {
-            prevButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE);
-            nextButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL);
-            doneButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
-            if (doneButton != null) {
-                doneButton.setOnClickListener(v -> finishSetup());
-            }
-            if (prevButton != null) {
-                prevButton.setOnClickListener(v -> goToPage(page - 1));
-            }
-            if (nextButton != null) {
-                nextButton.setOnClickListener(v -> goToPage(page + 1));
-            }
-            showPage(0);
-        });
+        dialog.setOnShowListener(d -> showPage(0));
         dialog.show();
     }
 
@@ -136,20 +152,13 @@ public final class InitializationGuideDialog {
 
     private void showPage(int index) {
         page = index;
-        if (content == null || pages == null) {
+        if (framePage == null || pages == null) {
             return;
         }
-        // 移除旧页，加新页
-        for (int i = 0; i < content.getChildCount(); i++) {
-            View c = content.getChildAt(i);
-            if (c != pageTitle) {
-                content.removeView(c);
-            }
-        }
-        // 标题在顶部
+        framePage.removeAllViews();
         String[] titles = {"LSPosed Hook", "Shizuku / Root / 悬浮窗", "录音", "文件访问 · 完成"};
         pageTitle.setText(titles[index]);
-        content.addView(pages[index], matchWrapParams());
+        framePage.addView(pages[index], matchWrapParams());
 
         boolean first = index == 0;
         boolean last = index == pages.length - 1;
@@ -160,7 +169,8 @@ public final class InitializationGuideDialog {
             nextButton.setVisibility(last ? View.GONE : View.VISIBLE);
         }
         if (doneButton != null) {
-            doneButton.setEnabled(last); // 完成只在最后一页可用
+            // 完成只在最后一页显示
+            doneButton.setVisibility(last ? View.VISIBLE : View.GONE);
         }
         refreshPageStatus();
     }
@@ -170,41 +180,48 @@ public final class InitializationGuideDialog {
     }
 
     private void refreshStatusTexts() {
-        updateText(rootStatusText, rootStatusLine());
+        // 快速本地状态（无 Binder/root），直接主线程更新
         updateText(shizukuStatusText, ShizukuUtils.hasPermission() ? "已授权" : "未授权");
         updateText(overlayStatusText, canDrawOverlays() ? "已授权" : "未授权");
         updateText(audioStatusText, isRecordAudioGranted() ? "已授权" : "未授权");
         updateText(fileStatusText, isFileAccessReady() ? "已授予" : "未授予");
-        updateText(lspStatusText, lspStatusLine());
+        // Root 与 LSPosed 状态涉及跨进程 Binder / root / logcat，必须在后台线程执行，
+        // 否则会阻塞主线程导致输入超时 ANR（此前实测 lspStatusLine 卡死主线程）。
+        refreshRootStatusAsync();
+        refreshLspStatusAsync();
     }
 
-    private String rootStatusLine() {
-        try {
-            if (State.userService != null && State.userService.isRooted()) {
-                return "已以 root 运行";
+    private void refreshRootStatusAsync() {
+        final boolean perm = ShizukuUtils.hasPermission();
+        new Thread(() -> {
+            boolean rooted = false;
+            try {
+                rooted = State.userService != null && State.userService.isRooted();
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
-        }
-        if (ShizukuUtils.hasPermission()) {
-            return "未以 root 运行";
-        }
-        return "待授权 Shizuku";
+            final boolean r = rooted;
+            MAIN_HANDLER.post(() -> updateText(rootStatusText,
+                    r ? "已以 root 运行" : (perm ? "未以 root 运行" : "待授权 Shizuku")));
+        }, "guide-root-status").start();
     }
 
-    private String lspStatusLine() {
-        // 通过 UserService 收集的 LSPosed 日志判断框架活跃度（原版/Vector 通用，不依赖包名）。
-        try {
-            String lsp = State.userService != null ? State.userService.fetchLspLogs() : null;
-            if (lsp != null) {
-                String clean = lsp.replace("=====", "");
-                if (!clean.trim().isEmpty()
-                        && clean.toLowerCase().contains("lsposedframework")) {
-                    return "已检测到框架活跃";
+    private void refreshLspStatusAsync() {
+        new Thread(() -> {
+            String s = "未检测到框架（需启用模块并重启）";
+            try {
+                if (State.userService != null) {
+                    String lsp = State.userService.fetchLspLogs();
+                    if (lsp != null
+                            && !lsp.replace("=====", "").trim().isEmpty()
+                            && lsp.toLowerCase().contains("lsposedframework")) {
+                        s = "已检测到框架活跃";
+                    }
                 }
+            } catch (Throwable ignored) {
             }
-        } catch (Throwable ignored) {
-        }
-        return "未检测到框架（需启用模块并重启）";
+            final String fs = s;
+            MAIN_HANDLER.post(() -> updateText(lspStatusText, fs));
+        }, "guide-lsp-status").start();
     }
 
     private boolean canDrawOverlays() {
@@ -236,7 +253,8 @@ public final class InitializationGuideDialog {
         col.addView(lspStatusText, matchWrapParams());
 
         TextView hint = note("LibreDeX 的核心显示/输入钩子依赖 LSPosed（原版或 Vector 均可）。\n"
-                + "请在其中启用本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。");
+                + "请在其中启用本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。\n"
+                + "提示：Vector 变种没有独立 App，入口在桌面的“LSPosed”快捷方式或通知栏里。");
         col.addView(hint, matchWrapParams());
 
         Button openLsp = new Button(activity);
@@ -248,14 +266,47 @@ public final class InitializationGuideDialog {
         return col;
     }
 
+    /** 覆盖已知的 LSPosed / Vector 管理器入口包名（含 Vector 无独立包、可启动宿主）。 */
+    private static final String[] LSPOSED_ENTRY_PACKAGES = {
+            "org.lsposed.manager",            // 原版
+            "io.github.vvb2060.lsposed",      // Vector 常见包名
+            "com.android.shell",              // 某些变种的宿主
+    };
+
     private void openLsposedManager() {
-        // 不靠单一包名：依次尝试已知入口，能起一个就行；起不了则提示。
-        String[] pkgs = {
-                "org.lsposed.manager",           // 原版
-                "io.github.vvb2060.lsposed",      // Vector 常见包名
-                "com.android.shell",             // 某些变种的宿主
-        };
-        for (String pkg : pkgs) {
+        // Vector 变种没有独立应用包，入口是注入的桌面快捷方式 / 通知栏。
+        // 因此不能只靠单一包名 getLaunchIntentForPackage，改用 queryIntentActivities
+        // 枚举可启动的 launcher intent，能匹配到任一已知入口就尽力跳转。
+        try {
+            @SuppressWarnings({"deprecation", "RedundantSuppression"})
+            java.util.List<android.content.pm.ResolveInfo> resolves =
+                    activity.getPackageManager().queryIntentActivities(
+                            new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
+                            PackageManager.MATCH_ALL);
+            if (resolves != null) {
+                for (android.content.pm.ResolveInfo ri : resolves) {
+                    if (ri == null || ri.activityInfo == null) {
+                        continue;
+                    }
+                    String pkg = ri.activityInfo.packageName;
+                    for (String candidate : LSPOSED_ENTRY_PACKAGES) {
+                        if (candidate.equals(pkg)) {
+                            Intent launcher = new Intent(Intent.ACTION_MAIN)
+                                    .addCategory(Intent.CATEGORY_LAUNCHER)
+                                    .setClassName(pkg, ri.activityInfo.name)
+                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            activity.startActivity(launcher);
+                            return;
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+            // 枚举失败则退回包名直连
+        }
+
+        // 兜底：再按已知包名直接取启动 intent（某些入口无 LAUNCHER 分类也能起）。
+        for (String pkg : LSPOSED_ENTRY_PACKAGES) {
             try {
                 Intent launcher = activity.getPackageManager().getLaunchIntentForPackage(pkg);
                 if (launcher != null) {
@@ -265,8 +316,19 @@ public final class InitializationGuideDialog {
             } catch (Throwable ignored) {
             }
         }
-        Toast.makeText(activity, "未找到 LSPosed 入口，请在 LSPosed/Vector 里启用本模块后重启",
-                Toast.LENGTH_LONG).show();
+
+        // 找不到可启动入口：Vector 系没有独立应用包，必须手动从桌面/通知栏进入。
+        // 用明确的对话框说明，而不是只有一句模糊 toast。
+        new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
+                .setTitle("未找到 LSPosed 入口")
+                .setMessage("你的设备装的是 LSPosed（Vector）变种，它没有独立的 App 图标。\n\n"
+                        + "请手动打开：\n"
+                        + "· 桌面上的“LSPosed”快捷方式，或\n"
+                        + "· 下拉通知栏里的 LSPosed（Vector）入口。\n\n"
+                        + "打开后在本模块中启用 LibreDeX，作用域勾选 android / 三星设置 / 桌面，"
+                        + "然后重启手机使 Hook 生效。")
+                .setPositiveButton("知道了", null)
+                .show();
     }
 
     // ---------- 第 1 页：Root + Shizuku + 悬浮窗 ----------
@@ -284,10 +346,18 @@ public final class InitializationGuideDialog {
         rootBtn.setText("以 root 重启");
         styleSmallButton(rootBtn);
         rootBtn.setOnClickListener(v -> {
-            boolean ok = AcquireShizuku.fixRootShizuku();
-            Toast.makeText(activity, ok ? "Shizuku 已以 root 重启" : "以 root 重启失败",
-                    Toast.LENGTH_SHORT).show();
-            refreshStatusTexts();
+            // root 重启涉及 su / 重绑定等阻塞操作，放后台线程，避免卡死主线程。
+            rootBtn.setEnabled(false);
+            new Thread(() -> {
+                boolean ok = AcquireShizuku.fixRootShizuku();
+                MAIN_HANDLER.post(() -> {
+                    Toast.makeText(activity,
+                            ok ? "Shizuku 已以 root 重启" : "以 root 重启失败",
+                            Toast.LENGTH_SHORT).show();
+                    rootBtn.setEnabled(true);
+                    refreshStatusTexts();
+                });
+            }, "guide-root-restart").start();
         });
         col.addView(rootBtn, wrapParamsR());
         col.addView(note("Root 是悬浮窗/投屏“一键静默授权”的基础；应用打开时会自动尝试拉起授权。"),
@@ -328,25 +398,37 @@ public final class InitializationGuideDialog {
             refreshStatusTexts();
             return;
         }
-        // 优先 root 静默授权
-        try {
-            boolean root = State.userService != null && State.userService.isRooted();
-            if (root) {
-                State.userService.executeCommand("appops set "
-                        + BuildConfig.APPLICATION_ID + " SYSTEM_ALERT_WINDOW allow");
-            }
-        } catch (Throwable ignored) {
-        }
-        if (!canDrawOverlays()) {
+        // 先显示“处理中”，再在后台线程做 root 静默授权（Binder/root 不能放主线程）。
+        Toast.makeText(activity, "正在授权悬浮窗…", Toast.LENGTH_SHORT).show();
+        new Thread(() -> {
+            boolean granted = false;
             try {
-                activity.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:" + activity.getPackageName())));
-            } catch (Throwable e) {
-                Toast.makeText(activity, "请手动授予悬浮窗权限", Toast.LENGTH_SHORT).show();
+                boolean root = State.userService != null
+                        && State.userService.isRooted();
+                if (root) {
+                    State.userService.executeCommand("appops set "
+                            + BuildConfig.APPLICATION_ID + " SYSTEM_ALERT_WINDOW allow");
+                }
+            } catch (Throwable ignored) {
             }
-        }
-        MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 600);
-        MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1800);
+            boolean still = canDrawOverlays();
+            MAIN_HANDLER.post(() -> {
+                if (still) {
+                    Toast.makeText(activity, "悬浮窗权限已授权", Toast.LENGTH_SHORT).show();
+                    refreshStatusTexts();
+                    return;
+                }
+                try {
+                    activity.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                            Uri.parse("package:" + activity.getPackageName())));
+                } catch (Throwable e) {
+                    Toast.makeText(activity, "请手动授予悬浮窗权限", Toast.LENGTH_SHORT).show();
+                }
+                MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 600);
+                MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1800);
+                refreshStatusTexts();
+            });
+        }, "guide-overlay").start();
     }
 
     // ---------- 第 2 页：录音 ----------
