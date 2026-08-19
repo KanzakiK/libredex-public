@@ -137,39 +137,54 @@ public final class InitializationGuideDialog {
     private View createShizukuRow() {
         final Button grantBtn = new Button(activity);
         grantBtn.setText("连接");
-        LinearLayout status = rowHeader("Shizuku 权限",
-                "系统级显示/控制链路（虚拟显示、屏幕采集、控制事件）。",
-                grantBtn);
+        Button rootBtn = new Button(activity);
+        rootBtn.setText("以 root 重启");
         grantBtn.setOnClickListener(v -> {
             State.startNewJob(new AcquireShizuku());
             MAIN_HANDLER.postDelayed(this::refreshStatus, 800);
             MAIN_HANDLER.postDelayed(this::refreshStatus, 2500);
         });
-        Button rootBtn = new Button(activity);
-        rootBtn.setText("以 root 重启");
-        rootBtn.setMinHeight(0);
-        rootBtn.setMinimumHeight(0);
-        rootBtn.setPadding(dp(12), dp(4), dp(12), dp(4));
         rootBtn.setOnClickListener(v -> {
             boolean ok = AcquireShizuku.fixRootShizuku();
             Toast.makeText(activity, ok ? "Shizuku 已以 root 重启" : "以 root 重启失败",
                     Toast.LENGTH_SHORT).show();
             MAIN_HANDLER.postDelayed(this::refreshStatus, 800);
         });
-        // 合并成一个水平行：两个按钮
-        LinearLayout row = new LinearLayout(activity);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setPadding(0, dp(6), 0, 0);
-        row.addView(grantBtn, wrapParams());
+
+        styleSmallButton(grantBtn);
+        styleSmallButton(rootBtn);
+
+        // 按钮放在一个水平行（每个按钮只 add 一次），标题/说明在另一列。
+        LinearLayout buttonRow = new LinearLayout(activity);
+        buttonRow.setOrientation(LinearLayout.HORIZONTAL);
+        buttonRow.addView(grantBtn, wrapParams());
         LinearLayout.LayoutParams rp = wrapParams();
         rp.setMarginStart(dp(8));
-        row.addView(rootBtn, rp);
+        buttonRow.addView(rootBtn, rp);
+
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(0, dp(16), 0, 0);
-        col.addView(status, matchWrapParams());
-        col.addView(row, matchWrapParams());
+        TextView titleView = new TextView(activity);
+        titleView.setText("Shizuku 权限");
+        titleView.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_primary));
+        titleView.setTextSize(16);
+        titleView.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        col.addView(titleView, wrapParams());
+        TextView noteView = new TextView(activity);
+        noteView.setText("系统级显示/控制链路（虚拟显示、屏幕采集、控制事件）。");
+        noteView.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
+        noteView.setTextSize(13);
+        noteView.setPadding(0, dp(2), 0, 0);
+        col.addView(noteView, matchWrapParams());
+        col.addView(buttonRow, matchWrapParams());
         return col;
+    }
+
+    private void styleSmallButton(Button b) {
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
+        b.setPadding(dp(12), dp(4), dp(12), dp(4));
     }
 
     private View createOverlayRow() {
