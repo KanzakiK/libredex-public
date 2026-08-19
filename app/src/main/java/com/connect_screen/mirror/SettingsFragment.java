@@ -219,12 +219,21 @@ public class SettingsFragment extends Fragment {
             rootShizukuStatus.setText("Root: -");
             return;
         }
-        try {
-            rootShizukuStatus.setText(State.userService.isRooted()
-                    ? "Root: root" : "Root: shell");
-        } catch (Throwable t) {
-            rootShizukuStatus.setText("Root: -");
-        }
+        // isRooted() 是跨进程 Binder 调用，放后台线程，避免阻塞主线程（轮询时尤其不能卡）。
+        final TextView statusView = rootShizukuStatus;
+        new Thread(() -> {
+            String text = "Root: -";
+            try {
+                text = State.userService.isRooted() ? "Root: root" : "Root: shell";
+            } catch (Throwable ignored) {
+            }
+            final String t = text;
+            if (getActivity() != null) {
+                getActivity().runOnUiThread(() -> statusView.setText(t));
+            } else {
+                statusView.setText(t);
+            }
+        }, "settings-root-status").start();
     }
 
     private void restartRootShizuku() {
