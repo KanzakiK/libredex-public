@@ -85,7 +85,14 @@ public class AcquireShizuku implements Job {
             }
             sleep(300);
         }
-        State.bindUserService();
+        // 绑定 UserService 需要 Shizuku 已授权本应用；未授权时 bind 会抛
+        // SecurityException（addUserService requires permission）直接崩线程，这里先做权限防护。
+        if (ShizukuUtils.hasPermission()) {
+            State.bindUserService();
+        } else {
+            State.log("Shizuku 未授权，无法绑定 root UserService");
+            return false;
+        }
         while (System.currentTimeMillis() < deadline) {
             if (State.isUserServiceAlive()) {
                 break;
@@ -103,6 +110,40 @@ public class AcquireShizuku implements Job {
             State.log("UserService root check failed: " + t.getMessage());
         }
         return false;
+    }
+
+    /**
+     * 应用启动时在后台自动探活 root（纯 su，不依赖 Shizuku 的 shizuku_starter 机制）：
+     * su 可用 → 视为已具备 root 能力（isRooted()/executeRootShellCommand 都基于 su），
+     *           只尝试确保 UserService 已绑定（若 Shizuku 已授权则绑定，绝不主动重启 Shizuku）；
+     * su 不可用 → 仅记录日志，Shizuku 授权兜底由 onResume 主线程的 AcquireShizuku 任务负责。
+     * 全程后台线程，不阻塞主线程；失败只记录日志，不打扰用户。
+     */
+    public static void autoAcquireRoot() {
+        new Thread(() -> {
+            try {
+                if (State.userService != null) {
+                    try {
+                        if (State.userService.isRooted()) {
+                            State.log("启动自动 root 获取：已具备 root 能力，跳过");
+                            return;
+                        }
+                    } catch (Throwable ignored) {
+                    }
+                }
+                // 直接 su 探活，不经过 Shizuku/root 重启。
+                String su = findSu();
+                if (su != null && probeRoot(su)) {
+                    State.log("启动自动 root 获取：root 可用 (su=" + su + ")，确保 UserService 绑定");
+                    // 仅当 Shizuku 已授权且未绑定时才绑定；绝不主动改 Shizuku 状态。
+                    State.ensureUserServiceBound();
+                } else {
+                    State.log("启动自动 root 获取：无可用 root/su，退回主线程 Shizuku 授权流程");
+                }
+            } catch (Throwable t) {
+                State.log("启动自动 root 获取失败: " + t.getMessage());
+            }
+        }, "auto-root-acquire").start();
     }
 
     private static String[] findShizukuStarter() {
