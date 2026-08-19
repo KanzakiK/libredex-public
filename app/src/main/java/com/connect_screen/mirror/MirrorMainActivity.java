@@ -187,6 +187,9 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         // 会话内只自动试一次，避免反复弹窗。
         if (!autoAcquiredShizuku) {
             autoAcquiredShizuku = true;
+            // 后台自动探活/准备 root（纯 su，不依赖 Shizuku 的 shizuku_starter 重启机制）。
+            AcquireShizuku.autoAcquireRoot();
+            // 主线程 Shizuku 授权兜底（UserService 由 Shizuku 托管，需授权后才能绑定）。
             State.startNewJob(new AcquireShizuku());
         }
     }

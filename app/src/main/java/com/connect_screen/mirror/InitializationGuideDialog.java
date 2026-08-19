@@ -266,66 +266,143 @@ public final class InitializationGuideDialog {
         return col;
     }
 
-    /** 覆盖已知的 LSPosed / Vector 管理器入口包名（含 Vector 无独立包、可启动宿主）。 */
+    /**
+     * Vector（及多数 LSPosed 变种）没有独立应用包：管理器是一个被 Zygisk/Riru 注入到宿主
+     * 进程（通常是 com.android.shell）里的组件，入口是注入的桌面快捷方式 / 通知栏。
+     * 因此按包名 getLaunchIntentForPackage / queryIntentActivities 查 launcher 入口是找不到的。
+     *
+     * Vector 模块自带的 action.sh 明确给出正确拉起方式（已在真机验证）：
+     *   am start -c org.matrix.vector.manager.LAUNCH_MANAGER com.android.shell/.BugreportWarningActivity
+     *
+     * 说明：能否真正弹出管理器依赖 Vector 框架的 Hook 是否活跃（组件是注入的）。所以这里
+     * 通过 shell（优先 root）执行上述命令，再根据输出判断是否真的拉起；失败则给出明确的手动入口提示。
+     */
+    private static final String VECTOR_MANAGER_CATEGORY = "org.matrix.vector.manager.LAUNCH_MANAGER";
+    private static final String VECTOR_HOST_COMPONENT = "com.android.shell/.BugreportWarningActivity";
+
+    /** 已知的独立 LSPosed 管理器包名（针对少数装有独立管理器 App 的设备，兜底用）。 */
     private static final String[] LSPOSED_ENTRY_PACKAGES = {
             "org.lsposed.manager",            // 原版
-            "io.github.vvb2060.lsposed",      // Vector 常见包名
-            "com.android.shell",              // 某些变种的宿主
+            "io.github.vvb2060.lsposed",      // Vector 较老版本的独立包名（若被单独安装）
     };
 
     private void openLsposedManager() {
-        // Vector 变种没有独立应用包，入口是注入的桌面快捷方式 / 通知栏。
-        // 因此不能只靠单一包名 getLaunchIntentForPackage，改用 queryIntentActivities
-        // 枚举可启动的 launcher intent，能匹配到任一已知入口就尽力跳转。
-        try {
-            @SuppressWarnings({"deprecation", "RedundantSuppression"})
-            java.util.List<android.content.pm.ResolveInfo> resolves =
-                    activity.getPackageManager().queryIntentActivities(
-                            new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER),
-                            PackageManager.MATCH_ALL);
-            if (resolves != null) {
-                for (android.content.pm.ResolveInfo ri : resolves) {
-                    if (ri == null || ri.activityInfo == null) {
-                        continue;
-                    }
-                    String pkg = ri.activityInfo.packageName;
-                    for (String candidate : LSPOSED_ENTRY_PACKAGES) {
-                        if (candidate.equals(pkg)) {
-                            Intent launcher = new Intent(Intent.ACTION_MAIN)
-                                    .addCategory(Intent.CATEGORY_LAUNCHER)
-                                    .setClassName(pkg, ri.activityInfo.name)
-                                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                            activity.startActivity(launcher);
-                            return;
-                        }
-                    }
+        // am start 要通过 shell / Binder 执行，且可能走 root，必须放后台线程，避免阻塞主线程。
+        new Thread(() -> {
+            String error = null;
+            try {
+                // 真实校验：只有 Vector 管理器窗口真的到前台才算成功，
+                // 不能只看 am start 输出（没有 root / 框架不活跃时输出也会“看似成功”）。
+                boolean launched = launchVectorAndVerify();
+                if (!launched) {
+                    // 注入宿主未拉起：再试独立管理器包名。
+                    launched = launchStandaloneLsposedPackage();
                 }
+                if (!launched) {
+                    error = "未检测到 LSPosed / Vector 管理器打开";
+                }
+            } catch (Throwable t) {
+                error = "拉起失败：" + (t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
             }
-        } catch (Throwable ignored) {
-            // 枚举失败则退回包名直连
-        }
 
-        // 兜底：再按已知包名直接取启动 intent（某些入口无 LAUNCHER 分类也能起）。
+            final String err = error;
+            MAIN_HANDLER.post(() -> {
+                if (err == null) {
+                    Toast.makeText(activity, "已在 LSPosed / Vector 中打开，请启用本模块后重启",
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    showLsposedManualDialog();
+                }
+            });
+        }, "guide-open-lsposed").start();
+    }
+
+    /**
+     * 通过 shell（root 优先）拉起 Vector 注入宿主，并依据 am start 输出判断是否真的成功。
+     *
+     * 为什么用输出判断而不是窗口轮询：Vector 的入口组件 com.android.shell/.BugreportWarningActivity
+     * 是框架运行时才“注入/注册”到 Activity 解析器里的。框架活跃时 am start 返回
+     * “Starting: Intent {...}”（能解析并启动）；框架不活跃时该组件解析不到，am start 报
+     * “does not exist / Error type 3 / Activity not found”。因此：
+     *   · 见 “Starting:” → 说明 Vector 框架确实把宿主组件注册上并能启动 → 真成功；
+     *   · 报错 → Vector 框架未激活（与是否有 root 无关）→ 正确地提示手动打开。
+     */
+    private boolean launchVectorAndVerify() {
+        String cmd = "am start -c " + VECTOR_MANAGER_CATEGORY + " " + VECTOR_HOST_COMPONENT;
+        String out = runShellCommand(cmd);
+        if (out == null) {
+            return false;
+        }
+        String lower = out.toLowerCase();
+        boolean hasStarting = lower.contains("starting: intent");
+        boolean hasError = lower.contains("does not exist")
+                || lower.contains("error type")
+                || lower.contains("activity not found")
+                || lower.contains("unable to find");
+        return hasStarting && !hasError;
+    }
+
+    /** 兜底：尝试按已知独立管理器包名直接启动。 */
+    private boolean launchStandaloneLsposedPackage() {
         for (String pkg : LSPOSED_ENTRY_PACKAGES) {
             try {
                 Intent launcher = activity.getPackageManager().getLaunchIntentForPackage(pkg);
                 if (launcher != null) {
+                    launcher.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     activity.startActivity(launcher);
-                    return;
+                    return true;
                 }
             } catch (Throwable ignored) {
             }
         }
+        return false;
+    }
 
-        // 找不到可启动入口：Vector 系没有独立应用包，必须手动从桌面/通知栏进入。
-        // 用明确的对话框说明，而不是只有一句模糊 toast。
+    /** 依次用 root shell / shell 执行命令；都不可用则用裸命令。失败返回 null。 */
+    private String runShellCommand(String command) {
+        try {
+            if (State.userService != null) {
+                try {
+                    if (State.userService.isRooted()) {
+                        String out = State.userService.executeRootShellCommand(command);
+                        if (out != null) {
+                            return out;
+                        }
+                    }
+                } catch (Throwable ignored) {
+                }
+                try {
+                    // am 是 shell 脚本，executeShellCommand（sh -c）比裸 Runtime.exec 更稳。
+                    String out = State.userService.executeShellCommand(command);
+                    if (out != null) {
+                        return out;
+                    }
+                } catch (Throwable ignored) {
+                }
+            }
+            // 无 userService 时退回本地 Runtime 执行（极少数兜底）。
+            java.io.BufferedReader r = new java.io.BufferedReader(
+                    new java.io.InputStreamReader(Runtime.getRuntime().exec(command).getInputStream()));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = r.readLine()) != null) {
+                sb.append(line).append('\n');
+            }
+            return sb.toString();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    /** 找不到可启动入口：给出明确的手动打开指引（桌面/通知栏），而不是一句模糊 toast。 */
+    private void showLsposedManualDialog() {
         new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setTitle("未找到 LSPosed 入口")
-                .setMessage("你的设备装的是 LSPosed（Vector）变种，它没有独立的 App 图标。\n\n"
+                .setMessage("LSPosed（含 Vector）变种没有独立 App 图标，入口是注入的快捷方式 / 通知栏。\n\n"
                         + "请手动打开：\n"
-                        + "· 桌面上的“LSPosed”快捷方式，或\n"
-                        + "· 下拉通知栏里的 LSPosed（Vector）入口。\n\n"
-                        + "打开后在本模块中启用 LibreDeX，作用域勾选 android / 三星设置 / 桌面，"
+                        + "· 桌面上的“LSPosed（Vector）”快捷方式，或\n"
+                        + "· 下拉通知栏里的 LSPosed / Vector 入口。\n\n"
+                        + "若已打开并启用了本模块，作用域勾选 android / 三星设置 / 桌面，"
                         + "然后重启手机使 Hook 生效。")
                 .setPositiveButton("知道了", null)
                 .show();
