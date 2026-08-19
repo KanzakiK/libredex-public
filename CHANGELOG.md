@@ -1,11 +1,15 @@
 # LibreDeX 更新记录
 
-## 0.1.11（2026-08-19）
+## 0.1.12（2026-08-19）
 
 ### 修复（One UI 8.5 卡死）
 
 - **Dex 桌面识别**：One UI 8.5 / Android 16 把 `VirtualDisplayConfig$Builder.setIsHomeSupported` 改名为 `setHomeSupported`（见 firmware framework.jar）。改为优先调用 `setHomeSupported`、旧版回退 `setIsHomeSupported`，让 fake DeX 虚屏能被系统正确认成 DeX 桌面（`mIsHomeSupported=true`），避免退化成高负载镜像路径。
 - **壁纸挂起死循环**：壁纸 PNG 缺失时 `DexWallpaper` 的 `retry` 会自乘式无限重试并反复 forceRedraw + 打印整棵桌面视图树，把 launcher 主线程烧满（实测 97% CPU → 桌面 ANR → 整机卡死）。现在重试加入次数上限（最多 6 次）、缺失期间不再 forceRedraw/打印视图树、不再逐次刷日志，`bitmap` 正常时自动重置。
+
+## 0.1.11（2026-08-19）
+
+> 本轮修复实际随 0.1.12 发布；0.1.11 仅作为过渡版本号，避免与已有分发混淆。
 
 ## 0.1.10（2026-08-19）
 
