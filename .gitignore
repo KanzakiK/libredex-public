@@ -37,7 +37,6 @@ DEXANYWHERE_*.txt
 dist/
 *.zip
 *.apk
-!libredex-public-release.apk
 *.apks
 *.aab
 *.jar
