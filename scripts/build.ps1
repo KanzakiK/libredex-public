@@ -6,8 +6,8 @@ param(
     [string]$Configuration = 'Debug',
     [switch]$Install,
     [string]$Apksigner = '',
-    [string]$VersionName = '0.1.12',
-    [int]$VersionCode = 12,
+    [string]$VersionName = '0.1.13',
+    [int]$VersionCode = 13,
     [string]$OptionalTransportModule = '',
     [string]$OptionalTransportProvider = ''
 )
