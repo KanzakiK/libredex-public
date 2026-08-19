@@ -6,6 +6,7 @@
 
 - **Dex 桌面识别**：One UI 8.5 / Android 16 把 `VirtualDisplayConfig$Builder.setIsHomeSupported` 改名为 `setHomeSupported`（见 firmware framework.jar）。改为优先调用 `setHomeSupported`、旧版回退 `setIsHomeSupported`，让 fake DeX 虚屏能被系统正确认成 DeX 桌面（`mIsHomeSupported=true`），避免退化成高负载镜像路径。
 - **壁纸挂起死循环**：壁纸 PNG 缺失时 `DexWallpaper` 的 `retry` 会自乘式无限重试并反复 forceRedraw + 打印整棵桌面视图树，把 launcher 主线程烧满（实测 97% CPU → 桌面 ANR → 整机卡死）。现在重试加入次数上限（最多 6 次）、缺失期间不再 forceRedraw/打印视图树、不再逐次刷日志，`bitmap` 正常时自动重置。
+- **DeX 桌面层级微调（TDA boost）容错**：One UI 8.5 / Android 16 上 `com.android.server.wm.Task.setBoostTaskLayerForFreeform` 方法可见性/声明位置变化，`getMethod` 找不到会抛 `NoSuchMethodException`，导致 `ensureDexRootOrder` 整体失败。改为 `getDeclaredMethod` + `setAccessible(true)` 容错反射（含字段 `mBoostRootTaskLayerForFreeform` 同样的 fallback），消除该异常。
 
 ## 0.1.11（2026-08-19）
 

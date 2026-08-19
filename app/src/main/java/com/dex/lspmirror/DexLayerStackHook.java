@@ -1184,6 +1184,19 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         return null;
     }
 
+    private static Method findDeclaredMethod(
+            Class<?> clazz, String name, Class<?>... paramTypes) {
+        for (Class<?> c = clazz; c != null; c = c.getSuperclass()) {
+            try {
+                Method m = c.getDeclaredMethod(name, paramTypes);
+                m.setAccessible(true);
+                return m;
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
+    }
+
     private static Object invokeNoArg(Object target, String name) throws Exception {
         for (Class<?> c = target.getClass(); c != null; c = c.getSuperclass()) {
             try {
@@ -1372,14 +1385,41 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             if (active == null || active == home) {
                 return;
             }
-            java.lang.reflect.Field boostField = active.getClass()
-                    .getField("mBoostRootTaskLayerForFreeform");
+            java.lang.reflect.Field boostField;
+            try {
+                boostField = active.getClass().getField("mBoostRootTaskLayerForFreeform");
+            } catch (NoSuchFieldException e) {
+                boostField = findDeclaredField(active.getClass(), "mBoostRootTaskLayerForFreeform");
+            }
+            if (boostField == null) {
+                XposedBridge.log(TAG + ": dex boost field missing on this build");
+                return;
+            }
             if (!boostField.getBoolean(active)) {
-                active.getClass().getMethod(
-                        "setBoostTaskLayerForFreeform", boolean.class, boolean.class)
-                        .invoke(active, Boolean.TRUE, Boolean.FALSE);
-                XposedBridge.log(TAG + ": dex activatable root boosted display="
-                        + displayId + " task=" + active);
+                try {
+                    Object[] args = {Boolean.TRUE, Boolean.FALSE};
+                    try {
+                        active.getClass().getMethod(
+                                "setBoostTaskLayerForFreeform", boolean.class, boolean.class)
+                                .invoke(active, args);
+                    } catch (NoSuchMethodException ePublic) {
+                        // Android 16 / One UI 8.5 may make this method non-public
+                        // or move it up the hierarchy; fall back to declared+accessible.
+                        java.lang.reflect.Method m = findDeclaredMethod(
+                                active.getClass(), "setBoostTaskLayerForFreeform",
+                                boolean.class, boolean.class);
+                        if (m == null) {
+                            throw ePublic;
+                        }
+                        m.setAccessible(true);
+                        m.invoke(active, args);
+                    }
+                    XposedBridge.log(TAG + ": dex activatable root boosted display="
+                            + displayId + " task=" + active);
+                } catch (Throwable t) {
+                    XposedBridge.log(TAG + ": dex activatable root boost failed: "
+                            + t + " (non-fatal)");
+                }
             }
             java.util.ArrayList<Object> children = (java.util.ArrayList<Object>)
                     XposedHelpers.getObjectField(tda, "mChildren");
