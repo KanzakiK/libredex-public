@@ -68,10 +68,11 @@ public class ProjectViaDp implements Job {
         }
         if (startPlainMirror && State.externalDisplayId > 0) {
             final int displayId = State.externalDisplayId;
-            final int width = State.externalDisplayWidth > 0
-                    ? State.externalDisplayWidth : 1920;
-            final int height = State.externalDisplayHeight > 0
-                    ? State.externalDisplayHeight : 1080;
+            int[] preferred = resolvePreferredDpSize();
+            final int width = preferred[0] > 0 ? preferred[0]
+                    : (State.externalDisplayWidth > 0 ? State.externalDisplayWidth : 1920);
+            final int height = preferred[1] > 0 ? preferred[1]
+                    : (State.externalDisplayHeight > 0 ? State.externalDisplayHeight : 1080);
             final long generation = ++plainMirrorGeneration;
             new Thread(() -> startPlainPhoneMirror(
                     displayId, width, height, generation),
@@ -132,6 +133,24 @@ public class ProjectViaDp implements Job {
         }
     }
 
+    /**
+     * Preferred wired (DP) output mode. When the user has explicitly picked a
+     * mode via the resolution dialog, that is used so DeX rendering follows
+     * the DP output signal. Otherwise default to 1080p (1920x1080) as a
+     * conservative fallback so a 4K panel does not drive a 4K render pipeline.
+     * Returns {width, height, refresh}; a 0 refresh means "fall back to the
+     * external display's current refresh rate".
+     */
+    private static int[] resolvePreferredDpSize() {
+        int[] mode = Pref.getDpOutputMode();
+        if (mode != null && mode.length >= 3 && mode[0] > 0 && mode[1] > 0) {
+            return new int[]{mode[0], mode[1], mode[2]};
+        }
+        // No explicit user choice: conservative 1080p default.
+        State.log(TAG + ": no user-chosen DP mode, defaulting render to 1920x1080");
+        return new int[]{1920, 1080, 0};
+    }
+
     @Override
     public void start() throws YieldException {
         stopPlainPhoneMirror();
@@ -150,11 +169,17 @@ public class ProjectViaDp implements Job {
             State.showErrorStatus("未检测到外接屏，请先连接 DP/HDMI 线");
             return;
         }
-        int width = State.externalDisplayWidth;
-        int height = State.externalDisplayHeight;
-        if (width <= 0 || height <= 0) {
+        int[] preferred = resolvePreferredDpSize();
+        int width = preferred[0];
+        int height = preferred[1];
+        int refresh = preferred[2];
+        boolean usedPreferred = width > 0 && height > 0;
+        if (!usedPreferred) {
+            // No size at all: fall back to the external panel's reported metrics.
+            width = State.externalDisplayWidth;
+            height = State.externalDisplayHeight;
             Display display = ExternalDisplayMonitor.getPrimaryExternalDisplay(context);
-            if (display != null) {
+            if ((width <= 0 || height <= 0) && display != null) {
                 width = display.getWidth();
                 height = display.getHeight();
             }
@@ -163,11 +188,19 @@ public class ProjectViaDp implements Job {
             State.showErrorStatus("无法读取外接屏尺寸");
             return;
         }
-        int refresh = 60;
-        Display externalDisplay = ExternalDisplayMonitor.getPrimaryExternalDisplay(context);
-        if (externalDisplay != null && externalDisplay.getMode() != null) {
-            refresh = Math.round(externalDisplay.getMode().getRefreshRate());
+        if (refresh <= 0) {
+            // Preferred/default path left refresh unspecified: use the external
+            // display's current refresh rate instead of hard-coding 60Hz.
+            Display display = ExternalDisplayMonitor.getPrimaryExternalDisplay(context);
+            if (display != null && display.getMode() != null) {
+                refresh = Math.round(display.getMode().getRefreshRate());
+            }
+            if (refresh <= 0) {
+                refresh = 60;
+            }
         }
+        State.log(TAG + ": DP render mode " + width + "x" + height + "@" + refresh
+                + "Hz (preferred-mode=" + usedPreferred + ")");
 
         active = true;
         activeDisplayId = displayId;

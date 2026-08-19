@@ -43,6 +43,7 @@ public class Pref {
     public static final String KEY_FIRST_USE_HIDDEN = "first_use_hidden";
     public static final String KEY_LAST_RUN_VERSION_CODE = "last_run_version_code";
     public static final String KEY_DP_SESSION_STARTED = "dp_session_started";
+    public static final String KEY_DP_OUTPUT_MODE = "dp_output_mode";
     public static final int ENCODER_CODEC_H264 = 0;
     public static final int ENCODER_CODEC_H265 = 1;
     public static boolean doNotAutoStartMoonlight;
@@ -221,6 +222,42 @@ public class Pref {
 
     public static void setDpSessionStarted(boolean started) {
         getPreferences().edit().putBoolean(KEY_DP_SESSION_STARTED, started).apply();
+    }
+
+    /**
+     * The user-chosen wired (DP) output mode "w:h:refresh", used as the DeX
+     * render resolution / refresh rate so rendering follows the DP output
+     * signal instead of the external panel's native metrics (which can be 4K
+     * and is the main source of jank on the wired path). Defaults to 1080p.
+     * Returns {width, height, refresh}; 0 tiles mean "not set" (fall back to
+     * the external display's native metrics).
+     */
+    public static int[] getDpOutputMode() {
+        String raw = getString(KEY_DP_OUTPUT_MODE, "");
+        if (raw == null || raw.trim().isEmpty()) {
+            return new int[]{0, 0, 0};
+        }
+        String[] parts = raw.trim().split(":");
+        if (parts.length != 3) {
+            return new int[]{0, 0, 0};
+        }
+        try {
+            int w = Integer.parseInt(parts[0].trim());
+            int h = Integer.parseInt(parts[1].trim());
+            int r = Integer.parseInt(parts[2].trim());
+            if (w <= 0 || h <= 0 || r <= 0) {
+                return new int[]{0, 0, 0};
+            }
+            return new int[]{w, h, r};
+        } catch (NumberFormatException e) {
+            return new int[]{0, 0, 0};
+        }
+    }
+
+    public static void setDpOutputMode(int width, int height, int refresh) {
+        getPreferences().edit()
+                .putString(KEY_DP_OUTPUT_MODE, width + ":" + height + ":" + refresh)
+                .apply();
     }
 
     public static void setInitialSetupComplete(boolean complete) {

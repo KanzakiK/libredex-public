@@ -56,4 +56,5 @@ interface IUserService {
    String executeRootShellCommand(String command) = 34;
    String getEnvironmentInfo() = 35;
    int stopSecondaryLauncher(int displayId) = 36;
+   String fetchLspLogs() = 38;
 }

@@ -362,6 +362,98 @@ public class UserService extends IUserService.Stub  {
         return sb.toString();
     }
 
+    /**
+     * Collect a focused excerpt of LSPosed/XposedBridge log lines plus the
+     * LSPosed daemon log files (e.g. /data/adb/lspd/log/*) when readable.
+     * The LibreDeX module logs its hooks via these tags (see DexLspMirror
+     * markers like "ensureDexRootOrder"), so bundling them lets the reporting
+     * side correlate device/version/env with the actual hook behaviour.
+     */
+    @Override
+    public String fetchLspLogs() throws RemoteException {
+        StringBuilder sb = new StringBuilder();
+        sb.append("===== logcat -s LSPosed XposedBridge (time) =====\n");
+        appendProcessOutput(sb, buildLogcat());
+        try {
+            String su = findSuBinary();
+            String prefix = su == null ? "" : (su + " -c ");
+            String[] candidates = {
+                    "/data/adb/lspd/log/modules.log",
+                    "/data/adb/lspd/log/verbose.log",
+                    "/data/adb/lspd/log/manager.log",
+                    "/data/adb/lspd/log/main.log",
+                    "/data/adb/lspd/log/lspd.log",
+                    "/data/adb/lspd/log/bridge.log"
+            };
+            for (String path : candidates) {
+                String out = runFileCat(prefix, path);
+                if (out == null || out.trim().isEmpty()) {
+                    continue;
+                }
+                sb.append("===== ").append(path).append(" =====\n").append(out);
+                if (sb.charAt(sb.length() - 1) != '\n') {
+                    sb.append('\n');
+                }
+            }
+        } catch (Throwable t) {
+            Ln.w("fetchLspLogs daemon files failed: " + t);
+        }
+        return sb.toString();
+    }
+
+    private void appendProcessOutput(StringBuilder sb, String out) {
+        if (out == null) {
+            sb.append("(empty)\n");
+            return;
+        }
+        // Strip the __EXIT_CODE= marker appended by readProcessOutput.
+        int idx = out.indexOf("__EXIT_CODE=");
+        sb.append(idx >= 0 ? out.substring(0, idx) : out);
+        if (sb.charAt(sb.length() - 1) != '\n') {
+            sb.append('\n');
+        }
+    }
+
+    private String buildLogcat() {
+        try {
+            ProcessBuilder builder = new ProcessBuilder("logcat", "-d", "-v", "time",
+                    "-s", "LSPosed", "XposedBridge", "libredex", "DexLspMirror", "UserService");
+            builder.redirectErrorStream(true);
+            Process process = builder.start();
+            String out = readProcessOutput(process, false);
+            Ln.i("fetchLspLogs logcat exit=" + process.waitFor() + " bytes=" + out.length());
+            return out;
+        } catch (Exception e) {
+            Ln.e("fetchLspLogs logcat failed", e);
+            return "";
+        }
+    }
+
+    private String runFileCat(String suPrefix, String path) {
+        try {
+            String command = suPrefix + "cat " + path;
+            ProcessBuilder builder = new ProcessBuilder("sh", "-c", command);
+            builder.redirectErrorStream(true);
+            String suDir = suBinaryDirectory();
+            if (suDir != null) {
+                Map<String, String> env = builder.environment();
+                String pathEnv = env.get("PATH");
+                env.put("PATH", suDir + (pathEnv == null || pathEnv.isEmpty() ? "" : ":" + pathEnv));
+            }
+            Process process = builder.start();
+            String out = readProcessOutput(process, false);
+            process.waitFor();
+            int off = out.indexOf("__EXIT_CODE=");
+            if (off >= 0) {
+                out = out.substring(0, off);
+            }
+            return out;
+        } catch (Exception e) {
+            Ln.w("runFileCat failed for " + path + ": " + e);
+            return null;
+        }
+    }
+
     private String readSystemProp(String name) {
         try {
             String out = executeShellCommand("getprop " + name);

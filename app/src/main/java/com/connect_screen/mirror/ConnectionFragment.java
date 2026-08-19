@@ -630,6 +630,9 @@ public class ConnectionFragment extends Fragment {
         if (!State.isUserServiceAlive()) {
             State.ensureUserServiceBound();
         }
+        // Remember the user's chosen wired (DP) output mode so ProjectViaDp
+        // can render DeX at the same resolution/refresh rate as the DP signal.
+        Pref.setDpOutputMode(width, height, refresh);
         try {
             int result = State.userService.applyExternalDisplayMode(
                     State.externalDisplayId, width, height, refresh);

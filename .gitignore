@@ -9,6 +9,15 @@
 *.tmp
 *.bak
 
+# Secrets / signing material: never commit keys, passwords, or local env snapshots.
+*.keystore
+*.jks
+*.p12
+*.pfx
+*.env.txt
+signing-*.env.txt
+DEXANYWHERE_*.txt
+
 # Local worktrees and migration backups under the main repo
 /public/
 /.backup/
