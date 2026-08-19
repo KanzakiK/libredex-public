@@ -69,6 +69,15 @@ android {
                 signingConfig signingConfigs.release
             }
         }
+        // Debug and release get different applicationIds so a debug build
+        // (different signing key) never clobbers an installed release and vice
+        // versa: debug -> com.libredex.debug, release -> com.libredex. All
+        // package-sensitive code already uses BuildConfig.APPLICATION_ID /
+        // getPackageName(), and the LSPosed hooks key off virtual-display
+        // names, so this suffix is safe.
+        debug {
+            applicationIdSuffix ".debug"
+        }
     }
     
     buildFeatures {
