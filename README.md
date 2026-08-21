@@ -16,7 +16,6 @@ LibreDeX brings a full desktop experience to One UI 8 Flip phones: the DeX deskt
 - **High refresh on external displays** — up to 2K144 over DP/HDMI, while the phone screen holds 120 Hz when docked (stock DeX caps the external panel at 60 Hz).
 - **Screen-off extras** — real / black-image simulated screen-off, fake screen-off (power key never locks mid-session), sleep blocking.
 - **Refresh-rate unlock hooks** — the phone stays at 120 Hz even when a DeX session would drag it down to 60.
-- **Diagnostics & logs** — in-app log panel with one-tap export (bundles device / OS / app version + LSPosed logs), Moonlight handshake & control-input stats, auto-cleaning logs.
 
 ### Stock DeX parity — the full DeX experience on the Flip 5
 
