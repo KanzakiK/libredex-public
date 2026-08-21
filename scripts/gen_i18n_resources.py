@@ -116,7 +116,7 @@ EXTRA = [
     ("guide_root_not_running", "Not running as root", "未以 root 运行"),
     ("guide_shizuku_pending", "Shizuku authorization pending", "待授权 Shizuku"),
     ("guide_framework_active", "Framework active", "已检测到框架活跃"),
-    ("guide_framework_not_detected", "Framework not detected (enable the module and reboot)", "未检测到框架（需启用模块并重启）"),
+    ("guide_framework_not_detected", "Hook not active: enable the LibreDeX module in LSPosed and reboot", "Hook 尚未生效：请在 LSPosed 中启用 LibreDeX 模块后重启手机"),
     ("guide_shizuku_root_restarted", "Shizuku restarted as root", "Shizuku 已以 root 重启"),
     ("guide_root_restart_failed", "Failed to restart as root", "以 root 重启失败"),
     ("screen_shizuku_granted_note", "Shizuku permission granted. External displays can be modified; the built-in screen is view-only.", "已获得 Shizuku 权限。外接屏可修改参数，内置屏幕仅允许查看。"),

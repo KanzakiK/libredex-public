@@ -336,7 +336,7 @@
     <string name="guide_root_not_running">Not running as root</string>
     <string name="guide_shizuku_pending">Shizuku authorization pending</string>
     <string name="guide_framework_active">Framework active</string>
-    <string name="guide_framework_not_detected">Framework not detected (enable the module and reboot)</string>
+    <string name="guide_framework_not_detected">Hook not active: enable the LibreDeX module in LSPosed and reboot</string>
     <string name="guide_shizuku_root_restarted">Shizuku restarted as root</string>
     <string name="guide_root_restart_failed">Failed to restart as root</string>
     <string name="screen_shizuku_granted_note">Shizuku permission granted. External displays can be modified; the built-in screen is view-only.</string>

@@ -336,7 +336,7 @@
     <string name="guide_root_not_running">未以 root 运行</string>
     <string name="guide_shizuku_pending">待授权 Shizuku</string>
     <string name="guide_framework_active">已检测到框架活跃</string>
-    <string name="guide_framework_not_detected">未检测到框架（需启用模块并重启）</string>
+    <string name="guide_framework_not_detected">Hook 尚未生效：请在 LSPosed 中启用 LibreDeX 模块后重启手机</string>
     <string name="guide_shizuku_root_restarted">Shizuku 已以 root 重启</string>
     <string name="guide_root_restart_failed">以 root 重启失败</string>
     <string name="screen_shizuku_granted_note">已获得 Shizuku 权限。外接屏可修改参数，内置屏幕仅允许查看。</string>
