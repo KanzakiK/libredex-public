@@ -44,7 +44,7 @@ public class SunshineAudio {
             userServiceWaitAttempts++;
             if (userServiceWaitAttempts <= 20) {
                 userServiceWaitScheduled = true;
-                State.log("等待 UserService 绑定后重试音频捕获 (" + userServiceWaitAttempts + "/20)");
+                State.log("Waiting for UserService bind, will retry audio capture (" + userServiceWaitAttempts + "/20)");
                 State.ensureUserServiceBound();
                 mainHandler.postDelayed(() -> {
                     userServiceWaitScheduled = false;
@@ -64,37 +64,37 @@ public class SunshineAudio {
         }
 
         if (!started) {
-            State.log("Moonlight 音频捕获未启动，继续视频串流");
+            State.log("Moonlight audio capture not started, continuing video stream");
             android.util.Log.i("SunshineAudio", "audio capture not started");
             return;
         }
         if (remoteSubmixActive.get()) {
             ensureRemoteSubmixVolume(context);
-            State.log("8.1 音频已路由到 remote_submix，本机扬声器不发声");
+            State.log("8.1 audio routed to remote_submix, phone speaker silent");
         } else if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
             ensureRemoteSubmixVolume(context);
-            State.log("8.1 音频已路由到 remote_submix，本机扬声器不发声");
+            State.log("8.1 audio routed to remote_submix, phone speaker silent");
         } else if (shouldMutePhone) {
             mutePhoneSpeaker(context);
         } else {
-            State.log("客户端请求保留手机端播放，不静音手机扬声器");
+            State.log("Client asked to keep phone-side playback, phone speaker not muted");
         }
     }
 
     private static void mutePhoneSpeaker(Context context) {
         if (context.checkSelfPermission(android.Manifest.permission.MODIFY_AUDIO_SETTINGS)
                 != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            State.log("没有音频控制权限，无法静音");
+            State.log("No audio control permission, cannot mute");
         }
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0);
         if (audioManager.isStreamMute(AudioManager.STREAM_MUSIC)) {
             isMuted = true;
-            State.log("应客户端的请求对手机静音");
+            State.log("Muting phone per client request");
             // 注册音量变化监听器
             registerVolumeChangeListener(context, audioManager);
         } else {
-            State.log("静音设置未成功");
+            State.log("Mute setting not applied");
         }
     }
 
@@ -139,14 +139,14 @@ public class SunshineAudio {
         }
         AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
         if (!audioManager.isStreamMute(AudioManager.STREAM_MUSIC)) {
-            State.log("检测到音量变化，重新设置静音");
+            State.log("Volume change detected, re-applying mute");
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0);
         }
     }
 
     private static boolean startAudioUseNormalPermission(Context context, int packetDuration) {
         if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.Q) {
-            State.log("安卓版本太低，无法录音");
+            State.log("Android version too low to record audio");
             return false;
         }
         if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
@@ -168,7 +168,7 @@ public class SunshineAudio {
                     .build();
             MediaProjection mediaProjection = State.getMediaProjection();
             if (mediaProjection == null) {
-                State.log("没有可用 MediaProjection，跳过系统音频捕获");
+                State.log("No MediaProjection available, skipping system audio capture");
                 android.util.Log.i("SunshineAudio", "no MediaProjection, skip capture");
                 return false;
             }
@@ -184,17 +184,17 @@ public class SunshineAudio {
                         .build();
                 audioRecord.startRecording();
             } catch (Throwable e) {
-                State.log("系统音频捕获启动失败，继续视频投屏: " + e.getMessage());
+                State.log("System audio capture failed, continuing video projection: " + e.getMessage());
                 return false;
             }
 
             // 将 AudioRecord 传递给 SunshineServer 进行处理
             SunshineServer.startAudioRecording(audioRecord, framesPerPacket);
-            State.log("Android 原生系统音频捕获已启动");
+            State.log("Android native system audio capture started");
             return true;
 
         } else {
-            State.log("未授予录音权限，跳过音频捕获并继续视频串流");
+            State.log("Recording permission not granted, skipping audio capture and continuing video stream");
             android.util.Log.i("SunshineAudio", "RECORD_AUDIO not granted");
             return false;
         }
@@ -203,21 +203,21 @@ public class SunshineAudio {
     private static boolean startRemoteSubmixAudioCapture(int packetDuration) {
         android.util.Log.i("SunshineAudio", "remote submix path, userSvc=" + State.isUserServiceAlive());
         if (!State.isUserServiceAlive()) {
-            State.log("8.1 REMOTE_SUBMIX 音频需要 UserService");
+            State.log("8.1 REMOTE_SUBMIX audio requires UserService");
             return false;
         }
         try {
             if (!State.userService.forceTntAudioRoute(true)) {
-                State.log("8.1 强制 remote_submix 路由失败，继续尝试录音");
+                State.log("8.1 forcing remote_submix route failed, continuing with recording");
                 android.util.Log.i("SunshineAudio", "forceTntAudioRoute failed");
             }
             if (!State.userService.startRecordingAudio()) {
-                State.log("8.1 REMOTE_SUBMIX AudioRecord 启动失败");
+                State.log("8.1 REMOTE_SUBMIX AudioRecord failed to start");
                 android.util.Log.i("SunshineAudio", "startRecordingAudio failed");
                 return false;
             }
         } catch (Throwable e) {
-            State.log("8.1 REMOTE_SUBMIX 音频启动异常: " + e.getClass().getSimpleName() + " " + e.getMessage());
+            State.log("8.1 REMOTE_SUBMIX audio start exception: " + e.getClass().getSimpleName() + " " + e.getMessage());
             android.util.Log.i("SunshineAudio", "remote submix exception: " + e);
             stopRemoteSubmixAudio();
             return false;
@@ -237,21 +237,21 @@ public class SunshineAudio {
                     if (n > 0) {
                         SunshineServer.pushAudioSamples(buffer, n);
                     } else if (n < 0) {
-                        State.log("8.1 REMOTE_SUBMIX readAudio 返回 " + n);
+                        State.log("8.1 REMOTE_SUBMIX readAudio returned " + n);
                         break;
                     }
                 } catch (Throwable e) {
-                    State.log("8.1 REMOTE_SUBMIX readAudio 异常: " + e.getClass().getSimpleName() + " " + e.getMessage());
+                    State.log("8.1 REMOTE_SUBMIX readAudio exception: " + e.getClass().getSimpleName() + " " + e.getMessage());
                     break;
                 }
             }
             remoteSubmixActive.set(false);
-            State.log("8.1 REMOTE_SUBMIX reader 线程结束");
+            State.log("8.1 REMOTE_SUBMIX reader thread ended");
         }, "moonlight-audio-submix");
         thread.setDaemon(true);
         remoteSubmixThread = thread;
         thread.start();
-        State.log("8.1 REMOTE_SUBMIX 音频捕获已启动");
+        State.log("8.1 REMOTE_SUBMIX audio capture started");
         return true;
     }
 
@@ -264,7 +264,7 @@ public class SunshineAudio {
                 State.userService.stopRecordingAudio();
             }
         } catch (Throwable e) {
-            State.log("8.1 REMOTE_SUBMIX 停止异常: " + e.getClass().getSimpleName() + " " + e.getMessage());
+            State.log("8.1 REMOTE_SUBMIX stop exception: " + e.getClass().getSimpleName() + " " + e.getMessage());
         }
         Thread thread = remoteSubmixThread;
         if (thread != null && thread != Thread.currentThread()) {
@@ -278,7 +278,7 @@ public class SunshineAudio {
         remoteSubmixThread = null;
         remoteSubmixActive.set(false);
         if (wasActive) {
-            State.log("8.1 REMOTE_SUBMIX 音频已停止");
+            State.log("8.1 REMOTE_SUBMIX audio stopped");
         }
     }
 
@@ -296,9 +296,9 @@ public class SunshineAudio {
             int maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
             int target = Math.max(1, (int) (maxVolume * 0.6f));
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0);
-            State.log("8.1 remote_submix 音量从 " + savedMusicVolume + " 调整到 " + target);
+            State.log("8.1 remote_submix volume from " + savedMusicVolume + " adjusted to " + target);
         } else {
-            State.log("8.1 remote_submix 音量保持 " + savedMusicVolume);
+            State.log("8.1 remote_submix volume stays " + savedMusicVolume);
         }
     }
 
@@ -311,13 +311,13 @@ public class SunshineAudio {
                 if (wasMusicMuted) {
                     audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_MUTE, 0);
                 }
-                State.log("恢复媒体音量到 " + savedMusicVolume + " muted=" + wasMusicMuted);
+                State.log("Restoring media volume to " + savedMusicVolume + " muted=" + wasMusicMuted);
             }
             savedMusicVolume = -1;
             wasMusicMuted = false;
         }
         if (isMuted && context != null) {
-            State.log("恢复音量");
+            State.log("Restoring volume");
             isMuted = false;
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             audioManager.adjustStreamVolume(AudioManager.STREAM_MUSIC, AudioManager.ADJUST_UNMUTE, 0);
@@ -350,7 +350,7 @@ public class SunshineAudio {
                 audioManager.abandonAudioFocus(volumeChangeListener);
                 volumeChangeListener = null;
             }
-            State.log("投屏停止后恢复手机音量");
+            State.log("Restoring phone volume after projection stops");
         }
     }
 }

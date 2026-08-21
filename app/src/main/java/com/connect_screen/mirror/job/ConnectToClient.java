@@ -25,22 +25,22 @@ public class ConnectToClient {
         try {
             clientPort = Integer.parseInt(parts[1]);
         } catch(Exception e) {
-            State.log("客户端地址非法: " + clientIpAndPort + "  " + e);
+            State.log("Invalid client address: " + clientIpAndPort + "  " + e);
             return;
         }
         // 获取服务器 IP（与客户端同网段）
         String serverIp = findServerIpInSameSubnet(clientIp);
         if (serverIp == null) {
-            State.log("找不到和客户端在同网段的ip");
+            State.log("No IP found on the same subnet as the client");
             return;
         }
         if (State.serverUuid == null) {
-            State.log("ServerUuid 为空");
+            State.log("ServerUuid is empty");
             return;
         }
         // 生成4位随机数作为PIN码
         String request = "{\"action\": \"connect\", \"ip\": \"" + serverIp + "\", \"pin\": \"" + pin + "\", \"uuid\": \"" + State.serverUuid + "\"}\n";
-        State.log("发送自启动请求到: " + clientIp + ":" + clientPort);
+        State.log("Sending autostart request to: " + clientIp + ":" + clientPort);
         
         // 创建新线程执行TCP连接
         final String finalClientIp = clientIp;
@@ -74,12 +74,12 @@ public class ConnectToClient {
             String response = reader.readLine();
             
             if (response != null) {
-                Log.i("ConnectToClient", "收到客户端响应: " + response);
+                Log.i("ConnectToClient", "Client response received: " + response);
             } else {
-                Log.i("ConnectToClient", "未收到客户端响应");
+                Log.i("ConnectToClient", "No client response");
             }
         } catch (Exception e) {
-            Log.e("ConnectToClient", "连接客户端失败: " + e.getMessage());
+            Log.e("ConnectToClient", "Failed to connect to client: " + e.getMessage());
         }
     }
     
@@ -121,7 +121,7 @@ public class ConnectToClient {
                 }
             }
         } catch (SocketException e) {
-            State.log("查找匹配的ip失败: " + e);
+            State.log("Failed to find a matching IP: " + e);
         }
         
         return null;

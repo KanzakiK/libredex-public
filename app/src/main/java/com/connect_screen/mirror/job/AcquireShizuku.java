@@ -90,7 +90,7 @@ public class AcquireShizuku implements Job {
         if (ShizukuUtils.hasPermission()) {
             State.bindUserService();
         } else {
-            State.log("Shizuku 未授权，无法绑定 root UserService");
+            State.log("Shizuku not granted, cannot bind root UserService");
             return false;
         }
         while (System.currentTimeMillis() < deadline) {
@@ -125,7 +125,7 @@ public class AcquireShizuku implements Job {
                 if (State.userService != null) {
                     try {
                         if (State.userService.isRooted()) {
-                            State.log("启动自动 root 获取：已具备 root 能力，跳过");
+                            State.log("Auto root acquisition: already has root, skipping");
                             return;
                         }
                     } catch (Throwable ignored) {
@@ -134,14 +134,14 @@ public class AcquireShizuku implements Job {
                 // 直接 su 探活，不经过 Shizuku/root 重启。
                 String su = findSu();
                 if (su != null && probeRoot(su)) {
-                    State.log("启动自动 root 获取：root 可用 (su=" + su + ")，确保 UserService 绑定");
+                    State.log("Auto root acquisition: root available (su=" + su + "), ensuring UserService is bound");
                     // 仅当 Shizuku 已授权且未绑定时才绑定；绝不主动改 Shizuku 状态。
                     State.ensureUserServiceBound();
                 } else {
-                    State.log("启动自动 root 获取：无可用 root/su，退回主线程 Shizuku 授权流程");
+                    State.log("Auto root acquisition: no root/su, falling back to main-thread Shizuku grant flow");
                 }
             } catch (Throwable t) {
-                State.log("启动自动 root 获取失败: " + t.getMessage());
+                State.log("Auto root acquisition failed: " + t.getMessage());
             }
         }, "auto-root-acquire").start();
     }

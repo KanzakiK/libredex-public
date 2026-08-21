@@ -26,7 +26,7 @@ import com.connect_screen.mirror.R;
 public class InputRouting {
     public static Map<String, String> getInputDeviceDescriptorToPortMap() {
         if (State.userService == null) {
-            State.log("user service 未启动，无法获取输入设备 descriptor -> port 的映射");
+            State.log("user service not running, cannot get input device descriptor -> port mapping");
             return new HashMap<>();
         }
         Map<String, String> map = new HashMap<>();
@@ -54,28 +54,28 @@ public class InputRouting {
         if (!inputDevice.isExternal()) {
             return;
         }
-        State.log("尝试绑定设备 " + inputDevice.getId());
+        State.log("Trying to bind device " + inputDevice.getId());
         try {
             inputManager.removeUniqueIdAssociationByDescriptor(inputDevice.getDescriptor());
             inputManager.addUniqueIdAssociationByDescriptor(inputDevice.getDescriptor(), String.valueOf(displayInfo.uniqueId));
-            State.log("成功更新输入设备路由: " + inputDevice.getName() + ", " + inputDevice.getDescriptor());
+            State.log("Successfully updated input device routing: " + inputDevice.getName() + ", " + inputDevice.getDescriptor());
         } catch(Throwable e) {
             String inputPort = inputDeviceDescriptorToPortMap.get(inputDevice.getDescriptor());
             if (inputPort == null) {
-                State.log("未能更新输入设备路由: " + inputDevice + ", " + e.getMessage());
+                State.log("Failed to update input device routing: " + inputDevice + ", " + e.getMessage());
             } else {
                 try {
                     inputManager.removeUniqueIdAssociation(inputPort);
                     inputManager.addUniqueIdAssociation(inputPort, String.valueOf(displayInfo.uniqueId));
-                    State.log("成功更新输入设备路由: " + inputDevice.getName() + ", " + inputPort + " => " + displayInfo.uniqueId);
+                    State.log("Successfully updated input device routing: " + inputDevice.getName() + ", " + inputPort + " => " + displayInfo.uniqueId);
                 } catch(Throwable e2) {
                     try {
                         inputManager.removePortAssociation(inputPort);
                         int displayPort = ((DisplayAddress.Physical) displayInfo.address).getPort();
                         inputManager.addPortAssociation(inputPort, displayPort);
-                        State.log("成功更新输入设备路由: " + inputDevice.getName() + ", " + inputPort + " => " + displayPort);
+                        State.log("Successfully updated input device routing: " + inputDevice.getName() + ", " + inputPort + " => " + displayPort);
                     } catch(Throwable e3) {
-                        State.log("改用 input port 仍然未能更新输入设备路由: " + inputDevice.getName() + ", " + e3.getMessage());
+                        State.log("Falling back to input port still failed to update routing: " + inputDevice.getName() + ", " + e3.getMessage());
                         Context context = State.getContext();
                         if (ShizukuUtils.hasPermission() && context != null) {
                             Toast.makeText(context, context.getString(R.string.input_simulate_off_required), Toast.LENGTH_SHORT).show();
@@ -98,7 +98,7 @@ public class InputRouting {
 
     public static void bindAllExternalInputToDisplay(int displayId) {
         if (!shouldBind()) {
-            State.log("跳过绑定外设到显示器: " + displayId);
+            State.log("Skipping binding peripheral to display: " + displayId);
             return;
         }
         DisplayInfo displayInfo = ServiceUtils.getDisplayManager().getDisplayInfo(displayId);

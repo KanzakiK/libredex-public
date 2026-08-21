@@ -440,7 +440,7 @@ public class SunshineServer {
 
     public static void stopVirtualDisplay(long sessionId) {
         if (!stoppingVirtualDisplay.compareAndSet(false, true)) {
-            State.log("Moonlight 投屏正在停止，跳过重复停止请求");
+            State.log("Moonlight projection stopping, skipping duplicate stop request");
             return;
         }
         Runnable cleanup = () -> {
@@ -466,11 +466,11 @@ public class SunshineServer {
         });
         try {
             if (!done.await(5, TimeUnit.SECONDS)) {
-                State.log("Moonlight 投屏停止等待超时，继续释放编码器");
+                State.log("Moonlight projection stop wait timed out, releasing encoder");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            State.log("Moonlight 投屏停止等待被中断");
+            State.log("Moonlight projection stop wait interrupted");
         }
     }
 
@@ -478,11 +478,11 @@ public class SunshineServer {
         boolean force = sessionId == 0;
         long activeSessionId = activeMoonlightSessionId;
         if (!force && activeSessionId != 0 && activeSessionId != sessionId) {
-            State.log("跳过过期 Moonlight 投屏清理，session=" + sessionId
+            State.log("Skipping stale Moonlight projection cleanup, session=" + sessionId
                     + " active=" + activeSessionId);
             return;
         }
-        State.log("停止 Moonlight 投屏");
+        State.log("Stopping Moonlight projection");
         SessionLifecycle.stop(State.getContext(), activeSessionId);
         activeMoonlightSessionId = 0;
         videoSourceCancelled = true;

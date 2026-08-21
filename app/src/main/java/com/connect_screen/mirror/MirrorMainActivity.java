@@ -66,20 +66,20 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                 InitializationGuideDialog.show(this);
             }
         } else {
-            State.log("未知权限请求代码: " + requestCode);
+            State.log("Unknown permission request code: " + requestCode);
         }
     }
 
     private void onRequestShizukuPermissionsResult(int requestCode, int grantResult) {
         if (requestCode == AcquireShizuku.SHIZUKU_PERMISSION_REQUEST_CODE) {
-            State.log("Shizuku 权限请求结果: "
-                    + (grantResult == PackageManager.PERMISSION_GRANTED ? "已授权" : "被拒绝"));
+            State.log("Shizuku permission request result: "
+                    + (grantResult == PackageManager.PERMISSION_GRANTED ? "Granted" : "Denied"));
             State.resumeJob();
             if (InitializationGuideDialog.needsSetup(this)) {
                 InitializationGuideDialog.show(this);
             }
         } else {
-            State.log("未知 Shizuku 请求代码: " + requestCode);
+            State.log("Unknown Shizuku request code: " + requestCode);
         }
     }
 
@@ -92,9 +92,9 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             try {
                 HiddenApiBypass.addHiddenApiExemptions("");
-                android.util.Log.i(TAG, "已启用 HiddenApiBypass");
+                android.util.Log.i(TAG, "HiddenApiBypass enabled");
             } catch (Exception e) {
-                android.util.Log.e(TAG, "HiddenApiBypass 初始化失败: " + e.getMessage());
+                android.util.Log.e(TAG, "HiddenApiBypass init failed: " + e.getMessage());
             }
         }
     }
@@ -172,8 +172,8 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         });
 
         State.log(SunshineService.getLifecycleState() == SunshineService.LifecycleState.STOPPED
-                ? "SunshineService 未启动，请点击启动服务"
-                : "SunshineService 正在运行");
+                ? "SunshineService not running, tap Start service"
+                : "SunshineService is running");
         refresh();
         if (InitializationGuideDialog.needsSetup(this)) {
             new android.os.Handler(android.os.Looper.getMainLooper())
@@ -282,14 +282,14 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         }
         if (lifecycleState == SunshineService.LifecycleState.STARTING
                 || lifecycleState == SunshineService.LifecycleState.STOPPING) {
-            State.log("SunshineService 正在切换状态，重试停止以强制结束");
+            State.log("SunshineService is switching state, retry stop to force-quit");
             SunshineService.markStopping();
             refresh();
             ExitAll.stopServices(this);
             refresh();
             return;
         }
-        State.log("手动停止 SunshineService");
+        State.log("Manually stopping SunshineService");
         SunshineService.markStopping();
         refresh();
         ExitAll.stopServices(this);
@@ -317,7 +317,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_MEDIA_PROJECTION) {
             if (resultCode == RESULT_OK && data != null) {
-                State.log("用户授予了投屏权限");
+                State.log("User granted projection permission");
                 if (SunshineService.instance == null) {
                     Intent sunshineServiceIntent = new Intent(this, SunshineService.class);
                     sunshineServiceIntent.putExtra("data", data);
@@ -326,7 +326,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                     } else {
                         startService(sunshineServiceIntent);
                     }
-                    State.log("启动 SunshineService 服务");
+                    State.log("Starting SunshineService");
                     refresh();
                 } else {
                     MediaProjectionManager mediaProjectionManager =
@@ -336,13 +336,13 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                         @Override
                         public void onStop() {
                             super.onStop();
-                            State.log("MediaProjection onStop 回调");
+                            State.log("MediaProjection onStop callback");
                         }
                     }, null);
                     State.resumeJob();
                 }
             } else {
-                State.log("用户拒绝了投屏权限");
+                State.log("User denied projection permission");
                 SunshineService.markStopped();
                 refresh();
                 State.resumeJob();
@@ -360,7 +360,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
 
     public void startMediaProjectionService() {
         if (SunshineService.getLifecycleState() == SunshineService.LifecycleState.STOPPING) {
-            State.log("SunshineService 正在停止，请稍候再启动");
+            State.log("SunshineService is stopping, please wait before restarting");
             refresh();
             return;
         }
