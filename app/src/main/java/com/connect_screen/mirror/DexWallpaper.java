@@ -116,13 +116,13 @@ public final class DexWallpaper {
 
     private static void trySetDexWallpaper(Context context, Bitmap bitmap, int displayId) {
         if (displayId < 0) {
-            toast(context, "请先连接 DeX");
+            toast(context, context.getString(R.string.dex_wallpaper_connect_dex));
             return;
         }
         DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
         Display display = displayManager.getDisplay(displayId);
         if (display == null) {
-            toast(context, "DeX display 不存在");
+            toast(context, context.getString(R.string.dex_wallpaper_display_missing));
             return;
         }
         Context displayContext = context.createDisplayContext(display);
@@ -137,7 +137,7 @@ public final class DexWallpaper {
                 setBitmap.invoke(wallpaperManager, bitmap, null, false, which);
                 State.log("DeX wallpaper setBitmap OK displayId=" + displayId + " which=" + which);
                 writeWallpaperFile(context, bitmap);
-                toast(context, "DeX 壁纸已更换");
+                toast(context, context.getString(R.string.dex_wallpaper_changed));
             } catch (Throwable e) {
                 State.log("DeX wallpaper setBitmap failed: " + e);
                 tryDexManagerWallpaper(context, bitmap);

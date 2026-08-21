@@ -16,15 +16,15 @@ public final class DebugDialogs {
         if (handshakeInfo == null || handshakeInfo.trim().isEmpty()) {
             handshakeInfo = context.getString(R.string.debug_no_handshake);
         }
-        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_handshake), handshakeInfo, "Moonlight 握手信息", "已复制握手信息");
+        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_handshake), handshakeInfo, context.getString(R.string.debug_moonlight_handshake_label), context.getString(R.string.debug_copied_handshake));
     }
 
     public static void showLastMoonlightControlInputDialog(Context context) {
         String controlInputInfo = State.lastMoonlightControlInputInfo;
         if (controlInputInfo == null || controlInputInfo.trim().isEmpty()) {
-            controlInputInfo = "尚无最近一次 Moonlight 控制输入统计";
+            controlInputInfo = context.getString(R.string.debug_no_control_input);
         }
-        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_input_stats), controlInputInfo, "Moonlight 控制输入统计", "已复制控制输入统计");
+        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_input_stats), controlInputInfo, context.getString(R.string.debug_moonlight_control_label), context.getString(R.string.debug_copied_control));
     }
 
     public static void showReadonlyDebugDialog(Context context,

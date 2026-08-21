@@ -37,6 +37,6 @@ public class StartSunshineService implements Job {
         }
         State.log("Requesting projection permission before starting SunshineService for native audio capture");
         activity.startMediaProjectionService();
-        throw new YieldException("等待用户授予投屏权限");
+        throw new YieldException("Waiting for user to grant projection permission");
     }
 }

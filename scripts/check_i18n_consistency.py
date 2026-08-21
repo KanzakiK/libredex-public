@@ -42,6 +42,7 @@ ZH_ALLOWED_UNTRANSLATED = {
     "debug_field_sep": "：",
     "debug_join_level": " / Level %1$s",
     "debug_label_ping": "Ping：",
+    "screen_info_mode_id": " (ID %1$d)",
 }
 
 def parse(path):

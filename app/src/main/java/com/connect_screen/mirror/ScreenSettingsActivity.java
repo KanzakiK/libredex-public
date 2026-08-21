@@ -114,7 +114,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         DisplayManager displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);
         Display[] displays = displayManager.getDisplays();
         if (displays.length == 0) {
-            TextView emptyText = createText("未发现可用屏幕");
+            TextView emptyText = createText(getString(R.string.screen_no_displays));
             displayListContainer.addView(emptyText);
             return;
         }
@@ -136,7 +136,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         container.setLayoutParams(params);
         container.setBackgroundResource(R.drawable.bg_ui_panel);
 
-        TextView title = createText("屏幕 " + display.getDisplayId() + " - " + display.getName());
+        TextView title = createText(getString(R.string.screen_title_fmt, display.getDisplayId(), display.getName()));
         title.setTextSize(18);
         title.setTextColor(getColorCompat(R.color.ui_text_primary));
         title.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -153,7 +153,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         container.addView(detail);
 
         if (internalDisplay) {
-            TextView warning = createText("内置屏幕仅允许查看，修改按钮已禁用，避免误改系统显示参数。");
+            TextView warning = createText(getString(R.string.screen_internal_viewonly));
             warning.setTextSize(13);
             warning.setTextColor(getColorCompat(R.color.ui_warning));
             LinearLayout.LayoutParams warningParams = new LinearLayout.LayoutParams(
@@ -169,13 +169,13 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         container.addView(actions);
 
         LinearLayout row1 = createButtonRow();
-        row1.addView(createActionButton("改分辨率", canModifyDisplay, v -> showResolutionDialog(display)));
-        row1.addView(createActionButton("改 DPI", canModifyDisplay, v -> showDpiDialog(display)));
+        row1.addView(createActionButton(getString(R.string.screen_action_resolution), canModifyDisplay, v -> showResolutionDialog(display)));
+        row1.addView(createActionButton(getString(R.string.screen_action_dpi), canModifyDisplay, v -> showDpiDialog(display)));
         actions.addView(row1);
 
         LinearLayout row2 = createButtonRow();
-        row2.addView(createActionButton("刷新模式", canModifyDisplay, v -> showDisplayModeDialog(display)));
-        row2.addView(createActionButton("旋转", canModifyDisplay, v -> showRotationDialog(display.getDisplayId())));
+        row2.addView(createActionButton(getString(R.string.screen_action_refresh_mode), canModifyDisplay, v -> showDisplayModeDialog(display)));
+        row2.addView(createActionButton(getString(R.string.screen_action_rotation), canModifyDisplay, v -> showRotationDialog(display.getDisplayId())));
         actions.addView(row2);
 
         LinearLayout row3 = createButtonRow();
@@ -189,24 +189,24 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         display.getRealMetrics(metrics);
         Display.Mode mode = display.getMode();
         StringBuilder builder = new StringBuilder();
-        builder.append("当前尺寸: ")
+        builder.append(getString(R.string.screen_info_current_size))
                 .append(metrics.widthPixels)
                 .append("x")
                 .append(metrics.heightPixels)
                 .append("\n");
         builder.append("DPI: ").append(metrics.densityDpi).append("\n");
-        builder.append("刷新率: ").append(String.format(java.util.Locale.US, "%.1f Hz", display.getRefreshRate())).append("\n");
-        builder.append("当前模式: ")
+        builder.append(getString(R.string.screen_info_refresh_rate)).append(String.format(java.util.Locale.US, "%.1f Hz", display.getRefreshRate())).append("\n");
+        builder.append(getString(R.string.screen_info_current_mode))
                 .append(mode.getPhysicalWidth())
                 .append("x")
                 .append(mode.getPhysicalHeight())
                 .append("@")
                 .append(String.format(java.util.Locale.US, "%.1f Hz", mode.getRefreshRate()))
-                .append(" (ID ")
-                .append(mode.getModeId())
-                .append(")\n");
-        builder.append("旋转: ").append(rotationName(display.getRotation())).append("\n");
-        builder.append("状态: ").append(display.getState() == Display.STATE_ON ? "开启" : getString(R.string.action_close));
+                .append(getString(R.string.screen_info_mode_id, mode.getModeId()))
+                .append("\n");
+        builder.append(getString(R.string.screen_info_rotation)).append(rotationName(display.getRotation())).append("\n");
+        builder.append(getString(R.string.screen_info_state))
+                .append(display.getState() == Display.STATE_ON ? getString(R.string.screen_state_on) : getString(R.string.action_close));
 
         if (hasShizuku) {
             try {
@@ -215,26 +215,26 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                 Point initialSize = new Point();
                 windowManager.getBaseDisplaySize(display.getDisplayId(), baseSize);
                 windowManager.getInitialDisplaySize(display.getDisplayId(), initialSize);
-                builder.append("\n基础尺寸: ")
+                builder.append(getString(R.string.screen_info_base_size))
                         .append(baseSize.x)
                         .append("x")
                         .append(baseSize.y);
-                builder.append("\n初始尺寸: ")
+                builder.append(getString(R.string.screen_info_initial_size))
                         .append(initialSize.x)
                         .append("x")
                         .append(initialSize.y);
-                builder.append("\n旋转锁定: ")
-                        .append(windowManager.isDisplayRotationFrozen(display.getDisplayId()) ? "是" : "否");
+                builder.append(getString(R.string.screen_info_rotation_frozen))
+                        .append(windowManager.isDisplayRotationFrozen(display.getDisplayId()) ? getString(R.string.screen_yes) : getString(R.string.screen_no));
                 android.view.DisplayInfo displayInfo = ServiceUtils.getDisplayManager().getDisplayInfo(display.getDisplayId());
                 if (displayInfo != null) {
                     builder.append("\nUniqueId: ").append(displayInfo.uniqueId);
-                    builder.append("\n默认模式ID: ").append(displayInfo.defaultModeId);
+                    builder.append(getString(R.string.screen_info_default_mode)).append(displayInfo.defaultModeId);
                     if (displayInfo.userPreferredModeId > 0) {
-                        builder.append("\n用户模式ID: ").append(displayInfo.userPreferredModeId);
+                        builder.append(getString(R.string.screen_info_user_mode)).append(displayInfo.userPreferredModeId);
                     }
                 }
             } catch (Throwable e) {
-                builder.append("\n系统级信息读取失败: ").append(e.getMessage());
+                builder.append(getString(R.string.screen_info_read_failed)).append(e.getMessage());
             }
         }
         return builder.toString();
@@ -308,8 +308,8 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             windowManager.setForcedDisplayDensityForUser(displayId, dpi, 0);
             refreshDisplays();
             showConfirmOrRevertDialog(
-                    "确认 DPI",
-                    String.format(java.util.Locale.US, "保留屏幕 %d 的新 DPI %d？5 秒内未确认会恢复。", displayId, dpi),
+                    getString(R.string.screen_confirm_dpi),
+                    getString(R.string.screen_confirm_dpi_msg_fmt, displayId, dpi),
                     () -> windowManager.setForcedDisplayDensityForUser(displayId, oldDpi, 0));
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_dpi_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
@@ -324,7 +324,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             return;
         }
         String[] items = new String[modes.length + 1];
-        items[0] = "使用系统默认";
+        items[0] = getString(R.string.screen_use_system_default);
         for (int i = 0; i < modes.length; i++) {
             Display.Mode mode = modes[i];
             items[i + 1] = String.format(

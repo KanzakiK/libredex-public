@@ -560,7 +560,7 @@ public class SunshineServer {
         boolean autoFellBack = fallbackEncoderCodecOnFailure();
         if (autoFellBack) {
             errorMessage = errorMessage
-                    + "\n\n已自动回退到 H.264/AVC，请重新连接 Moonlight。";
+                    + State.getContext().getString(R.string.sunshine_auto_fallback);
             State.log("[SunshineServer] HEVC encoder setup failed, auto fallback to H.264");
         }
         final String message = errorMessage;
