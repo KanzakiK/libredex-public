@@ -10,54 +10,30 @@ LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — p
 
 ## Features
 
+### Beyond stock DeX
+- **Up to 4K120 Moonlight streaming** — HEVC (auto-fallback to H.264), frame rate follows the client's request; full mouse / keyboard / touch input relay, local speaker mute, live session stats. High resolutions run hot — keep an eye on thermals.
+- **High refresh on external displays** — e.g. 2K144 over DP/HDMI, while the phone screen holds 120 Hz when docked.
+- **Official wireless DeX via Miracast** — dormant in the firmware, unlocked: cast the desktop to Miracast displays / Smart TVs.
+- **Full DeX settings page unlocked in system Settings** — resolution, font size & scaling, IME-on-DeX-screen toggle. Just search "DeX".
+- **Screen management extras** — real / black-image simulated screen-off, fake screen-off (power key never locks mid-session), sleep blocking.
+- **Refresh-rate unlock hooks** — the phone keeps 120 Hz even when a DeX session would drag it down to 60.
+
 ### Desktop mode (native DeX)
-- Virtual display with the system SecondaryLauncher as a fullscreen home
-- Resolution is configurable in-app — 1920×1080 by default, **4K verified** (higher untested)
-- Start / restart / release desktop sessions at any time
-- Change the DeX wallpaper from the app — the stock wallpaper setting inside the system DeX settings is dead, so LibreDeX ships its own
-- Quick virtual touchpad — the stock DeX touchpad entry is not exposed in system settings, so a dedicated shortcut lives on the app's home page
+- Virtual display with the system SecondaryLauncher as a fullscreen home; resolution configurable in-app (1920×1080 default, **4K verified**); start / restart / release sessions anytime.
+- Wallpaper picker & virtual touchpad shipped in-app — the stock DeX wallpaper setting is dead and the touchpad entry is missing, so LibreDeX fills both.
 
-### DeX settings (unlocked in system Settings)
-- Unlocks Samsung's hidden DeX settings page in the system Settings app
-- Adjust DeX resolution, font size & scaling, and whether the IME shows on the DeX screen
-- **Official wireless DeX via Miracast** — cast the desktop to Miracast displays / Smart TVs wirelessly
-- No in-app entry needed — just open the system Settings app and search "DeX"
-
-### Moonlight streaming
-- HEVC encoding (auto-fallback to H.264), up to **4K120** — frame rate follows the client's request
-- High resolutions work but push the phone hard: expect noticeable heat at 4K120, keep an eye on thermals
-- Full input relay: mouse, keyboard, and touch come back to the device
-- Mute the phone speaker locally during a stream; audio stays on the client
-- Live session stats (input fps / output fps) and encoder/transport settings in-app
-
-### USB-C DP / HDMI wired output
-- External display shows the DeX desktop or a mirror of the phone screen
-- **High refresh rate on the external display** (e.g. 2K144) with the phone screen staying at 120 Hz while docked
-- Read the external display's supported mode list; set custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`; re-plug the DP cable once after applying)
-- Auto-stops the output when the cable is unplugged
-
-### Screen management
-- Real screen-off and black-image simulated screen-off
-- Fake screen-off: during a projection session the power key only blanks the screen, it does not lock it
-- Prevent auto-lock and block sleep while a session is running
-
-### Mirror adaptation
-- Auto aspect-ratio matching and auto-rotation
-- Detects the inner and outer (Flip 5 cover) displays and acts on the active one
+### Wired output (DP / HDMI)
+- External display mirrors the DeX desktop or the phone screen; custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
 
 ### Screen settings (experimental)
-- Per-display resolution / DPI / refresh-mode / rotation controls
-- The built-in screen is view-only to protect system display parameters
+- Per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
 
-### Multi-language
-- UI follows the system language — Simplified Chinese and English, other languages fall back to English
-- In-app language switcher (Settings → Appearance → Language): Follow system / 简体中文 / English
-- All UI strings are resource-based; lint gates (`HardcodedText` / `SetTextI18n`) prevent regressions
+### Mirror adaptation
+- Auto aspect-ratio matching & auto-rotation; detects the inner and outer (Flip 5 cover) displays.
 
-### Diagnostics & logs
-- In-app log panel with one-tap export (bundles device model, OS version, app version, and LSPosed logs)
-- Recent Moonlight handshake / control-input stats for remote debugging
-- Logs auto-clean so they never grow unbounded
+### Multi-language & diagnostics
+- zh-CN / English UI with in-app language switcher; English runtime logs.
+- One-tap log export bundling device / OS / app version and LSPosed logs; logs auto-clean.
 
 ---
 
