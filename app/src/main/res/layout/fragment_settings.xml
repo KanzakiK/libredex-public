@@ -167,6 +167,37 @@
             </LinearLayout>
         </LinearLayout>
 
+        <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_language"
+                android:textColor="@color/ui_text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_libredex_seg_container"
+                android:orientation="horizontal"
+                android:padding="4dp">
+                <Button
+                    android:id="@+id/languageSystemButton"
+                    style="@style/LibreDeXSegButton"
+                    android:text="@string/settings_language_follow_system" />
+                <Button
+                    android:id="@+id/languageZhButton"
+                    style="@style/LibreDeXSegButton"
+                    android:text="@string/settings_language_zh" />
+                <Button
+                    android:id="@+id/languageEnButton"
+                    style="@style/LibreDeXSegButton"
+                    android:layout_marginEnd="0dp"
+                    android:text="@string/settings_language_en" />
+            </LinearLayout>
+        </LinearLayout>
+
         <TextView style="@style/LibreDeXSectionTitle" android:text="@string/action_get_started" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">

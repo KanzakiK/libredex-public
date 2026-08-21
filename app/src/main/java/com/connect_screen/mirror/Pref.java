@@ -26,6 +26,10 @@ public class Pref {
     public static final String KEY_MAP_MOUSE_TO_TOUCH = "map_mouse_to_touch";
     public static final String KEY_DARK_MODE = "dark_mode";
     public static final String KEY_THEME_MODE = "theme_mode";
+    /** Language override: "system" (follow device), or a BCP-47 tag such as
+     * "zh-rCN" / "en". Kept as a raw tag so adding languages later is only a
+     * resources + picker-entry change. */
+    public static final String KEY_LANGUAGE_MODE = "language_mode";
     public static final String KEY_DEX_LAYER_FIX = "dex_layer_fix_enabled";
     public static final String KEY_ENCODER_CODEC = "encoder_codec";
     public static final String KEY_ENCODER_BITRATE_PERCENT = "encoder_bitrate_percent";
@@ -139,6 +143,17 @@ public class Pref {
         SharedPreferences preferences = getPreferences();
         if (preferences != null) {
             preferences.edit().putString(KEY_THEME_MODE, mode).apply();
+        }
+    }
+
+    public static String getLanguageMode() {
+        return getString(KEY_LANGUAGE_MODE, "system");
+    }
+
+    public static void setLanguageMode(String mode) {
+        SharedPreferences preferences = getPreferences();
+        if (preferences != null) {
+            preferences.edit().putString(KEY_LANGUAGE_MODE, mode).apply();
         }
     }
 
