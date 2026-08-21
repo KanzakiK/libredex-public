@@ -16,16 +16,15 @@ LibreDeX brings a full desktop experience to One UI 8 Flip phones: the DeX deskt
 - **High refresh on external displays** — up to 2K144 over DP/HDMI, while the phone screen holds 120 Hz when docked (stock DeX caps the external panel at 60 Hz).
 - **Screen-off extras** — real / black-image simulated screen-off, fake screen-off (power key never locks mid-session), sleep blocking.
 - **Refresh-rate unlock hooks** — the phone stays at 120 Hz even when a DeX session would drag it down to 60.
+- **Wired output (DP / HDMI)** — DeX desktop or phone mirror on an external display; custom resolution / DPI / refresh rate up to 4K (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
+- **Screen settings (experimental)** — per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
+- **Mirror adaptation** — auto aspect-ratio matching & auto-rotation; inner / outer (cover) display aware.
 
 ### Stock DeX parity — the full DeX experience on the Flip 5
 
 - **Desktop mode** — virtual display with the system SecondaryLauncher as home; resolution configurable in-app (1920×1080 default, **4K verified**); wallpaper picker & virtual touchpad included (the stock entries are dead / missing on this device).
 - **Wireless DeX (Smart View / Miracast)** — the same screen-casting path stock DeX uses, dormant in the firmware and unlocked: cast the desktop to Miracast displays / Smart TVs.
-- **Wired output (DP / HDMI)** — DeX desktop or phone mirror on an external display; 4K output with custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
 - **DeX settings page unlocked in system Settings** — resolution, font size & scaling, IME-on-DeX-screen toggle; just search "DeX".
-- **Screen settings (experimental)** — per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
-- **Mirror adaptation** — auto aspect-ratio matching & auto-rotation; inner / outer (cover) display aware.
-- **Multi-language** — zh-CN / English UI with in-app language switcher; English runtime logs.
 
 ---
 
