@@ -1305,18 +1305,15 @@ public class UserService extends IUserService.Stub  {
 
     private String ensureQtiProbeBinary() {
         try {
-            if (context == null) {
-                Ln.w("ensureQtiProbeBinary: no context");
-                return null;
-            }
-            File dir = new File(context.getFilesDir(), "qti");
+            // The connect-screen process runs in the shell SELinux domain,
+            // which has no write access to the app data dir
+            // (/data/user/0/<pkg>/files -> EACCES). /data/local/tmp is the
+            // standard writable location for the shell domain and survives
+            // reboots, so stage the probe there.
+            File dir = new File("/data/local/tmp");
             File file = new File(dir, QTI_PROBE_FILE_NAME);
             if (file.exists() && file.length() > 0) {
                 return file.getAbsolutePath();
-            }
-            if (!dir.exists() && !dir.mkdirs()) {
-                Ln.w("ensureQtiProbeBinary: mkdir failed " + dir);
-                return null;
             }
             try (java.io.InputStream in = context.getAssets().open(QTI_PROBE_ASSET);
                  FileOutputStream out = new FileOutputStream(file)) {
@@ -1326,7 +1323,7 @@ public class UserService extends IUserService.Stub  {
                     out.write(buffer, 0, read);
                 }
             }
-            if (!file.setExecutable(true, true)) {
+            if (!file.setExecutable(true, false)) {
                 Ln.w("ensureQtiProbeBinary: chmod failed " + file);
             }
             Ln.i("ensureQtiProbeBinary: extracted " + file + " size=" + file.length());
@@ -1338,8 +1335,11 @@ public class UserService extends IUserService.Stub  {
     }
 
     private String runQtiProbe(String path) throws RemoteException {
-        String command = "LD_LIBRARY_PATH=" + QTI_PROBE_LIB_PATH + " " + shellQuote(path)
-                + " diag external";
+        // Run the probe through su: the connect-screen process currently runs
+        // in the shell SELinux domain, which is denied access to /dev/dri/card0
+        // ("Permission denied (13)"), so a plain sh -c probe gets no DRM modes.
+        String command = "su -c \"env LD_LIBRARY_PATH=" + QTI_PROBE_LIB_PATH + " "
+                + shellQuote(path) + " diag external\"";
         String out = executeShellCommand(command);
         if (out == null) {
             return "{\"ok\":false,\"error\":\"probe command returned null\"}";

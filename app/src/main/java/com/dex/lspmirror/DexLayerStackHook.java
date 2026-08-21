@@ -1496,7 +1496,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             XposedBridge.hookMethod(updateVote, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    if (!sessionActiveEnabled()) {
+                    if (!sessionOrDockActive(cl)) {
                         return;
                     }
                     int displayId = (Integer) param.args[0];
@@ -1506,6 +1506,19 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                         XposedBridge.log(TAG + ": dropped refresh-rate limiting vote priority="
                                 + priority + " displayId=" + displayId);
                         param.setResult(null);
+                        if (priority == 22) {
+                            // The docked (HDMI) case votes LOW_POWER_MODE_MODES
+                            // before the session activates, so our drop above
+                            // never sees it. Actively remove it here (the
+                            // null-vote re-entry is not dropped, no recursion).
+                            try {
+                                java.lang.reflect.Method rawUpdate =
+                                        (java.lang.reflect.Method) param.method;
+                                rawUpdate.invoke(param.thisObject, displayId, priority, null);
+                            } catch (Throwable t) {
+                                XposedBridge.log(TAG + ": active LOW_POWER removal failed: " + t);
+                            }
+                        }
                     }
                 }
             });
@@ -1526,13 +1539,32 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                     XposedBridge.hookMethod(method, new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                            boolean sessionActive = sessionActiveEnabled();
+                            boolean sessionActive = sessionOrDockActive(cl);
                             int mode = (Integer) param.args[1];
                             XposedBridge.log(TAG + ": notifyHFRmode mode=" + mode
                                     + " session=" + sessionActive);
                             if (sessionActive && mode != 2) {
                                 param.args[1] = 2;
                                 XposedBridge.log(TAG + ": forced notifyHFRmode -> HIGH(2)");
+                            }
+                            if (sessionActive) {
+                                // Also push HIGH onto the built-in panel token.
+                                // When a dock (HDMI) is connected the system
+                                // keeps the internal display at 60 Hz; forcing
+                                // only the docked token (which is what the
+                                // RefreshRateController notifies) leaves the
+                                // phone screen stuck at 60.
+                                try {
+                                    IBinder mainToken = fakeScreenDisplayToken(cl);
+                                    if (mainToken != null
+                                            && !mainToken.equals(param.args[0])) {
+                                        java.lang.reflect.Method raw = (java.lang.reflect.Method) param.method;
+                                        raw.invoke(null, mainToken, 2);
+                                        XposedBridge.log(TAG + ": forced main panel HFR HIGH");
+                                    }
+                                } catch (Throwable t) {
+                                    XposedBridge.log(TAG + ": main panel HFR force failed: " + t);
+                                }
                             }
                         }
                     });
@@ -1580,7 +1612,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             XposedBridge.hookMethod(getInfo, new XC_MethodHook() {
                 @Override
                 protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                    if (!sessionActiveEnabled()) {
+                    if (!sessionOrDockActive(cl)) {
                         return;
                     }
                     Object self = param.thisObject;
@@ -1736,6 +1768,64 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    // Unlock the internal panel whenever a LibreDeX session is running OR an
+    // external (HDMI/DP dock) display is connected: the firmware drops the
+    // phone screen to 60 Hz as soon as a dock is plugged in, even with no
+    // session active. Probe results are cached to avoid binder traffic on the
+    // hot updateVote/notifyHFRmode paths, and probing is skipped until the
+    // system has booted (DMS is not safe to query during early boot).
+    private static volatile Boolean dockActiveCached;
+    private static volatile long dockActiveCachedAtMs;
+
+    private static boolean sessionOrDockActive(ClassLoader cl) {
+        if (sessionActiveEnabled()) {
+            return true;
+        }
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            java.lang.reflect.Method get = sp.getMethod("get", String.class, String.class);
+            String boot = (String) get.invoke(null, "sys.boot_completed", "0");
+            if (!"1".equals(boot)) {
+                return false;
+            }
+        } catch (Throwable ignored) {
+            return false;
+        }
+        long now = android.os.SystemClock.uptimeMillis();
+        if (dockActiveCached != null && now - dockActiveCachedAtMs < 5000L) {
+            return dockActiveCached;
+        }
+        boolean active = false;
+        try {
+            Class<?> dmg = Class.forName(
+                    "android.hardware.display.DisplayManagerGlobal", false, cl);
+            Object global = dmg.getMethod("getInstance").invoke(null);
+            int[] ids = (int[]) dmg.getMethod("getDisplayIds").invoke(global);
+            if (ids != null) {
+                for (int id : ids) {
+                    if (id == 0) {
+                        continue;
+                    }
+                    Object info = dmg.getMethod("getDisplayInfo", int.class)
+                            .invoke(global, id);
+                    if (info == null) {
+                        continue;
+                    }
+                    int type = info.getClass().getField("type").getInt(info);
+                    if (type == 2 || type == 3) { // EXTERNAL / HDMI / VGA
+                        active = true;
+                        break;
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": sessionOrDockActive probe failed: " + t);
+        }
+        dockActiveCached = active;
+        dockActiveCachedAtMs = now;
+        return active;
     }
 
     private static IBinder fakeScreenDisplayToken(ClassLoader cl) {
