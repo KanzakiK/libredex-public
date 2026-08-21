@@ -99,19 +99,14 @@ public final class InitializationGuideDialog {
         };
 
         doneButton = null;
-        prevButton = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
-        nextButton = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
-        doneButton = new Button(activity, null, 0, R.style.LibreDeXButtonPrimary);
-        doneButton.setLayoutParams(new LinearLayout.LayoutParams(
-                dp(0), 48));
-        ((LinearLayout.LayoutParams) doneButton.getLayoutParams()).weight = 1;
+        prevButton = navButton(activity.getString(R.string.action_prev), false);
+        nextButton = navButton(activity.getString(R.string.action_next), false);
+        doneButton = navButton(activity.getString(R.string.action_done), true);
 
         LinearLayout nav = new LinearLayout(activity);
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setPadding(0, dp(6), 0, dp(4));
-        prevButton.setText(activity.getString(R.string.action_prev));
-        nextButton.setText(activity.getString(R.string.action_next));
-        doneButton.setText(activity.getString(R.string.action_done));
+        nav.setGravity(android.view.Gravity.CENTER_VERTICAL);
 
         prevButton.setOnClickListener(v -> goToPage(page - 1));
         nextButton.setOnClickListener(v -> goToPage(page + 1));
@@ -121,9 +116,8 @@ public final class InitializationGuideDialog {
         LinearLayout.LayoutParams gap = wrapParams();
         gap.setMarginStart(dp(8));
         nav.addView(nextButton, gap);
-        LinearLayout.LayoutParams doneP = matchWrapParams();
-        doneP.setMarginStart(dp(8));
-        doneP.height = dp(48);
+        LinearLayout.LayoutParams doneP = wrapParams();
+        doneP.setMarginStart(dp(10));
         nav.addView(doneButton, doneP);
 
         // 页面区包一层 ScrollView，页面内容长了也能滚动，避免小屏放不下。
@@ -627,10 +621,43 @@ public final class InitializationGuideDialog {
 
     /** 卡片内主操作按钮（LibreDeXButtonSoft：圆角 accent 文字，满宽）。 */
     private Button actionButton(String s) {
-        Button b = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
+        Button b = new Button(activity);
         b.setText(s);
+        b.setTextSize(14);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setAllCaps(false);
+        b.setGravity(android.view.Gravity.CENTER);
+        b.setTextColor(ContextCompat.getColor(activity, R.color.ui_accent));
+        b.setBackgroundResource(R.drawable.bg_libredex_button_soft);
+        b.setMinWidth(0);
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
+        b.setPadding(0, 0, 0, 0);
         b.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(44)));
+        return b;
+    }
+
+    /** 底部导航按钮：wrap_content 包住文本、文本居中；primary=true 用实底 accent。 */
+    private Button navButton(String text, boolean primary) {
+        Button b = new Button(activity);
+        b.setText(text);
+        b.setTextSize(14);
+        b.setTypeface(Typeface.DEFAULT_BOLD);
+        b.setAllCaps(false);
+        b.setGravity(android.view.Gravity.CENTER);
+        b.setTextColor(ContextCompat.getColor(activity,
+                primary ? R.color.ui_on_accent : R.color.ui_accent));
+        b.setBackgroundResource(primary
+                ? R.drawable.bg_libredex_button_primary
+                : R.drawable.bg_libredex_button_soft);
+        b.setMinWidth(0);
+        b.setMinHeight(0);
+        b.setMinimumHeight(0);
+        b.setPadding(dp(20), 0, dp(20), 0);
+        b.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
                 dp(44)));
         return b;
     }
