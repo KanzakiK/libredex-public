@@ -21,7 +21,7 @@ LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — p
 ### Stock DeX parity — the full DeX experience on the Flip 5
 
 - **Desktop mode** — virtual display with the system SecondaryLauncher as home; resolution configurable in-app (1920×1080 default, **4K verified**); wallpaper picker & virtual touchpad included (the stock entries are dead / missing on this device).
-- **Wireless DeX (Miracast)** — dormant in the firmware, unlocked: cast the desktop to Miracast displays / Smart TVs.
+- **Wireless DeX (Smart View / Miracast)** — the same screen-casting path stock DeX uses, dormant in the firmware and unlocked: cast the desktop to Miracast displays / Smart TVs.
 - **Wired output (DP / HDMI)** — DeX desktop or phone mirror on an external display; 4K output with custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
 - **DeX settings page unlocked in system Settings** — resolution, font size & scaling, IME-on-DeX-screen toggle; just search "DeX".
 - **Screen settings (experimental)** — per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
