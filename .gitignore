@@ -102,3 +102,4 @@ archive/DexHook/_original_check/
 .workbuddy/
 libredex_logs/
 xposed-stubs/bin/
+__pycache__/
