@@ -1180,7 +1180,7 @@ public class ConnectionFragment extends Fragment {
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
         intent.setType("image/*");
         intent.addCategory(Intent.CATEGORY_OPENABLE);
-        wallpaperPicker.launch(Intent.createChooser(intent, "选择 DeX 壁纸"));
+        wallpaperPicker.launch(Intent.createChooser(intent, getString(R.string.dex_pick_wallpaper)));
     }
 
     private int currentDexDisplayId() {

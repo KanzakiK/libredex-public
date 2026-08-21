@@ -137,7 +137,7 @@ public class FetchLogAndShare implements Job {
             shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
             State.getContext().startActivity(Intent.createChooser(
-                    shareIntent, "分享日志压缩包"));
+                    shareIntent, State.getContext().getString(R.string.log_share_archive)));
         } catch (RemoteException | IOException e) {
             Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_failed), Toast.LENGTH_LONG).show();
             throw new RuntimeException(e);

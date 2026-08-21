@@ -208,12 +208,12 @@ public class AutoRotateAndScaleForMoonlight {
             // 初始化 EGL
             eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY);
             if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
-                throw new RuntimeException("无法获取 EGL 显示连接");
+                throw new RuntimeException("Cannot get EGL display connection");
             }
 
             int[] version = new int[2];
             if (!EGL14.eglInitialize(eglDisplay, version, 0, version, 1)) {
-                throw new RuntimeException("无法初始化 EGL");
+                throw new RuntimeException("Cannot initialize EGL");
             }
 
             // 配置 EGL

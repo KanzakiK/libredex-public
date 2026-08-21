@@ -721,10 +721,10 @@ public class UserService extends IUserService.Stub  {
             long[] physicalDisplayIds = DisplayControl.getPhysicalDisplayIds();
             Ln.d("getDisplayToken: physicalDisplayIds count=" + physicalDisplayIds.length + " ids=" + java.util.Arrays.toString(physicalDisplayIds));
             if (physicalDisplayIds.length > 0) {
-                Ln.d("getDisplayToken: 浣跨敤 physicalDisplayIds[0]=" + physicalDisplayIds[0]);
+                Ln.d("getDisplayToken: using physicalDisplayIds[0]=" + physicalDisplayIds[0]);
                 return DisplayControl.getPhysicalDisplayToken(physicalDisplayIds[0]);
             }
-            Ln.d("getDisplayToken: physicalDisplayIds 涓虹┖, 浣跨敤 getBuiltInDisplay");
+            Ln.d("getDisplayToken: physicalDisplayIds empty, using getBuiltInDisplay");
             return SurfaceControl.getBuiltInDisplay();
         } catch (Throwable e) {
             Ln.e("failed to getDisplayToken", e);
@@ -1692,7 +1692,7 @@ public class UserService extends IUserService.Stub  {
             Ln.e("createExternalMirror [API30]: layerStack=" + layerStack);
             return -1;
         }
-        Ln.d("createExternalMirror [API30] 鍑嗗璋冪敤 SurfaceControl.createDisplay...");
+        Ln.d("createExternalMirror [API30] about to call SurfaceControl.createDisplay...");
         IBinder token = SurfaceControl.createDisplay(name, true);
         Ln.d("createExternalMirror [API30] createDisplay token=" + token);
         if (token == null) {
@@ -1706,18 +1706,18 @@ public class UserService extends IUserService.Stub  {
         SurfaceControl.openTransaction();
         try {
             SurfaceControl.setDisplaySurface(token, surface);
-            Ln.d("createExternalMirror [API30] setDisplaySurface 瀹屾垚");
+            Ln.d("createExternalMirror [API30] setDisplaySurface done");
             SurfaceControl.setDisplayProjection(token, 0, sourceRect, displayRect);
-            Ln.d("createExternalMirror [API30] setDisplayProjection 瀹屾垚");
+            Ln.d("createExternalMirror [API30] setDisplayProjection done");
             SurfaceControl.setDisplayLayerStack(token, layerStack);
-            Ln.d("createExternalMirror [API30] setDisplayLayerStack 瀹屾垚");
+            Ln.d("createExternalMirror [API30] setDisplayLayerStack done");
         } finally {
             SurfaceControl.closeTransaction();
         }
         Ln.d("createExternalMirror [API30] transaction committed");
         mirrorExternalToken = token;
         SurfaceControl.setDisplayPowerMode(token, SurfaceControl.POWER_MODE_NORMAL);
-        Ln.d("createExternalMirror [API30] setDisplayPowerMode NORMAL 瀹屾垚");
+        Ln.d("createExternalMirror [API30] setDisplayPowerMode NORMAL done");
         Ln.i("createExternalMirror [API30] done, layerStack=" + layerStack);
         return 0;
     }

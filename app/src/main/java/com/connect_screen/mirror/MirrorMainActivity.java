@@ -367,7 +367,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         MediaProjectionManager mediaProjectionManager =
                 (MediaProjectionManager) getSystemService(Context.MEDIA_PROJECTION_SERVICE);
         if (mediaProjectionManager == null) {
-            throw new RuntimeException("无法获取 MediaProjectionManager 服务");
+            throw new RuntimeException("Cannot get MediaProjectionManager service");
         }
 
         Intent captureIntent;

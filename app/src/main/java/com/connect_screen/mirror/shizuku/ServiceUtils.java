@@ -138,7 +138,7 @@ public class ServiceUtils {
 
     public static int callPendingIntent(PendingIntent pendingIntent, ActivityOptions options, int displayId) {
         if (activityManager == null) {
-            throw new IllegalStateException("ServiceUtils 未初始化，请先调用 initWithShizuku()");
+            throw new IllegalStateException("ServiceUtils not initialized, call initWithShizuku() first");
         }
 
         try {

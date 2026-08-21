@@ -234,7 +234,7 @@ public class ProjectViaDp implements Job {
                                 + "restarting Shizuku as root");
                         if (!AcquireShizuku.fixRootShizuku()) {
                             State.showErrorStatus(
-                                    TAG + ": DP DeX 需要以 root 启动 Shizuku");
+                                    TAG + ": " + State.getContext().getString(R.string.dp_dex_need_root_shizuku));
                             stop();
                             State.refreshMainActivity();
                             return;
