@@ -202,20 +202,22 @@ public final class InitializationGuideDialog {
             }
             final boolean r = rooted;
             MAIN_HANDLER.post(() -> updateText(rootStatusText,
-                    r ? "已以 root 运行" : (perm ? "未以 root 运行" : "待授权 Shizuku")));
+                    r ? activity.getString(R.string.guide_root_running)
+                            : (perm ? activity.getString(R.string.guide_root_not_running)
+                                    : activity.getString(R.string.guide_shizuku_pending))));
         }, "guide-root-status").start();
     }
 
     private void refreshLspStatusAsync() {
         new Thread(() -> {
-            String s = "未检测到框架（需启用模块并重启）";
+            String s = activity.getString(R.string.guide_framework_not_detected);
             try {
                 if (State.userService != null) {
                     String lsp = State.userService.fetchLspLogs();
                     if (lsp != null
                             && !lsp.replace("=====", "").trim().isEmpty()
                             && lsp.toLowerCase(Locale.ROOT).contains("lsposedframework")) {
-                        s = "已检测到框架活跃";
+                        s = activity.getString(R.string.guide_framework_active);
                     }
                 }
             } catch (Throwable ignored) {
@@ -430,7 +432,8 @@ public final class InitializationGuideDialog {
                 boolean ok = AcquireShizuku.fixRootShizuku();
                 MAIN_HANDLER.post(() -> {
                     Toast.makeText(activity,
-                            ok ? "Shizuku 已以 root 重启" : "以 root 重启失败",
+                            ok ? activity.getString(R.string.guide_shizuku_root_restarted)
+                                    : activity.getString(R.string.guide_root_restart_failed),
                             Toast.LENGTH_SHORT).show();
                     rootBtn.setEnabled(true);
                     refreshStatusTexts();

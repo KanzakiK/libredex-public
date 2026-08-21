@@ -107,8 +107,8 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         boolean hasShizuku = ShizukuUtils.hasPermission();
         requestShizukuButton.setVisibility(hasShizuku ? View.GONE : View.VISIBLE);
         statusText.setText(hasShizuku
-                ? "已获得 Shizuku 权限。外接屏可修改参数，内置屏幕仅允许查看。"
-                : "未获得 Shizuku 权限，只能查看基础屏幕信息。");
+                ? getString(R.string.screen_shizuku_granted_note)
+                : getString(R.string.screen_shizuku_not_granted_note));
 
         displayListContainer.removeAllViews();
         DisplayManager displayManager = (DisplayManager) getSystemService(Context.DISPLAY_SERVICE);

@@ -19,6 +19,7 @@ import androidx.appcompat.app.AppCompatDelegate;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.core.content.ContextCompat;
+import androidx.core.os.LocaleListCompat;
 import androidx.core.view.ViewCompat;
 import androidx.fragment.app.Fragment;
 
@@ -41,6 +42,9 @@ public class SettingsFragment extends Fragment {
     private Button themeSystemButton;
     private Button themeLightButton;
     private Button themeDarkButton;
+    private Button languageSystemButton;
+    private Button languageZhButton;
+    private Button languageEnButton;
     private boolean pendingLogExport;
 
     private final ActivityResultLauncher<Intent> storagePermissionLauncher =
@@ -75,6 +79,9 @@ public class SettingsFragment extends Fragment {
         themeSystemButton = view.findViewById(R.id.themeSystemButton);
         themeLightButton = view.findViewById(R.id.themeLightButton);
         themeDarkButton = view.findViewById(R.id.themeDarkButton);
+        languageSystemButton = view.findViewById(R.id.languageSystemButton);
+        languageZhButton = view.findViewById(R.id.languageZhButton);
+        languageEnButton = view.findViewById(R.id.languageEnButton);
 
         tintButton(shizukuGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
 
@@ -86,6 +93,10 @@ public class SettingsFragment extends Fragment {
         themeSystemButton.setOnClickListener(v -> setThemeMode("system"));
         themeLightButton.setOnClickListener(v -> setThemeMode("light"));
         themeDarkButton.setOnClickListener(v -> setThemeMode("dark"));
+
+        languageSystemButton.setOnClickListener(v -> setLanguageMode("system"));
+        languageZhButton.setOnClickListener(v -> setLanguageMode("zh-rCN"));
+        languageEnButton.setOnClickListener(v -> setLanguageMode("en"));
 
         view.findViewById(R.id.wizardEntry).setOnClickListener(v ->
                 InitializationGuideDialog.show(requireActivity()));
@@ -142,12 +153,19 @@ public class SettingsFragment extends Fragment {
         boolean overlay = Settings.canDrawOverlays(requireContext());
         boolean storage = isStorageAccessReady();
         if (userServiceStatus != null) {
-            userServiceStatus.setText(State.isUserServiceAlive() ? "online" : "offline");
+            userServiceStatus.setText(State.isUserServiceAlive()
+                ? getString(R.string.settings_online) : getString(R.string.settings_offline));
         }
         updateRootShizukuStatus();
-        shizukuStatus.setText(shizuku ? "已授权 · UserService 在线" : getString(R.string.settings_not_granted));
-        overlayStatus.setText(overlay ? "已授权" : getString(R.string.settings_not_granted));
-        storageStatus.setText(storage ? "已授予" : getString(R.string.settings_file_not_granted));
+        shizukuStatus.setText(shizuku
+                ? getString(R.string.settings_authorized_userservice)
+                : getString(R.string.settings_not_granted));
+        overlayStatus.setText(overlay
+                ? getString(R.string.settings_authorized)
+                : getString(R.string.settings_not_granted));
+        storageStatus.setText(storage
+                ? getString(R.string.settings_granted)
+                : getString(R.string.settings_file_not_granted));
         shizukuGrantButton.setVisibility(shizuku ? View.GONE : View.VISIBLE);
         rootShizukuButton.setVisibility(shizuku ? View.VISIBLE : View.GONE);
 
@@ -155,6 +173,11 @@ public class SettingsFragment extends Fragment {
         setSegButton(themeSystemButton, "system".equals(mode));
         setSegButton(themeLightButton, "light".equals(mode));
         setSegButton(themeDarkButton, "dark".equals(mode));
+
+        String lang = Pref.getLanguageMode();
+        setSegButton(languageSystemButton, "system".equals(lang));
+        setSegButton(languageZhButton, "zh-rCN".equals(lang));
+        setSegButton(languageEnButton, "en".equals(lang));
     }
 
     private void requestLogExport() {
@@ -249,8 +272,8 @@ public class SettingsFragment extends Fragment {
                 getActivity().runOnUiThread(() -> {
                     rootShizukuButton.setEnabled(true);
                     Toast.makeText(requireContext(),
-                            ok ? "Shizuku 已以 root 重启"
-                                    : "以 root 重启 Shizuku 失败",
+                            ok ? getString(R.string.guide_shizuku_root_restarted)
+                                    : getString(R.string.settings_root_restart_failed),
                             Toast.LENGTH_LONG).show();
                     refreshStatus();
                 });
@@ -268,6 +291,25 @@ public class SettingsFragment extends Fragment {
         refreshStatus();
         // setDefaultNightMode alone only affects the next activity creation; the
         // already-live settings UI needs a recreate for the theme to apply in real time.
+        try {
+            requireActivity().recreate();
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Switch the app language. "system" clears the override; otherwise the
+     * value is a BCP-47 tag (e.g. "zh-rCN", "en"). Persisted via Pref and
+     * re-applied in LibreDeXApp.onCreate, so the choice survives restarts.
+     * AppCompat handles locale-config changes by recreating the activities.
+     */
+    private void setLanguageMode(String mode) {
+        Pref.setLanguageMode(mode);
+        LocaleListCompat locales = ("system".equals(mode) || mode == null || mode.isEmpty())
+                ? LocaleListCompat.getEmptyLocaleList()
+                : LocaleListCompat.forLanguageTags(mode);
+        AppCompatDelegate.setApplicationLocales(locales);
+        refreshStatus();
         try {
             requireActivity().recreate();
         } catch (Throwable ignored) {

@@ -26,9 +26,11 @@ BRAND = re.compile(
     r"%\d+\$[a-zA-Z]|[A-Za-z0-9][A-Za-z0-9 \-/·%.()]*)$"
 )
 
-# EN strings that intentionally embed CJK (search keywords users must type)
+# EN strings that intentionally embed CJK (search keywords users must type,
+# or language self-names in the language picker)
 CJK_IN_EN_ALLOWED = {
     "dialog_edit_resolution_warning",
+    "settings_language_zh",
 }
 
 # ZH values that legitimately contain no CJK (brand names, tech placeholders)

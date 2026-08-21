@@ -4,6 +4,8 @@ import android.app.Application;
 
 import com.connect_screen.mirror.transport.TransportRegistry;
 
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.os.LocaleListCompat;
 import rikka.shizuku.Shizuku;
 
 public class LibreDeXApp extends Application {
@@ -12,6 +14,7 @@ public class LibreDeXApp extends Application {
         super.onCreate();
         TransportRegistry.discover();
         Pref.init(this);
+        applyPersistedLanguage();
         int lastVersion = Pref.getLastRunVersionCode();
         int currentVersion = BuildConfig.VERSION_CODE;
         String lastCommit = Pref.getLastRunCommit();
@@ -32,6 +35,24 @@ public class LibreDeXApp extends Application {
         }
         if (Pref.getDpSessionStarted()) {
             State.ensureUserServiceBound();
+        }
+    }
+
+    /**
+     * Restore the user's language override ("system" or a BCP-47 tag) before
+     * any activity is created. Mechanism is AppCompat's application-level
+     * locales, so it works on every AppCompatActivity and survives process
+     * death via Pref.
+     */
+    private void applyPersistedLanguage() {
+        String lang = Pref.getLanguageMode();
+        try {
+            if (lang == null || lang.isEmpty() || "system".equals(lang)) {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList());
+            } else {
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang));
+            }
+        } catch (Throwable ignored) {
         }
     }
 
