@@ -97,6 +97,7 @@ public class ConnectionFragment extends Fragment {
     private TextView serviceBadge;
     private TextView ipText;
     private View telemetryChips;
+    private View sharedCardsContainer;
     private TextView codecValue;
     private TextView resolutionValue;
     private TextView bitrateValue;
@@ -163,6 +164,7 @@ public class ConnectionFragment extends Fragment {
         serviceBadge = view.findViewById(R.id.serviceBadge);
         ipText = view.findViewById(R.id.ipText);
         telemetryChips = view.findViewById(R.id.telemetryChips);
+        sharedCardsContainer = view.findViewById(R.id.sharedCardsContainer);
         codecValue = view.findViewById(R.id.chipCodecValue);
         resolutionValue = view.findViewById(R.id.chipResolutionValue);
         bitrateValue = view.findViewById(R.id.chipBitrateValue);
@@ -473,6 +475,11 @@ public class ConnectionFragment extends Fragment {
         setTabButton(transportOptional, optionalSelected);
         boolean moonlight = "moonlight".equals(currentTransport);
         moonlightContent.setVisibility(moonlight ? View.VISIBLE : View.GONE);
+        // Shared cards (client / transport / logs / telemetry) only make
+        // sense for the Moonlight transport; hide them for DP / AirPlay.
+        if (sharedCardsContainer != null) {
+            sharedCardsContainer.setVisibility(moonlight ? View.VISIBLE : View.GONE);
+        }
         if (optionalSelected) {
             attachOptionalFragment();
             if (optionalTransportContainer != null) {

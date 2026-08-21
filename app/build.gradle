@@ -21,6 +21,30 @@ if (optionalTransportProvider == null && rootProject.file('local.properties').ex
     rootProject.file('local.properties').withInputStream { localProperties.load(it) }
     optionalTransportProvider = localProperties.getProperty('optionalTransportProvider')
 }
+
+def resolveGitCommit() {
+    try {
+        def head = ['git', 'rev-parse', '--short', 'HEAD'].execute(null, rootProject.projectDir)
+        head.waitFor()
+        def out = head.text?.trim()
+        if (!out || out.isEmpty()) {
+            return 'unknown'
+        }
+        def status = ['git', 'status', '--porcelain'].execute(null, rootProject.projectDir)
+        status.waitFor()
+        def dirty = status.text?.trim()
+        if (dirty && !dirty.isEmpty()) {
+            // Uncommitted build: append a per-second timestamp so every
+            // build gets a unique COMMIT and LibreDeXApp restarts the
+            // Shizuku UserService to load the new code.
+            def stamp = new Date().format('yyyyMMdd-HHmmss')
+            return out + '-dirty-' + stamp
+        }
+        return out
+    } catch (Throwable ignored) {
+        return 'unknown'
+    }
+}
 if (optionalTransportModule) {
     android.sourceSets.main {
         java.srcDirs += file("$optionalTransportModule/src")
@@ -43,6 +67,11 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField 'String', 'OPTIONAL_TRANSPORT_PROVIDER',
                 '"' + (optionalTransportProvider ?: '') + '"'
+        // Short git commit of this build, e.g. "3f9c1a2" (or "unknown" when
+        // git is unavailable). Surfaced in the About page and log exports, and
+        // used to restart the Shizuku UserService when the code changed even
+        // though the version number did not.
+        buildConfigField 'String', 'COMMIT', '"' + resolveGitCommit() + '"'
 
         ndk {
             ndkVersion "28.0.13004108"

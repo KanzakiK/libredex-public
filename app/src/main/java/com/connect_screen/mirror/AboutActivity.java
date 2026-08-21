@@ -42,7 +42,8 @@ public class AboutActivity extends AppCompatActivity {
 
         TextView versionText = findViewById(R.id.versionText);
         String androidVersion = android.os.Build.VERSION.RELEASE;
-        versionText.setText("版本 " + BuildConfig.VERSION_NAME + " / Android " + androidVersion);
+        versionText.setText("版本 " + BuildConfig.VERSION_NAME + " ("
+                + BuildConfig.COMMIT + ") / Android " + androidVersion);
 
         GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
