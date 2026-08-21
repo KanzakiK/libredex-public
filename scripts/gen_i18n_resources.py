@@ -198,6 +198,7 @@ EXTRA = [
     ("log_share_archive", "Share log archive", "分享日志压缩包"),
     ("dp_dex_need_root_shizuku", "DP DeX needs Shizuku started as root", "DP DeX 需要以 root 启动 Shizuku"),
     ("sunshine_auto_fallback", "\\n\\nAutomatically fell back to H.264/AVC. Please reconnect Moonlight.", "\\n\\n已自动回退到 H.264/AVC，请重新连接 Moonlight。"),
+    ("screen_builtin_display", "Built-in screen", "内置屏幕"),
 ]
 
 # pre-existing entries to keep in values/ (app_name referenced by manifest; the

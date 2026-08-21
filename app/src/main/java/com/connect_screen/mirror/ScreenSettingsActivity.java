@@ -136,7 +136,14 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         container.setLayoutParams(params);
         container.setBackgroundResource(R.drawable.bg_ui_panel);
 
-        TextView title = createText(getString(R.string.screen_title_fmt, display.getDisplayId(), display.getName()));
+        // System-provided display names follow the device language, not the
+        // in-app language. Map the built-in display to our localized label so
+        // the title stays consistent with the app locale; external displays
+        // keep their system name (usually already English/brand).
+        String displayName = display.getDisplayId() == Display.DEFAULT_DISPLAY
+                ? getString(R.string.screen_builtin_display)
+                : display.getName();
+        TextView title = createText(getString(R.string.screen_title_fmt, display.getDisplayId(), displayName));
         title.setTextSize(18);
         title.setTextColor(getColorCompat(R.color.ui_text_primary));
         title.setTypeface(null, android.graphics.Typeface.BOLD);
