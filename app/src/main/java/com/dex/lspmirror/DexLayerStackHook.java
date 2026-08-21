@@ -62,6 +62,14 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         systemServerClassLoader = lpparam.classLoader;
         cleanupStaleDpStateAtBoot();
         XposedBridge.log(TAG + ": hooking system_server");
+        // 自报状态：hook 真正注入 system_server 后设置系统属性，
+        // App 侧直接读 getprop 即可判定模块是否生效（比翻 lspd 日志可靠）。
+        try {
+            Class<?> sp = Class.forName("android.os.SystemProperties");
+            sp.getMethod("set", String.class, String.class)
+                    .invoke(null, "sys.libredex.hook_active", "1");
+        } catch (Throwable ignored) {
+        }
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
         installRefreshRateUnlockHooks(cl);

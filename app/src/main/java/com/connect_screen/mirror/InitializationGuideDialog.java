@@ -222,17 +222,17 @@ public final class InitializationGuideDialog {
 
     private void refreshLspStatusAsync() {
         new Thread(() -> {
+            // 直接读 hook 自报的系统属性（任何进程可读 getprop），
+            // 不依赖 UserService/日志文件：属性存在即模块已注入生效。
             String s = activity.getString(R.string.guide_framework_not_detected);
             try {
-                // 全新环境 UserService 可能未绑定，先确保绑定再检测，否则永远误报“未检测到”。
-                ensureUserServiceForShell();
-                if (State.userService != null) {
-                    String lsp = State.userService.fetchLspLogs();
-                    // 判定依据：lspd 的 modules 日志会记录实际加载的模块，
-                    // 出现 "com.libredex" 即证明 LibreDeX 的 hook 已被注入。
-                    if (lsp != null && lsp.toLowerCase(Locale.ROOT).contains("com.libredex")) {
-                        s = activity.getString(R.string.guide_framework_active);
-                    }
+                Process p = Runtime.getRuntime().exec(
+                        new String[]{"getprop", "sys.libredex.hook_active"});
+                java.io.BufferedReader r = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(p.getInputStream()));
+                String line = r.readLine();
+                if (line != null && line.trim().contains("1")) {
+                    s = activity.getString(R.string.guide_framework_active);
                 }
             } catch (Throwable ignored) {
             }
