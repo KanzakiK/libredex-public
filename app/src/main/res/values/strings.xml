@@ -365,9 +365,10 @@
     <string name="debug_field_frame_pacer">Frame pacer</string>
     <string name="debug_field_sep">: </string>
     <string name="guide_page_title_lsposed">LSPosed Hook</string>
-    <string name="guide_page_title_environment">Shizuku / Root / overlay</string>
+    <string name="guide_page_title_environment">Root / Shizuku</string>
+    <string name="guide_page_title_permissions">Overlay / Recording</string>
     <string name="guide_page_title_recording">Recording</string>
-    <string name="guide_page_title_files">File access · Done</string>
+    <string name="guide_page_title_files">File access · Screen capture</string>
     <string name="guide_label_result">Result</string>
     <string name="guide_lsposed_note">LibreDeX core display/input hooks depend on LSPosed (stock or Vector).\nEnable this module there, scope it to android / Samsung Settings / launcher, then reboot for the hooks to take effect.\nNote: Vector variants have no standalone app icon; the entry is the LSPosed shortcut on the home screen or in the notification shade.</string>
     <string name="guide_lsposed_manager_not_open">Could not detect that the LSPosed / Vector manager is open</string>
