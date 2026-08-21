@@ -224,6 +224,8 @@ public final class InitializationGuideDialog {
         new Thread(() -> {
             String s = activity.getString(R.string.guide_framework_not_detected);
             try {
+                // 全新环境 UserService 可能未绑定，先确保绑定再检测，否则永远误报“未检测到”。
+                ensureUserServiceForShell();
                 if (State.userService != null) {
                     String lsp = State.userService.fetchLspLogs();
                     if (lsp != null
