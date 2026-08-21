@@ -64,6 +64,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
         installRefreshRateUnlockHooks(cl);
+        installVdRefreshRateHook(cl);
         try {
             Class<?> adapter = XposedHelpers.findClass(
                     "com.android.server.display.VirtualDisplayAdapter", cl);
@@ -1553,6 +1554,66 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    // The mirror VD is created with the legacy API (VirtualDisplayConfig-based
+    // builds come up black on this firmware) which leaves it at a fixed 60 Hz
+    // mode. Patch the VD's advertised modes to 120 Hz so SurfaceFlinger feeds
+    // the streaming mirror at 120 fps. The DeX VD already gets 120 Hz through
+    // VirtualDisplayConfig.setRequestedRefreshRate, so only mirror VDs
+    // (mDisplayIdToMirror >= 0) are touched here.
+    private static volatile boolean vdRefreshRateHookInstalled;
+
+    private static void installVdRefreshRateHook(ClassLoader cl) {
+        if (vdRefreshRateHookInstalled) {
+            return;
+        }
+        vdRefreshRateHookInstalled = true;
+        try {
+            Class<?> vdd = XposedHelpers.findClass(
+                    "com.android.server.display.VirtualDisplayAdapter$VirtualDisplayDevice", cl);
+            Method getInfo = vdd.getDeclaredMethod("getDisplayDeviceInfoLocked");
+            XposedBridge.hookMethod(getInfo, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    if (!sessionActiveEnabled()) {
+                        return;
+                    }
+                    Object self = param.thisObject;
+                    if (self == null) {
+                        return;
+                    }
+                    int mirrorId = self.getClass().getField("mDisplayIdToMirror").getInt(self);
+                    if (mirrorId < 0) {
+                        return;
+                    }
+                    Object oldMode = self.getClass().getField("mMode").get(self);
+                    if (oldMode == null) {
+                        return;
+                    }
+                    float currentRate = (Float) oldMode.getClass().getMethod("getRefreshRate").invoke(oldMode);
+                    if (currentRate >= 119.5f) {
+                        return;
+                    }
+                    int modeId = (Integer) oldMode.getClass().getMethod("getModeId").invoke(oldMode);
+                    int width = (Integer) oldMode.getClass().getMethod("getPhysicalWidth").invoke(oldMode);
+                    int height = (Integer) oldMode.getClass().getMethod("getPhysicalHeight").invoke(oldMode);
+                    Class<?> modeClass = Class.forName("android.view.Display$Mode", false, cl);
+                    java.lang.reflect.Constructor<?> ctor = modeClass.getConstructor(
+                            int.class, int.class, int.class, float.class, float.class,
+                            boolean.class, float[].class, int[].class);
+                    Object mode120 = ctor.newInstance(
+                            modeId, width, height, 120.0f, 120.0f, false,
+                            new float[0], new int[0]);
+                    self.getClass().getField("mMode").set(self, mode120);
+                    XposedBridge.log(TAG + ": mirror VD (mirrorId=" + mirrorId
+                            + ") mMode forced to 120Hz");
+                }
+            });
+            XposedBridge.log(TAG + ": vd refresh-rate hook installed");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": vd refresh-rate hook setup failed: " + t);
         }
     }
 
