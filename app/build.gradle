@@ -64,6 +64,11 @@ android {
         versionCode libredexVersionCode
         versionName libredexVersionName
 
+        // i18n: only ship en + zh-rCN resources to keep the APK lean.
+        // values/ (default, no qualifier) = English after the i18n pass;
+        // values-zh-rCN/ = Simplified Chinese.
+        resConfigs "en", "zh-rCN"
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField 'String', 'OPTIONAL_TRANSPORT_PROVIDER',
                 '"' + (optionalTransportProvider ?: '') + '"'
@@ -121,6 +126,14 @@ android {
 
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+
+    // i18n gate: severity rules live in app/lint.xml (HardcodedText = error so
+    // new UI strings must go through resources; hook-project tech debt like
+    // hidden-API reflection is demoted to warning). Only `./gradlew lint*`
+    // is affected, not assemble. MissingTranslation stays non-fatal.
+    lint {
+        abortOnError true
     }
 
 }

@@ -17,6 +17,7 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
+import java.util.Locale;
 
 public final class DexWallpaperHook implements IXposedHookLoadPackage {
     private static final String TAG = "DexWallpaper";
@@ -189,7 +190,7 @@ public final class DexWallpaperHook implements IXposedHookLoadPackage {
         if (view == null || depth > 24) {
             return;
         }
-        String cls = view.getClass().getName().toLowerCase();
+        String cls = view.getClass().getName().toLowerCase(Locale.ROOT);
         if (cls.contains("hotseat") || cls.contains("hotseatcell")) {
             if (view.getBackground() != null) {
                 view.setBackground(null);
@@ -226,7 +227,7 @@ public final class DexWallpaperHook implements IXposedHookLoadPackage {
         }
         int h = view.getHeight();
         int bottom = view.getBottom();
-        String cls = view.getClass().getName().toLowerCase();
+        String cls = view.getClass().getName().toLowerCase(Locale.ROOT);
         boolean hot = cls.contains("hotseat")
                 || cls.contains("dock")
                 || cls.contains("taskbar")

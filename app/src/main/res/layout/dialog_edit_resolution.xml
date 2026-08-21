@@ -14,7 +14,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="宽度："
+            android:text="@string/dialog_width_label"
             android:layout_marginEnd="8dp"/>
 
         <EditText
@@ -32,7 +32,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="高度："
+            android:text="@string/dialog_height_label"
             android:layout_marginEnd="8dp"/>
 
         <EditText
@@ -46,7 +46,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:text="部分手机修改后画面可能会拉伸，这说明该手机不支持改比例，2秒不操作会自动复原。对于修改不了的手机，需要 root 权限，操作方法在 b 站搜索 '安卓改比例拉伸及触控错位解决办法'。"
+        android:text="@string/dialog_edit_resolution_warning"
         android:textColor="#FF5722" />
 
 </LinearLayout>

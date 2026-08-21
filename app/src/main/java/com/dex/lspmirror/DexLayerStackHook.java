@@ -21,6 +21,7 @@ import de.robv.android.xposed.XC_MethodHook;
 import de.robv.android.xposed.XposedBridge;
 import de.robv.android.xposed.XposedHelpers;
 import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
+import java.util.Locale;
 
 public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final String TAG = "DexLspMirror";
@@ -589,7 +590,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                     Class<?> c = Class.forName(name, false, cl);
                     StringBuilder sb = new StringBuilder();
                     for (Method m : c.getDeclaredMethods()) {
-                        String n = m.getName().toLowerCase();
+                        String n = m.getName().toLowerCase(Locale.ROOT);
                         if (n.contains("layerstack") || n.contains("layer_stack")) {
                             sb.append(m.getName()).append('(')
                               .append(java.util.Arrays.toString(m.getParameterTypes()))
@@ -1228,13 +1229,13 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         for (Class<?> c = tda.getClass(); c != null; c = c.getSuperclass()) {
             try {
                 for (Method m : c.getDeclaredMethods()) {
-                    String name = m.getName().toLowerCase();
+                    String name = m.getName().toLowerCase(Locale.ROOT);
                     if (name.contains("display") || name.contains("content")) {
                         methods.append(m.getName()).append(' ');
                     }
                 }
                 for (Field f : c.getDeclaredFields()) {
-                    String name = f.getName().toLowerCase();
+                    String name = f.getName().toLowerCase(Locale.ROOT);
                     if (name.contains("display") || name.contains("content")) {
                         fields.append(f.getName()).append(' ');
                     }

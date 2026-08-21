@@ -30,7 +30,7 @@
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/autoConnectClientCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="自动连接 Moonlight 客户端" />
+                android:text="@string/connection_auto_connect_client" />
 
             <LinearLayout
                 android:id="@+id/clientConnectionContainer"
@@ -60,7 +60,7 @@
                     android:minWidth="0dp"
                     android:minHeight="0dp"
                     android:padding="0dp"
-                    android:text="连接"
+                    android:text="@string/nav_connect"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -81,7 +81,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="编码格式"
+                android:text="@string/encoder_format"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="14sp" />
 
@@ -100,7 +100,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_ui_input"
-                    android:hint="码率比例"
+                    android:hint="@string/encoder_bitrate_ratio"
                     android:inputType="number"
                     android:paddingStart="12dp"
                     android:paddingEnd="164dp"
@@ -114,7 +114,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_vertical"
                     android:paddingEnd="12dp"
-                    android:text="码率% 25-200 默认100"
+                    android:text="@string/streaming_bitrate_range"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="11sp" />
             </FrameLayout>
@@ -135,7 +135,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_ui_input"
-                    android:hint="编码复杂度"
+                    android:hint="@string/streaming_encoder_complexity"
                     android:inputType="number"
                     android:paddingStart="12dp"
                     android:paddingEnd="148dp"
@@ -149,7 +149,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_vertical"
                     android:paddingEnd="12dp"
-                    android:text="复杂度 0-10 默认5"
+                    android:text="@string/streaming_complexity_range"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="11sp" />
             </FrameLayout>
@@ -164,7 +164,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_ui_input"
-                    android:hint="I 帧间隔"
+                    android:hint="@string/encoder_i_frame_interval"
                     android:inputType="number"
                     android:paddingStart="12dp"
                     android:paddingEnd="154dp"
@@ -178,7 +178,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_vertical"
                     android:paddingEnd="12dp"
-                    android:text="I帧(s) 1-10 默认3"
+                    android:text="@string/streaming_iframe_range"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="11sp" />
             </FrameLayout>
@@ -193,7 +193,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_ui_input"
-                    android:hint="最大编码 FPS"
+                    android:hint="@string/streaming_max_encoder_fps"
                     android:inputType="number"
                     android:paddingStart="12dp"
                     android:paddingEnd="166dp"
@@ -207,7 +207,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_vertical"
                     android:paddingEnd="12dp"
-                    android:text="FPS 1-240 默认60"
+                    android:text="@string/streaming_fps_range"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="11sp" />
             </FrameLayout>
@@ -222,7 +222,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:background="@drawable/bg_ui_input"
-                    android:hint="FEC 百分比"
+                    android:hint="@string/streaming_fec_percent"
                     android:inputType="number"
                     android:paddingStart="12dp"
                     android:paddingEnd="150dp"
@@ -236,7 +236,7 @@
                     android:layout_gravity="end"
                     android:gravity="center_vertical"
                     android:paddingEnd="12dp"
-                    android:text="FEC% 0-50 默认0"
+                    android:text="@string/streaming_fec_range"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="11sp" />
             </FrameLayout>
@@ -261,7 +261,7 @@
                     android:minWidth="0dp"
                     android:minHeight="0dp"
                     android:padding="0dp"
-                    android:text="恢复默认"
+                    android:text="@string/action_restore_default"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="12sp" />
 
@@ -275,7 +275,7 @@
                     android:minWidth="0dp"
                     android:minHeight="0dp"
                     android:padding="0dp"
-                    android:text="保存"
+                    android:text="@string/action_save"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="12sp" />
             </LinearLayout>
@@ -292,28 +292,28 @@
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/encoderLowLatencyCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="低延迟编码" />
+                android:text="@string/encoder_low_latency" />
 
             <View style="@style/LibreDeXDivider" />
 
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/encoderDisableBFramesCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="禁用 B 帧" />
+                android:text="@string/encoder_disable_b_frame" />
 
             <View style="@style/LibreDeXDivider" />
 
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/encoderRealtimePriorityCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="实时优先级" />
+                android:text="@string/encoder_realtime_priority" />
 
             <View style="@style/LibreDeXDivider" />
 
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/encoderDynamicFrameRateCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="动态帧率" />
+                android:text="@string/encoder_dynamic_fps" />
         </LinearLayout>
 
         <LinearLayout
@@ -327,7 +327,7 @@
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/disableUsbAudioCheckbox"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="禁用 USB 外接屏音频输出" />
+                android:text="@string/audio_disable_usb_audio" />
         </LinearLayout>
 
         <Button
@@ -336,7 +336,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:textColor="@color/ui_text_primary"
-            android:text="更换 DeX 壁纸" />
+            android:text="@string/dex_change_wallpaper" />
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -350,7 +350,7 @@
                 android:id="@+id/autoStartBootCheckbox"
                 style="@style/LibreDeXSettingSwitch"
                 android:textColor="@color/ui_text_primary"
-                android:text="开机自启 Sunshine 服务" />
+                android:text="@string/streaming_autostart_sunshine" />
 
             <View style="@style/LibreDeXDivider" />
 
@@ -361,7 +361,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
                 android:textColor="@color/ui_text_primary"
-                android:text="更多设置（屏幕管理 / 输入 / 权限）" />
+                android:text="@string/streaming_more_settings" />
 
             <View style="@style/LibreDeXDivider" />
 
@@ -372,7 +372,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
                 android:textColor="@color/ui_text_primary"
-                android:text="查看日志" />
+                android:text="@string/connection_view_log" />
 
             <Button
                 android:id="@+id/exportLogsButton"
@@ -381,7 +381,7 @@
                 android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
                 android:textColor="@color/ui_text_primary"
-                android:text="导出日志" />
+                android:text="@string/settings_export_log" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>

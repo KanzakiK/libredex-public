@@ -14,7 +14,7 @@
         android:paddingEnd="16dp"
         android:paddingBottom="24dp">
 
-        <TextView style="@style/LibreDeXSectionTitle" android:text="权限与系统" />
+        <TextView style="@style/LibreDeXSectionTitle" android:text="@string/settings_permission_section" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout style="@style/LibreDeXRow">
@@ -26,7 +26,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="Shizuku"
+                        android:text="@string/brand_shizuku"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -35,21 +35,21 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="未授权"
+                        android:text="@string/settings_not_granted"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
                 <Button
                     android:id="@+id/shizukuGrantButton"
                     style="@style/LibreDeXButtonSoft"
-                    android:text="授权" />
+                    android:text="@string/action_grant" />
             </LinearLayout>
             <TextView
                 android:id="@+id/rootShizukuStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="Root: -"
+                android:text="@string/settings_root_status"
                 android:textColor="@color/ui_text_secondary"
                 android:textSize="12sp" />
             <Button
@@ -58,7 +58,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="以 root 重启 Shizuku" />
+                android:text="@string/settings_root_restart_shizuku" />
             <LinearLayout style="@style/LibreDeXRow">
                 <LinearLayout
                     android:layout_width="0dp"
@@ -68,7 +68,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="悬浮窗权限"
+                        android:text="@string/settings_overlay_permission"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -77,7 +77,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="未授权"
+                        android:text="@string/settings_not_granted"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -91,7 +91,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="文件访问权限"
+                        android:text="@string/settings_file_permission"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -100,7 +100,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="未授予"
+                        android:text="@string/settings_file_not_granted"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -114,7 +114,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="UserService"
+                        android:text="@string/brand_userservice"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -123,24 +123,24 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="未运行"
+                        android:text="@string/settings_not_running"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
                 <Button
                     android:id="@+id/restartUserServiceButton"
                     style="@style/LibreDeXButtonSoft"
-                    android:text="重启" />
+                    android:text="@string/action_restart" />
             </LinearLayout>
         </LinearLayout>
 
-        <TextView style="@style/LibreDeXSectionTitle" android:text="外观" />
+        <TextView style="@style/LibreDeXSectionTitle" android:text="@string/settings_appearance" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="主题"
+                android:text="@string/settings_theme"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -154,20 +154,20 @@
                 <Button
                     android:id="@+id/themeSystemButton"
                     style="@style/LibreDeXSegButton"
-                    android:text="跟随系统" />
+                    android:text="@string/settings_follow_system" />
                 <Button
                     android:id="@+id/themeLightButton"
                     style="@style/LibreDeXSegButton"
-                    android:text="浅色" />
+                    android:text="@string/settings_light_theme" />
                 <Button
                     android:id="@+id/themeDarkButton"
                     style="@style/LibreDeXSegButton"
                     android:layout_marginEnd="0dp"
-                    android:text="深色" />
+                    android:text="@string/settings_dark_theme" />
             </LinearLayout>
         </LinearLayout>
 
-        <TextView style="@style/LibreDeXSectionTitle" android:text="开始使用" />
+        <TextView style="@style/LibreDeXSectionTitle" android:text="@string/action_get_started" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout
@@ -181,7 +181,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="初始化配置向导"
+                        android:text="@string/settings_init_guide"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -189,20 +189,20 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="授权与首次连接指引"
+                        android:text="@string/settings_guide_desc"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>
         </LinearLayout>
 
-        <TextView style="@style/LibreDeXSectionTitle" android:text="调试" />
+        <TextView style="@style/LibreDeXSectionTitle" android:text="@string/settings_debug" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout
@@ -212,14 +212,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="查看日志"
+                    android:text="@string/connection_view_log"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>
@@ -230,20 +230,20 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="导出日志"
+                    android:text="@string/settings_export_log"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>
         </LinearLayout>
 
-        <TextView style="@style/LibreDeXSectionTitle" android:text="关于" />
+        <TextView style="@style/LibreDeXSectionTitle" android:text="@string/action_about" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout
@@ -253,14 +253,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="关于 LibreDeX"
+                    android:text="@string/settings_about_libredex"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>

@@ -30,7 +30,7 @@
             android:gravity="center_vertical"
             android:includeFontPadding="false"
             android:maxLines="1"
-            android:text="调试日志"
+            android:text="@string/log_debug"
             android:textColor="@color/ui_text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
@@ -49,7 +49,7 @@
             android:minHeight="0dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
-            android:text="握手信息"
+            android:text="@string/log_handshake"
             android:textColor="@color/ui_text_primary"
             android:textSize="11.5sp" />
 
@@ -68,7 +68,7 @@
             android:minHeight="0dp"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
-            android:text="控制统计"
+            android:text="@string/log_control_stats"
             android:textColor="@color/ui_text_primary"
             android:textSize="11.5sp" />
     </LinearLayout>

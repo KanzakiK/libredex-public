@@ -8,7 +8,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="这个分辨率只是控制 displaylink 芯片的扩展坞输出分辨率。如果是 typec 直连屏幕则改不了分辨率，完全看安卓操作系统自动分配的分辨率。如果是 moonlight 无线投屏，可以在 moonlight 的设置里修改分辨率和码率。"
+        android:text="@string/dialog_resolution_displaylink_note"
         android:textSize="14sp"
         android:textColor="@color/ui_text_secondary"
         android:layout_marginBottom="16dp"/>
@@ -23,7 +23,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="预设分辨率"
+            android:text="@string/dialog_resolution_preset"
             android:textSize="16sp"/>
 
         <Spinner
@@ -41,7 +41,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="宽度: "
+            android:text="@string/dialog_resolution_width_label"
             android:textSize="16sp"/>
 
         <EditText
@@ -50,7 +50,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:inputType="number"
-            android:hint="宽度"/>
+            android:hint="@string/dialog_resolution_width"/>
     </LinearLayout>
 
     <LinearLayout
@@ -63,7 +63,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="高度: "
+            android:text="@string/dialog_resolution_height_label"
             android:textSize="16sp"/>
 
         <EditText
@@ -72,7 +72,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:inputType="number"
-            android:hint="高度"/>
+            android:hint="@string/dialog_resolution_height"/>
     </LinearLayout>
 
     <LinearLayout
@@ -84,7 +84,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="刷新率:"
+            android:text="@string/dialog_resolution_refresh_label"
             android:layout_marginEnd="8dp"/>
 
         <EditText
@@ -93,6 +93,6 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:inputType="number"
-            android:hint="Hz"/>
+            android:hint="@string/unit_hz"/>
     </LinearLayout>
 </LinearLayout> 

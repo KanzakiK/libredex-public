@@ -3,13 +3,13 @@
     <item
         android:id="@+id/nav_home"
         android:icon="@drawable/ic_home"
-        android:title="连接" />
+        android:title="@string/nav_connect" />
     <item
         android:id="@+id/nav_dex"
         android:icon="@drawable/ic_mirror_foreground"
-        android:title="DeX" />
+        android:title="@string/brand_dex" />
     <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/ic_settings"
-        android:title="设置" />
+        android:title="@string/settings_title" />
 </menu>

@@ -26,14 +26,14 @@
                 android:id="@+id/wiredActivation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="有线激活"
+                android:text="@string/shizuku_wired_activation"
                 android:checked="true"/>
 
             <RadioButton
                 android:id="@+id/wirelessActivation"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="无线激活"
+                android:text="@string/shizuku_wireless_activation"
                 android:layout_marginStart="16dp"/>
         </RadioGroup>
 
@@ -72,7 +72,7 @@
             android:id="@+id/installButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="安装 shizuku"
+            android:text="@string/shizuku_install"
             android:layout_marginTop="16dp"
             android:visibility="gone"/>
 

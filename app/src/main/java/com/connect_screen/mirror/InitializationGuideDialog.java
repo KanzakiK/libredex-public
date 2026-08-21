@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat;
 import com.connect_screen.mirror.job.AcquireShizuku;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import java.util.Locale;
 
 public final class InitializationGuideDialog {
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
@@ -213,7 +214,7 @@ public final class InitializationGuideDialog {
                     String lsp = State.userService.fetchLspLogs();
                     if (lsp != null
                             && !lsp.replace("=====", "").trim().isEmpty()
-                            && lsp.toLowerCase().contains("lsposedframework")) {
+                            && lsp.toLowerCase(Locale.ROOT).contains("lsposedframework")) {
                         s = "已检测到框架活跃";
                     }
                 }
@@ -333,7 +334,7 @@ public final class InitializationGuideDialog {
         if (out == null) {
             return false;
         }
-        String lower = out.toLowerCase();
+        String lower = out.toLowerCase(Locale.ROOT);
         boolean hasStarting = lower.contains("starting: intent");
         boolean hasError = lower.contains("does not exist")
                 || lower.contains("error type")

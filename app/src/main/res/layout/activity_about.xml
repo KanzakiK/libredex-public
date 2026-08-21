@@ -22,7 +22,7 @@
             android:layout_width="64dp"
             android:layout_height="match_parent"
             android:gravity="center_vertical"
-            android:text="返回"
+            android:text="@string/action_back"
             android:textColor="@color/ui_text_primary"
             android:textSize="15sp" />
 
@@ -31,7 +31,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="关于"
+            android:text="@string/action_about"
             android:textColor="@color/ui_text_primary"
             android:textSize="17sp"
             android:textStyle="bold" />
@@ -65,7 +65,7 @@
                 android:id="@+id/aboutAppIcon"
                 android:layout_width="96dp"
                 android:layout_height="96dp"
-                android:contentDescription="LibreDeX"
+                android:contentDescription="@string/brand_libredex"
                 android:src="@mipmap/ic_launcher_v2" />
 
             <TextView
@@ -74,7 +74,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:gravity="center"
-                android:text="LibreDeX"
+                android:text="@string/brand_libredex"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="22sp"
                 android:textStyle="bold" />
@@ -85,7 +85,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:gravity="center"
-                android:text="版本："
+                android:text="@string/about_version"
                 android:textColor="@color/ui_text_secondary"
                 android:textSize="14sp" />
 
@@ -110,13 +110,13 @@
                 android:id="@+id/githubButton"
                 style="@style/LibreDeXLargeButton"
                 android:layout_marginTop="@dimen/ui_section_gap"
-                android:text="GitHub 项目地址" />
+                android:text="@string/about_github_url" />
 
             <Button
                 android:id="@+id/releasesButton"
                 style="@style/LibreDeXLargeButton"
                 android:layout_marginTop="@dimen/ui_row_gap"
-                android:text="下载最新版本" />
+                android:text="@string/about_download_latest" />
         </LinearLayout>
     </ScrollView>
 </LinearLayout>
