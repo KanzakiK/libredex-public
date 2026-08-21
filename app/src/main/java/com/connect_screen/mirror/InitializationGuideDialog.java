@@ -182,10 +182,10 @@ public final class InitializationGuideDialog {
 
     private void refreshStatusTexts() {
         // 快速本地状态（无 Binder/root），直接主线程更新
-        updateText(shizukuStatusText, ShizukuUtils.hasPermission() ? "已授权" : activity.getString(R.string.settings_not_granted));
-        updateText(overlayStatusText, canDrawOverlays() ? "已授权" : activity.getString(R.string.settings_not_granted));
-        updateText(audioStatusText, isRecordAudioGranted() ? "已授权" : activity.getString(R.string.settings_not_granted));
-        updateText(fileStatusText, isFileAccessReady() ? "已授予" : activity.getString(R.string.settings_file_not_granted));
+        updateText(shizukuStatusText, ShizukuUtils.hasPermission() ? activity.getString(R.string.settings_authorized) : activity.getString(R.string.settings_not_granted));
+        updateText(overlayStatusText, canDrawOverlays() ? activity.getString(R.string.settings_authorized) : activity.getString(R.string.settings_not_granted));
+        updateText(audioStatusText, isRecordAudioGranted() ? activity.getString(R.string.settings_authorized) : activity.getString(R.string.settings_not_granted));
+        updateText(fileStatusText, isFileAccessReady() ? activity.getString(R.string.settings_granted) : activity.getString(R.string.settings_file_not_granted));
         // Root 与 LSPosed 状态涉及跨进程 Binder / root / logcat，必须在后台线程执行，
         // 否则会阻塞主线程导致输入超时 ANR（此前实测 lspStatusLine 卡死主线程）。
         refreshRootStatusAsync();

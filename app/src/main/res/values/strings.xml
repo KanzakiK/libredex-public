@@ -380,4 +380,5 @@
     <string name="guide_file_note">Used to write logs / archives to the Downloads folder.</string>
     <string name="guide_label_screen_capture">Screen capture (projection)</string>
     <string name="guide_screen_capture_note">The system prompts for projection authorization when a connection starts; just confirm it there. No need to grant it in advance here.</string>
+    <string name="debug_no_handshake">No recent Moonlight connection handshake info</string>
 </resources>

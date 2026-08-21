@@ -4,8 +4,6 @@ import android.app.Application;
 
 import com.connect_screen.mirror.transport.TransportRegistry;
 
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.core.os.LocaleListCompat;
 import rikka.shizuku.Shizuku;
 
 public class LibreDeXApp extends Application {
@@ -14,7 +12,6 @@ public class LibreDeXApp extends Application {
         super.onCreate();
         TransportRegistry.discover();
         Pref.init(this);
-        applyPersistedLanguage();
         int lastVersion = Pref.getLastRunVersionCode();
         int currentVersion = BuildConfig.VERSION_CODE;
         String lastCommit = Pref.getLastRunCommit();
@@ -39,23 +36,12 @@ public class LibreDeXApp extends Application {
     }
 
     /**
-     * Restore the user's language override ("system" or a BCP-47 tag) before
-     * any activity is created. Mechanism is AppCompat's application-level
-     * locales, so it works on every AppCompatActivity and survives process
-     * death via Pref.
+     * The language override is now applied in MirrorMainActivity.onCreate
+     * (only when a non-system language was chosen), so the default path makes
+     * zero AppCompat locale calls and stays identical to pre-i18n behavior.
+     * The empty-list "follow system" call is intentionally not made at app
+     * startup to avoid spurious locale-change activity recreations.
      */
-    private void applyPersistedLanguage() {
-        String lang = Pref.getLanguageMode();
-        try {
-            if (lang == null || lang.isEmpty() || "system".equals(lang)) {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList());
-            } else {
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang));
-            }
-        } catch (Throwable ignored) {
-        }
-    }
-
     private void recycleStaleUserService() {
         // A Shizuku user service is a daemon: force-stopping or swiping away
         // the app does not destroy it, so a stale process can keep an old

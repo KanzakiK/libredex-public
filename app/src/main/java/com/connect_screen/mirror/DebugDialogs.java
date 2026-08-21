@@ -14,7 +14,7 @@ public final class DebugDialogs {
     public static void showLastMoonlightHandshakeDialog(Context context) {
         String handshakeInfo = State.lastMoonlightHandshakeInfo;
         if (handshakeInfo == null || handshakeInfo.trim().isEmpty()) {
-            handshakeInfo = "尚无最近一次 Moonlight 连接握手信息";
+            handshakeInfo = context.getString(R.string.debug_no_handshake);
         }
         showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_handshake), handshakeInfo, "Moonlight 握手信息", "已复制握手信息");
     }
