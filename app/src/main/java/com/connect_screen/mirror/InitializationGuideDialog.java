@@ -83,13 +83,26 @@ public final class InitializationGuideDialog {
         content = new LinearLayout(activity);
         content.setOrientation(LinearLayout.VERTICAL);
         int padding = dp(20);
-        content.setPadding(padding, dp(10), padding, 0);
+        content.setPadding(padding, dp(8), padding, dp(8));
 
+        // 总标题（替代对话框默认 title，统一加粗与大字号）
+        TextView guideTitle = new TextView(activity);
+        guideTitle.setText(activity.getString(R.string.guide_title));
+        guideTitle.setTextSize(20);
+        guideTitle.setTypeface(Typeface.DEFAULT_BOLD);
+        guideTitle.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_primary));
+        LinearLayout.LayoutParams gtLp = matchWrapParams();
+        gtLp.bottomMargin = dp(2);
+        content.addView(guideTitle, gtLp);
+
+        // 页面标题
         pageTitle = new TextView(activity);
-        pageTitle.setTextSize(19);
+        pageTitle.setTextSize(15);
         pageTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        pageTitle.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_primary));
-        content.addView(pageTitle, matchWrapParams());
+        pageTitle.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
+        LinearLayout.LayoutParams ptLp = matchWrapParams();
+        ptLp.bottomMargin = dp(10);
+        content.addView(pageTitle, ptLp);
 
         pages = new View[]{
                 createLspPage(),
@@ -105,7 +118,7 @@ public final class InitializationGuideDialog {
 
         LinearLayout nav = new LinearLayout(activity);
         nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.setPadding(0, dp(6), 0, dp(4));
+        nav.setPadding(0, dp(10), 0, dp(2));
         nav.setGravity(android.view.Gravity.CENTER_VERTICAL);
 
         prevButton.setOnClickListener(v -> goToPage(page - 1));
@@ -132,15 +145,12 @@ public final class InitializationGuideDialog {
         content.addView(nav, matchWrapParams());
 
         dialog = new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle(activity.getString(R.string.guide_title))
                 .setView(content)
-                .setCancelable(false)
+                .setCancelable(true)
                 .create();
         showing = true;
-        dialog.setOnDismissListener(d -> {
-            showing = false;
-            Pref.setInitialSetupComplete(true);
-        });
+        // 点击外部 / 返回键 = 取消（隐藏），不算完成：下次启动仍需引导。
+        dialog.setOnDismissListener(d -> showing = false);
         dialog.setOnShowListener(d -> showPage(0));
         dialog.show();
     }
@@ -655,10 +665,11 @@ public final class InitializationGuideDialog {
         b.setMinWidth(0);
         b.setMinHeight(0);
         b.setMinimumHeight(0);
-        b.setPadding(dp(20), 0, dp(20), 0);
+        b.setIncludeFontPadding(false);
+        b.setPadding(dp(22), dp(10), dp(22), dp(10));
         b.setLayoutParams(new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
-                dp(44)));
+                dp(48)));
         return b;
     }
 
