@@ -10,30 +10,23 @@ LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — p
 
 ## Features
 
-### Beyond stock DeX
-- **Up to 4K120 Moonlight streaming** — HEVC (auto-fallback to H.264), frame rate follows the client's request; full mouse / keyboard / touch input relay, local speaker mute, live session stats. High resolutions run hot — keep an eye on thermals.
-- **High refresh on external displays** — e.g. 2K144 over DP/HDMI, while the phone screen holds 120 Hz when docked.
-- **Official wireless DeX via Miracast** — dormant in the firmware, unlocked: cast the desktop to Miracast displays / Smart TVs.
-- **Full DeX settings page unlocked in system Settings** — resolution, font size & scaling, IME-on-DeX-screen toggle. Just search "DeX".
-- **Screen management extras** — real / black-image simulated screen-off, fake screen-off (power key never locks mid-session), sleep blocking.
-- **Refresh-rate unlock hooks** — the phone keeps 120 Hz even when a DeX session would drag it down to 60.
+### Beyond stock DeX — what stock DeX can't do
 
-### Desktop mode (native DeX)
-- Virtual display with the system SecondaryLauncher as a fullscreen home; resolution configurable in-app (1920×1080 default, **4K verified**); start / restart / release sessions anytime.
-- Wallpaper picker & virtual touchpad shipped in-app — the stock DeX wallpaper setting is dead and the touchpad entry is missing, so LibreDeX fills both.
+- **Up to 4K120 Moonlight streaming** — HEVC (auto-fallback to H.264), frame rate follows the client's request; full mouse / keyboard / touch input relay, local speaker mute, live session stats. ⚠️ Runs hot at 4K120, watch thermals.
+- **High refresh on external displays** — up to 2K144 over DP/HDMI, while the phone screen holds 120 Hz when docked (stock DeX caps the external panel at 60 Hz).
+- **Screen-off extras** — real / black-image simulated screen-off, fake screen-off (power key never locks mid-session), sleep blocking.
+- **Refresh-rate unlock hooks** — the phone stays at 120 Hz even when a DeX session would drag it down to 60.
+- **Diagnostics & logs** — in-app log panel with one-tap export (bundles device / OS / app version + LSPosed logs), Moonlight handshake & control-input stats, auto-cleaning logs.
 
-### Wired output (DP / HDMI)
-- External display mirrors the DeX desktop or the phone screen; custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
+### Stock DeX parity — the full DeX experience on the Flip 5
 
-### Screen settings (experimental)
-- Per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
-
-### Mirror adaptation
-- Auto aspect-ratio matching & auto-rotation; detects the inner and outer (Flip 5 cover) displays.
-
-### Multi-language & diagnostics
-- zh-CN / English UI with in-app language switcher; English runtime logs.
-- One-tap log export bundling device / OS / app version and LSPosed logs; logs auto-clean.
+- **Desktop mode** — virtual display with the system SecondaryLauncher as home; resolution configurable in-app (1920×1080 default, **4K verified**); wallpaper picker & virtual touchpad included (the stock entries are dead / missing on this device).
+- **Wireless DeX (Miracast)** — dormant in the firmware, unlocked: cast the desktop to Miracast displays / Smart TVs.
+- **Wired output (DP / HDMI)** — DeX desktop or phone mirror on an external display; 4K output with custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`, re-plug once after applying); auto-stops on unplug.
+- **DeX settings page unlocked in system Settings** — resolution, font size & scaling, IME-on-DeX-screen toggle; just search "DeX".
+- **Screen settings (experimental)** — per-display resolution / DPI / refresh-mode / rotation controls (built-in screen is view-only).
+- **Mirror adaptation** — auto aspect-ratio matching & auto-rotation; inner / outer (cover) display aware.
+- **Multi-language** — zh-CN / English UI with in-app language switcher; English runtime logs.
 
 ---
 
