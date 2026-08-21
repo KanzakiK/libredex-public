@@ -1612,12 +1612,11 @@ public class UserService extends IUserService.Stub  {
             ctor.setAccessible(true);
             dm = ctor.newInstance(FakeContext.get());
         }
-        // Keep the legacy createVirtualDisplay(name,w,h,displayIdToMirror,surface)
-        // path for the mirror VD: building the VD ourselves with a
-        // VirtualDisplayConfig leaves it without mirrored content (black
-        // screen). The legacy API mirrors the panel correctly; we then push the
-        // requested frame rate onto the Display so the VD advertises a 120 Hz
-        // mode instead of the fixed 60 Hz default.
+        // The legacy createVirtualDisplay(name,w,h,displayIdToMirror,surface)
+        // path is the only one that produces mirrored content on this firmware
+        // (VirtualDisplayConfig-based builds come up black). The 120 Hz mode is
+        // applied by the LSPosed hook on VirtualDisplayDevice
+        // getDisplayDeviceInfoLocked; frameRate is accepted for future use.
         Method method = android.hardware.display.DisplayManager.class
                 .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class);
         if (mirrorVirtualDisplay != null) {
@@ -1627,11 +1626,6 @@ public class UserService extends IUserService.Stub  {
         mirrorVirtualDisplay = (VirtualDisplay) method.invoke(dm, name, width, height, displayIdToMirror, surface);
         int vdId = mirrorVirtualDisplay.getDisplay().getDisplayId();
         Ln.i("createExternalMirror [API31+] success, virtualDisplayId=" + vdId);
-        // NOTE: pushing a refresh rate onto the mirror VD (Display
-        // setRequestedRefreshRate / VirtualDisplayConfig setRequestedRefreshRate)
-        // breaks mouse-to-touch injection (InputDispatcher rejects the events),
-        // so the mirror path intentionally keeps the legacy 60 Hz VD. The DeX
-        // path (createDexMirror) keeps its own requested-refresh-rate support.
         return vdId;
     }
 

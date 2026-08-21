@@ -1189,6 +1189,7 @@ public class SunshineMouse {
         touchGestureDownTime = 0;
         singlePoint = null;
         lastFocusedDisplayId = Integer.MIN_VALUE;
+        dexTargetDisplayId = Integer.MIN_VALUE;
     }
 
     private static void resetTouchInputDebugStats() {
