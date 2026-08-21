@@ -254,7 +254,7 @@
 
                 <Button
                     android:id="@+id/resetEncoderSettingsButton"
-                    android:layout_width="92dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="@dimen/ui_small_button_height"
                     android:background="@drawable/bg_ui_small_button"
                     android:elevation="@dimen/ui_shadow_small"
@@ -267,7 +267,7 @@
 
                 <Button
                     android:id="@+id/saveEncoderSettingsButton"
-                    android:layout_width="92dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="@dimen/ui_small_button_height"
                     android:layout_marginStart="10dp"
                     android:background="@drawable/bg_ui_small_button"
