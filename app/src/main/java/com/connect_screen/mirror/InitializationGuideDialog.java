@@ -157,7 +157,7 @@ public final class InitializationGuideDialog {
             return;
         }
         framePage.removeAllViews();
-        String[] titles = {"LSPosed Hook", "Shizuku / Root / 悬浮窗", "录音", "文件访问 · 完成"};
+        String[] titles = {activity.getString(R.string.guide_page_title_lsposed), activity.getString(R.string.guide_page_title_environment), activity.getString(R.string.guide_page_title_recording), activity.getString(R.string.guide_page_title_files)};
         pageTitle.setText(titles[index]);
         framePage.addView(pages[index], matchWrapParams());
 
@@ -252,12 +252,10 @@ public final class InitializationGuideDialog {
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(0, dp(6), 0, 0);
-        col.addView(label("检测结果"), wrapParams());
+        col.addView(label(activity.getString(R.string.guide_label_result)), wrapParams());
         col.addView(lspStatusText, matchWrapParams());
 
-        TextView hint = note("LibreDeX 的核心显示/输入钩子依赖 LSPosed（原版或 Vector 均可）。\n"
-                + "请在其中启用本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。\n"
-                + "提示：Vector 变种没有独立 App，入口在桌面的“LSPosed”快捷方式或通知栏里。");
+        TextView hint = note(activity.getString(R.string.guide_lsposed_note));
         col.addView(hint, matchWrapParams());
 
         Button openLsp = new Button(activity);
@@ -302,10 +300,10 @@ public final class InitializationGuideDialog {
                     launched = launchStandaloneLsposedPackage();
                 }
                 if (!launched) {
-                    error = "未检测到 LSPosed / Vector 管理器打开";
+                    error = activity.getString(R.string.guide_lsposed_manager_not_open);
                 }
             } catch (Throwable t) {
-                error = "拉起失败：" + (t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
+                error = activity.getString(R.string.guide_launch_failed_fmt, t.getMessage() == null ? t.getClass().getSimpleName() : t.getMessage());
             }
 
             final String err = error;
@@ -402,11 +400,7 @@ public final class InitializationGuideDialog {
         new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setTitle(activity.getString(R.string.guide_lsposed_not_found))
                 .setMessage(activity.getString(R.string.guide_lsposed_entry_note)
-                        + "请手动打开：\n"
-                        + "· 桌面上的“LSPosed（Vector）”快捷方式，或\n"
-                        + "· 下拉通知栏里的 LSPosed / Vector 入口。\n\n"
-                        + "若已打开并启用了本模块，作用域勾选 android / 三星设置 / 桌面，"
-                        + "然后重启手机使 Hook 生效。")
+                        + activity.getString(R.string.guide_open_lsposed_manual))
                 .setPositiveButton(activity.getString(R.string.action_got_it), null)
                 .show();
     }
@@ -417,7 +411,7 @@ public final class InitializationGuideDialog {
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(0, dp(6), 0, 0);
 
-        col.addView(label("Root / UserService"), wrapParams());
+        col.addView(label(activity.getString(R.string.guide_label_root_userservice)), wrapParams());
         rootStatusText = new TextView(activity);
         rootStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
         rootStatusText.setTextSize(13);
@@ -441,7 +435,7 @@ public final class InitializationGuideDialog {
             }, "guide-root-restart").start();
         });
         col.addView(rootBtn, wrapParamsR());
-        col.addView(note("Root 是悬浮窗/投屏“一键静默授权”的基础；应用打开时会自动尝试拉起授权。"),
+        col.addView(note(activity.getString(R.string.guide_root_note)),
                 matchWrapParams());
 
         col.addView(label(activity.getString(R.string.brand_shizuku)), wrapParamsR());
@@ -518,9 +512,9 @@ public final class InitializationGuideDialog {
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(0, dp(6), 0, 0);
-        col.addView(label("录音权限"), wrapParams());
+        col.addView(label(activity.getString(R.string.guide_label_recording_permission)), wrapParams());
         col.addView(audioStatusText, matchWrapParams());
-        col.addView(note("用于采集系统播放音频；未授权仍可串流画面，只是没有声音。可跳过。"),
+        col.addView(note(activity.getString(R.string.guide_recording_note)),
                 matchWrapParams());
         Button grantBtn = new Button(activity);
         grantBtn.setText(activity.getString(R.string.action_grant));
@@ -546,7 +540,7 @@ public final class InitializationGuideDialog {
         col.setPadding(0, dp(6), 0, 0);
         col.addView(label(activity.getString(R.string.settings_file_permission)), wrapParams());
         col.addView(fileStatusText, matchWrapParams());
-        col.addView(note("用于把日志/压缩包写入下载目录。"), matchWrapParams());
+        col.addView(note(activity.getString(R.string.guide_file_note)), matchWrapParams());
         Button fileBtn = new Button(activity);
         fileBtn.setText(activity.getString(R.string.action_grant));
         styleSmallButton(fileBtn);
@@ -562,8 +556,8 @@ public final class InitializationGuideDialog {
         });
         col.addView(fileBtn, wrapParamsR());
 
-        col.addView(label("屏幕采集（投屏）"), wrapParamsR());
-        col.addView(note("开始连接时系统会自动弹出投屏授权，确认即可；无需在此提前授权。"),
+        col.addView(label(activity.getString(R.string.guide_label_screen_capture)), wrapParamsR());
+        col.addView(note(activity.getString(R.string.guide_screen_capture_note)),
                 matchWrapParams());
         return col;
     }
