@@ -14,8 +14,18 @@ public class LibreDeXApp extends Application {
         Pref.init(this);
         int lastVersion = Pref.getLastRunVersionCode();
         int currentVersion = BuildConfig.VERSION_CODE;
-        if (lastVersion != currentVersion) {
-            Pref.setLastRunVersionCode(currentVersion);
+        String lastCommit = Pref.getLastRunCommit();
+        String currentCommit = BuildConfig.COMMIT;
+        // Restart the Shizuku UserService when the code changed: either the
+        // version number bumped or the build commit differs (dev builds often
+        // reinstall the same version with new code). Same-version same-commit
+        // launches keep the daemon alive (avoids frequent restarts that could
+        // trip the Samsung process manager).
+        boolean codeChanged = lastVersion != currentVersion
+                || !currentCommit.equals(lastCommit);
+        Pref.setLastRunVersionCode(currentVersion);
+        Pref.setLastRunCommit(currentCommit);
+        if (codeChanged) {
             recycleStaleUserServiceAfterUpdate();
         } else {
             recycleStaleUserService();

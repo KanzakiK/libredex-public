@@ -42,6 +42,7 @@ public class Pref {
     public static final String KEY_INITIAL_SETUP_COMPLETE = "initial_setup_complete";
     public static final String KEY_FIRST_USE_HIDDEN = "first_use_hidden";
     public static final String KEY_LAST_RUN_VERSION_CODE = "last_run_version_code";
+    public static final String KEY_LAST_RUN_COMMIT = "last_run_commit";
     public static final String KEY_DP_SESSION_STARTED = "dp_session_started";
     public static final String KEY_DP_OUTPUT_MODE = "dp_output_mode";
     public static final int ENCODER_CODEC_H264 = 0;
@@ -214,6 +215,14 @@ public class Pref {
 
     public static void setLastRunVersionCode(int versionCode) {
         getPreferences().edit().putInt(KEY_LAST_RUN_VERSION_CODE, versionCode).apply();
+    }
+
+    public static String getLastRunCommit() {
+        return getString(KEY_LAST_RUN_COMMIT, "");
+    }
+
+    public static void setLastRunCommit(String commit) {
+        getPreferences().edit().putString(KEY_LAST_RUN_COMMIT, commit).apply();
     }
 
     public static boolean getDpSessionStarted() {

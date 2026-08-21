@@ -82,9 +82,37 @@ public class UserService extends IUserService.Stub  {
     private static final long MAX_TOTAL_LOG_BYTES = 64L * 1024 * 1024;
     private static final int KEEP_LOG_DAYS = 7;
 
+    // Periodic log housekeeping: trimLogFiles() only ran on export before, so
+    // a user who never exports would accumulate logs forever. A daemon timer
+    // checks the log dir regularly and applies the same retention rules
+    // (7 days / 24 MB daily / 64 MB total). Daemon thread dies with the
+    // process on destroy() -> System.exit(0), so no explicit shutdown needed.
+    private final java.util.concurrent.ScheduledExecutorService logTrimScheduler =
+            java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "libredex-log-trim");
+                t.setDaemon(true);
+                return t;
+            });
+
+    private void scheduleLogTrim() {
+        try {
+            logTrimScheduler.scheduleWithFixedDelay(() -> {
+                try {
+                    trimLogFiles(getLogDirectory());
+                } catch (Throwable t) {
+                    Ln.w("periodic log trim failed: " + t);
+                }
+            }, 15, 30, java.util.concurrent.TimeUnit.MINUTES);
+            Ln.i("log trim scheduler started (every 30 min)");
+        } catch (Throwable t) {
+            Ln.w("log trim scheduler failed: " + t);
+        }
+    }
+
     public UserService() {
         Ln.i("Start UserService without context: uid=" + android.os.Process.myUid()
                 + " sdk=" + Build.VERSION.SDK_INT + " su=" + findSuBinary());
+        scheduleLogTrim();
     }
 
     @Keep
@@ -92,6 +120,7 @@ public class UserService extends IUserService.Stub  {
         this.context = context;
         Ln.i("Start UserService with context: uid=" + android.os.Process.myUid()
                 + " sdk=" + Build.VERSION.SDK_INT + " su=" + findSuBinary());
+        scheduleLogTrim();
     }
 
     /**

@@ -203,7 +203,8 @@ public class FetchLogAndShare implements Job {
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
         StringBuilder sb = new StringBuilder();
         sb.append("LibreDeX ").append(BuildConfig.VERSION_NAME)
-                .append(" (versionCode ").append(BuildConfig.VERSION_CODE).append(")\n");
+                .append(" (versionCode ").append(BuildConfig.VERSION_CODE)
+                .append(", commit ").append(BuildConfig.COMMIT).append(")\n");
         sb.append("Exported ").append(dateFormat.format(new Date())).append('\n');
         sb.append("Android ").append(Build.VERSION.RELEASE)
                 .append(" (SDK ").append(Build.VERSION.SDK_INT).append(")\n");

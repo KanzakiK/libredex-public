@@ -314,6 +314,12 @@
 
         
 
+
+        <LinearLayout
+            android:id="@+id/sharedCardsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
 <LinearLayout
                     android:id="@+id/telemetryChips"
                     android:layout_width="match_parent"
@@ -530,6 +536,8 @@
                         app:tint="@color/ui_text_secondary" />
                 </LinearLayout>
             </LinearLayout>
+
+        </LinearLayout>
 <LinearLayout
             android:id="@+id/placeholderContent"
             android:layout_width="match_parent"
