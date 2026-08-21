@@ -402,7 +402,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
             newUiState.screenOffBtnVisibility = true;
             newUiState.screenOffBtnEnabled = Pref.getUseBlackImage() || ShizukuUtils.hasPermission();
         } else {
-            newUiState.mirrorStatusText = "Sunshine 服务已启动，等待连接中";
+            newUiState.mirrorStatusText = getString(R.string.mirror_sunshine_waiting);
             newUiState.screenOffBtnVisibility = false;
             newUiState.screenOffBtnEnabled = false;
         }

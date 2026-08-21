@@ -342,4 +342,26 @@
     <string name="screen_shizuku_granted_note">已获得 Shizuku 权限。外接屏可修改参数，内置屏幕仅允许查看。</string>
     <string name="screen_shizuku_not_granted_note">未获得 Shizuku 权限，只能查看基础屏幕信息。</string>
     <string name="settings_root_restart_failed">以 root 重启 Shizuku 失败</string>
+    <string name="connection_processing">处理中</string>
+    <string name="connection_waiting_connect">等待连接</string>
+    <string name="mirror_sunshine_waiting">Sunshine 服务已启动，等待连接中</string>
+    <string name="moonlight_cursor_hint">按 Ctrl+Alt+Shift+C 打开光标\n如果不可操控，请在 Moonlight 切换一下控制模式</string>
+    <string name="debug_summary_placeholder">编码状态：未启动\n编码器：--\n分辨率：--\n帧率：输入 -- / 输出 --\n码率：--\nPing：--</string>
+    <string name="debug_label_status">编码状态：</string>
+    <string name="debug_label_encoder">编码器：</string>
+    <string name="debug_label_resolution">分辨率：</string>
+    <string name="debug_label_fps_req">请求/编码帧率：</string>
+    <string name="debug_label_fps_io">输入/输出帧率：</string>
+    <string name="debug_label_bitrate">码率：</string>
+    <string name="debug_label_ping">Ping：</string>
+    <string name="debug_join_level"> / Level %1$s</string>
+    <string name="debug_join_target"> / 目标 %1$s</string>
+    <string name="debug_field_priority">优先级</string>
+    <string name="debug_field_audio">音频</string>
+    <string name="debug_field_color">色彩</string>
+    <string name="debug_field_output_gap">输出间隔</string>
+    <string name="debug_field_queue">队列</string>
+    <string name="debug_field_native">Native</string>
+    <string name="debug_field_frame_pacer">Frame pacer</string>
+    <string name="debug_field_sep">：</string>
 </resources>

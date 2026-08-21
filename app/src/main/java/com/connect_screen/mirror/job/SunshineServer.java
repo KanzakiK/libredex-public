@@ -70,8 +70,6 @@ public class SunshineServer {
     private static volatile int activeVideoHeight;
     public static volatile int activeDexDisplayId = -1;
     private static volatile boolean videoSourceCancelled;
-    private static final String MOONLIGHT_CONTROL_HINT =
-            "按 Ctrl+Alt+Shift+C 打开光标\n如果不可操控，请在 Moonlight 切换一下控制模式";
 
     static {
         System.loadLibrary("sunshine");
@@ -430,9 +428,9 @@ public class SunshineServer {
             if (context == null) {
                 return;
             }
-            Toast.makeText(context, MOONLIGHT_CONTROL_HINT, Toast.LENGTH_LONG).show();
+            Toast.makeText(context, context.getString(R.string.moonlight_cursor_hint), Toast.LENGTH_LONG).show();
             new Handler(Looper.getMainLooper()).postDelayed(() ->
-                    Toast.makeText(context, MOONLIGHT_CONTROL_HINT, Toast.LENGTH_LONG).show(), 3500);
+                    Toast.makeText(context, context.getString(R.string.moonlight_cursor_hint), Toast.LENGTH_LONG).show(), 3500);
         });
     }
 

@@ -850,13 +850,13 @@ public class ConnectionFragment extends Fragment {
         switch (lifecycleState) {
             case STARTING:
                 serviceSub.setText(getString(R.string.connection_sunshine_starting));
-                setBadge(serviceBadge, "处理中", false);
+                setBadge(serviceBadge, getString(R.string.connection_processing), false);
                 setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                         R.color.ui_on_accent, true);
                 break;
             case STOPPING:
                 serviceSub.setText(getString(R.string.connection_sunshine_stopping));
-                setBadge(serviceBadge, "处理中", false);
+                setBadge(serviceBadge, getString(R.string.connection_processing), false);
                 setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                         R.color.ui_on_accent, true);
                 break;
@@ -868,7 +868,7 @@ public class ConnectionFragment extends Fragment {
                             R.color.ui_on_accent, true);
                 } else {
                     serviceSub.setText(getString(R.string.connection_sunshine_started));
-                    setBadge(serviceBadge, "等待连接", true);
+                    setBadge(serviceBadge, getString(R.string.connection_waiting_connect), true);
                     setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                             R.color.ui_on_accent, true);
                 }
@@ -1059,7 +1059,7 @@ public class ConnectionFragment extends Fragment {
 
     private String buildDebugPanelSummaryText(String info) {
         if (info == null || info.trim().isEmpty() || "串流未启动".equals(info.trim())) {
-            return "编码状态：未启动\n编码器：--\n分辨率：--\n帧率：输入 -- / 输出 --\n码率：--\nPing：--";
+            return getString(R.string.debug_summary_placeholder);
         }
 
         String codec = valueAfterPrefix(info, "Codec:");
@@ -1081,26 +1081,26 @@ public class ConnectionFragment extends Fragment {
         String framePacer = findLineStartingWith(info, "Frame pacer:");
 
         StringBuilder builder = new StringBuilder();
-        builder.append("编码状态：").append(emptyAsDash(status)).append('\n');
-        builder.append("编码器：").append(emptyAsDash(codec));
+        builder.append(getString(R.string.debug_label_status)).append(emptyAsDash(status)).append('\n');
+        builder.append(getString(R.string.debug_label_encoder)).append(emptyAsDash(codec));
         if (!level.isEmpty() && !"-".equals(level)) {
-            builder.append(" / Level ").append(level);
+            builder.append(getString(R.string.debug_join_level, level));
         }
         builder.append('\n');
-        builder.append("分辨率：").append(emptyAsDash(size)).append('\n');
-        builder.append("请求/编码帧率：").append(emptyAsDash(clientAndEncoderFps)).append('\n');
-        builder.append("输入/输出帧率：").append(emptyAsDash(inputFps))
+        builder.append(getString(R.string.debug_label_resolution)).append(emptyAsDash(size)).append('\n');
+        builder.append(getString(R.string.debug_label_fps_req)).append(emptyAsDash(clientAndEncoderFps)).append('\n');
+        builder.append(getString(R.string.debug_label_fps_io)).append(emptyAsDash(inputFps))
                 .append(" / ").append(emptyAsDash(outputFps)).append('\n');
-        builder.append("码率：").append(emptyAsDash(encodedBitrate))
-                .append(" / 目标 ").append(emptyAsDash(targetBitrate)).append('\n');
-        builder.append("Ping：").append(emptyAsDash(ping));
-        appendIfPresent(builder, "优先级", priority);
-        appendIfPresent(builder, "音频", audio);
-        appendIfPresent(builder, "色彩", color);
-        appendIfPresent(builder, "输出间隔", outputGap);
-        appendIfPresent(builder, "队列", queue);
-        appendIfPresent(builder, "Native", nativeCost);
-        appendIfPresent(builder, "Frame pacer", stripPrefix(framePacer, "Frame pacer:"));
+        builder.append(getString(R.string.debug_label_bitrate)).append(emptyAsDash(encodedBitrate))
+                .append(getString(R.string.debug_join_target, emptyAsDash(targetBitrate))).append('\n');
+        builder.append(getString(R.string.debug_label_ping)).append(emptyAsDash(ping));
+        appendIfPresent(builder, getString(R.string.debug_field_priority), priority);
+        appendIfPresent(builder, getString(R.string.debug_field_audio), audio);
+        appendIfPresent(builder, getString(R.string.debug_field_color), color);
+        appendIfPresent(builder, getString(R.string.debug_field_output_gap), outputGap);
+        appendIfPresent(builder, getString(R.string.debug_field_queue), queue);
+        appendIfPresent(builder, getString(R.string.debug_field_native), nativeCost);
+        appendIfPresent(builder, getString(R.string.debug_field_frame_pacer), stripPrefix(framePacer, "Frame pacer:"));
         return builder.toString();
     }
 
@@ -1161,7 +1161,7 @@ public class ConnectionFragment extends Fragment {
         if (value == null || value.trim().isEmpty()) {
             return;
         }
-        builder.append('\n').append(label).append("：").append(value.trim());
+        builder.append('\n').append(label).append(getString(R.string.debug_field_sep)).append(value.trim());
     }
 
     private String emptyAsDash(String value) {
