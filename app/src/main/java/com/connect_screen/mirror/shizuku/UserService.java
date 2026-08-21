@@ -1675,7 +1675,7 @@ public class UserService extends IUserService.Stub  {
         Ln.d("createExternalMirror [API30] IDisplayManager=" + dm);
         android.view.DisplayInfo extInfo = dm.getDisplayInfo(displayIdToMirror);
         if (extInfo == null) {
-            Ln.e("createExternalMirror [API30]: getDisplayInfo(" + displayIdToMirror + ") 杩斿洖 null");
+            Ln.e("createExternalMirror [API30]: getDisplayInfo(" + displayIdToMirror + ") returned null");
             return -1;
         }
         Ln.d("createExternalMirror [API30] getDisplayInfo success, reading layerStack");
@@ -1696,7 +1696,7 @@ public class UserService extends IUserService.Stub  {
         IBinder token = SurfaceControl.createDisplay(name, true);
         Ln.d("createExternalMirror [API30] createDisplay token=" + token);
         if (token == null) {
-            Ln.e("createExternalMirror [API30]: SurfaceControl.createDisplay 杩斿洖 null");
+            Ln.e("createExternalMirror [API30]: SurfaceControl.createDisplay returned null");
             return -1;
         }
         Rect sourceRect = getSourceDisplayRect(extInfo, width, height);
@@ -1718,7 +1718,7 @@ public class UserService extends IUserService.Stub  {
         mirrorExternalToken = token;
         SurfaceControl.setDisplayPowerMode(token, SurfaceControl.POWER_MODE_NORMAL);
         Ln.d("createExternalMirror [API30] setDisplayPowerMode NORMAL 瀹屾垚");
-        Ln.i("createExternalMirror [API30] 鍏ㄩ儴瀹屾垚, layerStack=" + layerStack);
+        Ln.i("createExternalMirror [API30] done, layerStack=" + layerStack);
         return 0;
     }
 

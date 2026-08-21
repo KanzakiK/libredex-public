@@ -54,7 +54,7 @@ public class LandscapeAutoScaler {
             android.opengl.Matrix.scaleM(landscapeMvpMatrix, 0, scale, scale, 1.0f);
 
             android.util.Log.d("LibreDeX", String.format(
-                    "应用缩放变换: scaleX=%.2f, scaleY=%.2f, 最终scale=%.2f",
+                    "Applying scale transform: scaleX=%.2f, scaleY=%.2f, finalScale=%.2f",
                     scaleX, scaleY, scale
             ));
         } else {
@@ -148,7 +148,7 @@ public class LandscapeAutoScaler {
                 && topBlackHeight > 0 && bottomBlackHeight > 0;
 
         android.util.Log.d("LibreDeX", String.format(
-                "左黑边: %d, 右黑边: %d, 上黑边: %d, 下黑边: %d, 水平对称: %b, 垂直对称: %b",
+                "left black bar: %d, right black bar: %d, top black bar: %d, bottom black bar: %d, h-sym: %b, v-sym: %b",
                 leftBlackWidth, rightBlackWidth, topBlackHeight, bottomBlackHeight,
                 hasSymmetricHorizontalBars, hasSymmetricVerticalBars));
 

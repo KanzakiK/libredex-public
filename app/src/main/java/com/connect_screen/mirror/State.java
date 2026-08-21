@@ -97,7 +97,7 @@ public class State {
             SharedPreferences preferences = Pref.getPreferences();
             if (preferences != null && preferences.getInt("AUTO_GRANT_PERMISSION", 0) != BuildConfig.VERSION_CODE) {
                 preferences.edit().putInt("AUTO_GRANT_PERMISSION", BuildConfig.VERSION_CODE).apply();
-                State.log("授予媒体投影权限和悬浮窗权限");
+                State.log("Granting media projection and overlay permissions");
                 try {
                     State.userService.executeCommand("appops set " + BuildConfig.APPLICATION_ID + " PROJECT_MEDIA allow");
                     State.userService.executeCommand("appops set " + BuildConfig.APPLICATION_ID + " SYSTEM_ALERT_WINDOW allow");
@@ -189,29 +189,29 @@ public class State {
         if (currentJob == null) {
             return;
         }
-        State.log("取消任务 " + currentJob.getClass().getSimpleName() + ": " + reason);
+        State.log("Canceling task " + currentJob.getClass().getSimpleName() + ": " + reason);
         currentJob = null;
     }
 
     public static void startNewJob(Job job) {
         if (currentJob != null) {
             if (currentActivity != null && currentActivity.get() != null) {
-                State.log("当前任务 " + currentJob.getClass().getSimpleName() + " 正在进行中");
+                State.log("Current task " + currentJob.getClass().getSimpleName() + " in progress");
             }
             return;
         }
         currentJob = job;
         try {
-            State.log("开始任务 " + job.getClass().getSimpleName());
+            State.log("Starting task " + job.getClass().getSimpleName());
             currentJob.start();
-            State.log("任务 " + job.getClass().getSimpleName() + " 完成");
+            State.log("Task " + job.getClass().getSimpleName() + " done");
             currentJob = null;
         } catch (YieldException e) {
-            State.log("任务 " + job.getClass().getSimpleName() + " 暂停, " + e.getMessage());
+            State.log("Task " + job.getClass().getSimpleName() + " paused, " + e.getMessage());
         } catch (RuntimeException e) {
-            State.log("任务 " + job.getClass().getSimpleName() + " 启动失败");
+            State.log("Task " + job.getClass().getSimpleName() + " failed to start");
             String stackTrace = android.util.Log.getStackTraceString(e);
-            State.log("堆栈跟踪: " + stackTrace);
+            State.log("Stack trace: " + stackTrace);
             currentJob = null;
         }
     }
@@ -221,16 +221,16 @@ public class State {
             return;
         }
         try {
-            State.log("恢复任务 " + currentJob.getClass().getSimpleName());
+            State.log("Resuming task " + currentJob.getClass().getSimpleName());
             currentJob.start();
-            State.log("任务 " + currentJob.getClass().getSimpleName() + " 完成");
+            State.log("Task " + currentJob.getClass().getSimpleName() + " done");
             currentJob = null;
         } catch (YieldException e) {
-            State.log("任务 " + currentJob.getClass().getSimpleName() + " 暂停, " + e.getMessage());
+            State.log("Task " + currentJob.getClass().getSimpleName() + " paused, " + e.getMessage());
         } catch (RuntimeException e) {
-            State.log("任务 " + currentJob.getClass().getSimpleName() + " 恢复失败");
+            State.log("Task " + currentJob.getClass().getSimpleName() + " failed to resume");
             String stackTrace = android.util.Log.getStackTraceString(e);
-            State.log("堆栈跟踪: " + stackTrace);
+            State.log("Stack trace: " + stackTrace);
             currentJob = null;
         }
     }

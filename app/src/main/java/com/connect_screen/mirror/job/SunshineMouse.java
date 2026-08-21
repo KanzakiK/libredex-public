@@ -196,13 +196,13 @@ public class SunshineMouse {
             portraitMirrorHeight = portraitMirrorWidth * aspectRatio;
         }
 
-        State.log("主屏尺寸 defaultDisplayWidth: " + defaultDisplayWidth + " defaultDisplayHeight: " + defaultDisplayHeight);
-        State.log("客户端屏幕尺寸 screenWidth: " + screenWidth + " screenHeight: " + screenHeight);
+        State.log("main display size defaultDisplayWidth: " + defaultDisplayWidth + " defaultDisplayHeight: " + defaultDisplayHeight);
+        State.log("client screen size screenWidth: " + screenWidth + " screenHeight: " + screenHeight);
         State.log("Moonlight input target displayId=" + getTargetDisplayId()
                 + " externalMirrorMode=" + externalMirrorMode
                 + " externalSize=" + externalMirrorWidth + "x" + externalMirrorHeight);
         if (!singleAppMode) {
-            State.log("镜像模式时 portraitMirrorWidth: " + portraitMirrorWidth + " portraitMirrorHeight: " + portraitMirrorHeight + " landscapeMirrorWidth: " + landscapeMirrorWidth + " landscapeMirrorHeight: " + landscapeMirrorHeight);
+            State.log("mirror mode portraitMirrorWidth: " + portraitMirrorWidth + " portraitMirrorHeight: " + portraitMirrorHeight + " landscapeMirrorWidth: " + landscapeMirrorWidth + " landscapeMirrorHeight: " + landscapeMirrorHeight);
         }
     }
 
@@ -571,7 +571,7 @@ public class SunshineMouse {
                 handleTouchEventCancelAll();
                 break;
             default:
-                Log.e(TAG, "未知的触摸事件类型: " + eventType);
+                Log.e(TAG, "Unknown touch event type: " + eventType);
         }
     }
 

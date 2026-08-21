@@ -189,8 +189,8 @@ public class AutoRotateAndScaleForMoonlight {
         }
 
         // 记录屏幕尺寸信息到日志
-        android.util.Log.d("AutoRotateAndScaleForMoonlight", "主屏幕实际尺寸: " + defaultDisplayWidth + " x " + defaultDisplayHeight);
-        android.util.Log.d("AutoRotateAndScaleForMoonlight", "外接显示器尺寸: " + virtualDisplayArgs.width + " x " + virtualDisplayArgs.height);
+        android.util.Log.d("AutoRotateAndScaleForMoonlight", "Main display actual size: " + defaultDisplayWidth + " x " + defaultDisplayHeight);
+        android.util.Log.d("AutoRotateAndScaleForMoonlight", "External display size: " + virtualDisplayArgs.width + " x " + virtualDisplayArgs.height);
 
         // 创建专用的渲染线程
         renderThread = new HandlerThread("LibreDeXRenderThread");
@@ -297,7 +297,7 @@ public class AutoRotateAndScaleForMoonlight {
             }
         });
 
-        State.log("AutoRotateAndScaleForMoonlight 启动，autoRotate=" + autoRotate
+        State.log("AutoRotateAndScaleForMoonlight starting, autoRotate=" + autoRotate
                 + ", autoScale=" + autoScale
                 + ", dynamicFrameRate=" + dynamicFrameRate);
     }
@@ -337,7 +337,7 @@ public class AutoRotateAndScaleForMoonlight {
         int targetWidth = nextLandscape ? virtualDisplayArgs.width : virtualDisplayArgs.height;
         int targetHeight = nextLandscape ? virtualDisplayArgs.height : virtualDisplayArgs.width;
         if (targetSurface == null || !targetSurface.isValid()) {
-            State.log("AutoRotateAndScaleForMoonlight 输入 Surface 无效");
+            State.log("AutoRotateAndScaleForMoonlight input Surface invalid");
             return false;
         }
         if (!State.isUserServiceAlive()) {
@@ -586,7 +586,7 @@ public class AutoRotateAndScaleForMoonlight {
             // 检查FBO状态
             int status = GLES20.glCheckFramebufferStatus(GLES20.GL_FRAMEBUFFER);
             if (status != GLES20.GL_FRAMEBUFFER_COMPLETE) {
-                android.util.Log.e("AutoRotateAndScaleForMoonlight", "FBO创建失败，状态: " + status);
+                android.util.Log.e("AutoRotateAndScaleForMoonlight", "FBO creation failed, status: " + status);
             }
             GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
             this.landscapeAutoScaler = new LandscapeAutoScaler(externalTextureRenderer, width, height, fbo[0]);

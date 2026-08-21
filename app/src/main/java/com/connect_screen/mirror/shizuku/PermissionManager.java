@@ -18,7 +18,7 @@ public class PermissionManager {
         try {
             return _grant(permissionName);
         } catch(Throwable e) {
-            State.log("授权失败: " + e);
+            State.log("Grant failed: " + e);
             return false;
         }
     }
@@ -30,7 +30,7 @@ public class PermissionManager {
         if (permissionManager == null) {
             IPackageManager packageManager = ServiceUtils.getPackageManager();
             packageManager.grantRuntimePermission(packageName, permissionName, userHandleHidden.getIdentifier());
-            Log.i("PermissionManager", "成功授予 " + permissionName + " 权限");
+            Log.i("PermissionManager", "Successfully granted " + permissionName + " permission");
             return true;
         } else {
             try {
@@ -38,7 +38,7 @@ public class PermissionManager {
                         packageName,
                         permissionName,
                         "0", userHandleHidden.getIdentifier());
-                Log.i("PermissionManager", "成功授予 " + permissionName + " 权限");
+                Log.i("PermissionManager", "Successfully granted " + permissionName + " permission");
                 return true;
             } catch (Throwable e) {
                 try {
@@ -46,10 +46,10 @@ public class PermissionManager {
                             packageName,
                             permissionName,
                             userHandleHidden.getIdentifier());
-                    Log.i("PermissionManager", "成功授予 " + permissionName + " 权限");
+                    Log.i("PermissionManager", "Successfully granted " + permissionName + " permission");
                     return true;
                 } catch (Throwable e2) {
-                    State.log("授予权限失败: " + e2.getMessage());
+                    State.log("Failed to grant permission: " + e2.getMessage());
                 }
             }
         }

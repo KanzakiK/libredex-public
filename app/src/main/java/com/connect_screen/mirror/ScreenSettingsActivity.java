@@ -82,10 +82,10 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             return;
         }
         if (grantResult == PackageManager.PERMISSION_GRANTED) {
-            State.log("屏幕设置已获得 Shizuku 权限");
+            State.log("Screen settings got Shizuku permission");
             State.bindUserService();
         } else {
-            State.log("屏幕设置 Shizuku 权限被拒绝");
+            State.log("Screen settings Shizuku permission denied");
         }
         refreshDisplays();
     }
@@ -276,7 +276,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     () -> windowManager.setForcedDisplaySize(displayId, oldSize.x, oldSize.y));
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_resolution_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
-            State.log("修改分辨率失败: " + e);
+            State.log("Failed to change resolution: " + e);
         }
     }
 
@@ -313,7 +313,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     () -> windowManager.setForcedDisplayDensityForUser(displayId, oldDpi, 0));
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_dpi_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
-            State.log("修改 DPI 失败: " + e);
+            State.log("Failed to change DPI: " + e);
         }
     }
 
@@ -352,7 +352,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             refreshDisplays();
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_refresh_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
-            State.log("设置刷新模式失败: " + e);
+            State.log("Failed to set refresh mode: " + e);
         }
     }
 
@@ -430,7 +430,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             refreshDisplays();
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_rotation_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
-            State.log("设置旋转失败: " + e);
+            State.log("Failed to set rotation: " + e);
         }
     }
 
@@ -440,12 +440,12 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             try {
                 windowManager.clearForcedDisplaySize(displayId);
             } catch (Throwable e) {
-                State.log("恢复分辨率失败: " + e.getMessage());
+                State.log("Failed to restore resolution: " + e.getMessage());
             }
             try {
                 windowManager.clearForcedDisplayDensityForUser(displayId, 0);
             } catch (Throwable e) {
-                State.log("恢复 DPI 失败: " + e.getMessage());
+                State.log("Failed to restore DPI: " + e.getMessage());
             }
             try {
                 windowManager.setIgnoreOrientationRequest(displayId, false);
@@ -460,13 +460,13 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             try {
                 ServiceUtils.getDisplayManager().setUserPreferredDisplayMode(displayId, null);
             } catch (Throwable e) {
-                State.log("恢复刷新模式失败: " + e.getMessage());
+                State.log("Failed to restore refresh mode: " + e.getMessage());
             }
             Toast.makeText(this, getString(R.string.screen_restored_default), Toast.LENGTH_SHORT).show();
             refreshDisplays();
         } catch (Throwable e) {
             Toast.makeText(this, getString(R.string.screen_restore_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
-            State.log("恢复默认失败: " + e);
+            State.log("Failed to restore defaults: " + e);
         }
     }
 

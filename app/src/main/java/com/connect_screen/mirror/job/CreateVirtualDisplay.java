@@ -76,7 +76,7 @@ public class CreateVirtualDisplay {
                 }
             } else {
                 new Handler(Looper.getMainLooper()).post(() -> {
-                   State.log("没有 shizuku 权限，无法单应用投屏");
+                   State.log("No Shizuku permission, cannot do single-app projection");
                 });
                 return null;
             }
@@ -141,7 +141,7 @@ public class CreateVirtualDisplay {
             ActivityOptions options = ActivityOptions.makeBasic();
             context.startActivity(intent, options.toBundle());
         } else {
-            State.log("镜像投屏时需要 shizuku 权限才能熄屏");
+            State.log("Mirror projection requires Shizuku permission to turn off screen");
         }
     }
 
@@ -188,7 +188,7 @@ public class CreateVirtualDisplay {
         try {
             if (State.userService != null && State.userService.isRooted()) {
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    State.log("用 root 权限启动的 shizuku 可能无法单应用投屏，最好改成 adb 权限启动");
+                    State.log("Shizuku started with root may not support single-app projection; prefer starting it with adb permission");
                 });
             }
         } catch (Throwable e) {
@@ -200,7 +200,7 @@ public class CreateVirtualDisplay {
             displayId = displayManager.createVirtualDisplay(callback, projection, packageName, virtualDisplayArgs.virtualDisplayName, virtualDisplayWidth, virtualDisplayArgs.height, virtualDisplayArgs.dpi, surface, flags, virtualDisplayArgs.virtualDisplayName);
         }
         DisplayInfo displayInfo = ServiceUtils.getDisplayManager().getDisplayInfo(displayId);
-        android.util.Log.i("CreateVirtualDisplay", "创建虚拟显示成功，displayId: " + displayId + ", uniqueId: " + displayInfo.uniqueId);
+        android.util.Log.i("CreateVirtualDisplay", "Virtual display created, displayId: " + displayId + ", uniqueId: " + displayInfo.uniqueId);
         VirtualDisplay virtualDisplay = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             virtualDisplay = DisplayManagerGlobal.getInstance().createVirtualDisplayWrapper(config, callback, displayId);

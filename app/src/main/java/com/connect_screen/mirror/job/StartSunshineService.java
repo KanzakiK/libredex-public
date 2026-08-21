@@ -31,11 +31,11 @@ public class StartSunshineService implements Job {
             } else {
                 activity.startService(sunshineServiceIntent);
             }
-            State.log("启动 SunshineService 服务（复用已有投屏权限用于原生音频捕获）");
+            State.log("Starting SunshineService (reusing existing projection permission for native audio capture)");
             activity.refresh();
             return;
         }
-        State.log("启动 SunshineService 前请求投屏权限，用于 Android 原生音频捕获");
+        State.log("Requesting projection permission before starting SunshineService for native audio capture");
         activity.startMediaProjectionService();
         throw new YieldException("等待用户授予投屏权限");
     }
