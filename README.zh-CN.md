@@ -44,7 +44,7 @@ LibreDeX 为 One UI 8 的 Flip 手机带来完整的桌面体验：基于 One UI
 2. **启用模块**：打开 LSPosed，启用 LibreDeX 模块，作用域勾选 `android`（system_server）、`com.android.settings`、`com.sec.android.app.launcher`（One UI 桌面），然后**重启手机**。
 3. **打开 LibreDeX**：设置向导会带你完成 Shizuku / root、悬浮窗、录音、文件访问、录屏等授权，按提示授予即可。
 4. **Moonlight 串流**：打开连接页启动服务，在 Moonlight 客户端添加手机 IP 并配对。
-5. **DP / HDMI 输出**：插入 USB-C DP 线后进入 DP 页，点击「开始 DP 输出」；修改分辨率 / 刷新率后按提示插拔一次线。
+5. **DP / HDMI 输出**：插入 USB-C DP 线，可先设置分辨率 / 刷新率（可选，不设置则按 EDID 识别的最大支持分辨率），然后点击「开始 DP 输出」；若修改了分辨率 / 刷新率，按提示插拔一次线。
 
 > **首次运行自检**：设置向导第一页显示「已检测到框架活跃」才表示模块真正注入到 `system_server`。如果显示「Hook 尚未生效」，说明模块未启用或启用后没重启。
 

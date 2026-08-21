@@ -44,7 +44,7 @@ LibreDeX brings a full desktop experience to One UI 8 Flip phones: the DeX deskt
 2. **Enable the module**: open LSPosed, enable the LibreDeX module, scope it to `android` (system_server), `com.android.settings`, and `com.sec.android.app.launcher` (One UI Home), then **reboot the phone**.
 3. **Open LibreDeX**: the setup wizard walks through Shizuku / root, overlay, audio recording, file access, and screen capture. Grant the requested permissions.
 4. **Moonlight streaming**: open the connection page, start the service, then add the phone's IP in a Moonlight client and pair.
-5. **DP / HDMI output**: plug in a USB-C DP cable, open the DP page and tap **Start DP output**. After changing resolution/refresh rate, re-plug the cable once as prompted.
+5. **DP / HDMI output**: plug in a USB-C DP cable; optionally set the resolution / refresh rate first (defaults to the EDID-detected maximum), then tap **Start DP output**. Re-plug the cable once if you changed resolution/refresh rate.
 
 > **First run check**: the setup wizard's first page shows *"Hook active"* only when the module is actually injected into `system_server`. If it says *"Hook not active"*, the module isn't enabled or the phone hasn't been rebooted since enabling it.
 
