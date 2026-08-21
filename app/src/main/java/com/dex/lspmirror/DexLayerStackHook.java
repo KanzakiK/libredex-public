@@ -1546,10 +1546,13 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     }
 
     private static boolean isRefreshRateLimitPriority(int priority) {
+        // Drop the 60 Hz caps: LOW_POWER_MODE_MODES (22, 0~60 Hz) and
+        // SYNCHRONIZED_REFRESH_RATE (15, 59~61 Hz lock emitted when a virtual
+        // display activates). 16/17 (synchronized render / limit mode) are
+        // kept because they also drive the external HDMI/DP display state and
+        // dropping them makes docked DeX apps open fullscreen.
         switch (priority) {
             case 15: // PRIORITY_SYNCHRONIZED_REFRESH_RATE
-            case 16: // PRIORITY_SYNCHRONIZED_RENDER_FRAME_RATE
-            case 17: // PRIORITY_LIMIT_MODE
             case 22: // PRIORITY_LOW_POWER_MODE_MODES
                 return true;
             default:
