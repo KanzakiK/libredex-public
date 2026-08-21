@@ -301,6 +301,9 @@ public final class InitializationGuideDialog {
         new Thread(() -> {
             String error = null;
             try {
+                // 全新环境（首次向导）UserService 可能还没绑定，而 am start 需要
+                // 通过 userService 的 root/shell 通道执行。先确保绑定再操作。
+                ensureUserServiceForShell();
                 // 真实校验：只有 Vector 管理器窗口真的到前台才算成功，
                 // 不能只看 am start 输出（没有 root / 框架不活跃时输出也会“看似成功”）。
                 boolean launched = launchVectorAndVerify();
@@ -366,6 +369,26 @@ public final class InitializationGuideDialog {
             }
         }
         return false;
+    }
+
+    /**
+     * 确保 UserService 已绑定（shell/root 命令通道）。首次向导/全新环境时
+     * UserService 尚未按需拉起，am start 会退化成裸 Runtime.exec 而失败。
+     * 有 Shizuku 权限就主动绑定并等它就绪；绑定不上就维持现状（runShellCommand
+     * 仍有 Runtime.exec 兜底）。
+     */
+    private void ensureUserServiceForShell() {
+        try {
+            if (State.userService == null && ShizukuUtils.hasPermission()) {
+                State.ensureUserServiceBound();
+                long deadline = System.currentTimeMillis() + 3000;
+                while (State.userService == null
+                        && System.currentTimeMillis() < deadline) {
+                    Thread.sleep(50);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     /** 依次用 root shell / shell 执行命令；都不可用则用裸命令。失败返回 null。 */
