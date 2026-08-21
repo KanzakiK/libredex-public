@@ -172,8 +172,11 @@ public class DexManageFragment extends Fragment {
         mirrorBanner.setVisibility(mirror ? View.VISIBLE : View.GONE);
         dexContent.setVisibility(mirror ? View.GONE : View.VISIBLE);
         mirrorActionCard.setVisibility(mirror ? View.VISIBLE : View.GONE);
-        dexExperimentalTitle.setVisibility(mirror ? View.GONE : View.VISIBLE);
-        dexExperimentalCard.setVisibility(mirror ? View.GONE : View.VISIBLE);
+        // 屏幕设置（实验）入口不是 DeX 专属：镜像输出（DP/moonlight）时
+        // 也需要用它设置外接屏分辨率/DPI/刷新率/旋转，所以镜像模式下
+        // 保留入口卡片和"实验"标题（保持布局完整）。
+        dexExperimentalTitle.setVisibility(View.VISIBLE);
+        dexExperimentalCard.setVisibility(View.VISIBLE);
 
         dexSessionBadge.setText(connected ? "运行中" : "待机");
         dexSessionBadge.setBackgroundResource(connected

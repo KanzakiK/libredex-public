@@ -259,14 +259,23 @@ public class ConnectionFragment extends Fragment {
         moonlightContent.setVisibility(View.GONE);
         placeholderContent.setVisibility(View.GONE);
         firstUseCard.setVisibility(View.GONE);
-        if (rootScroll != null) {
-            rootScroll.scrollTo(0, 0);
-        }
         subPageContainer.removeAllViews();
         View pageView = "encoder".equals(page) ? buildEncoderPage() : buildAudioPage();
         if (pageView != null) {
             subPageContainer.addView(pageView);
             subPageContainer.setVisibility(View.VISIBLE);
+        }
+        // The shared cards (telemetry chips / client / transport / logs) stay
+        // visible above the sub page, so scroll to the sub page itself instead
+        // of the very top, otherwise the opened settings are off-screen.
+        if (rootScroll != null) {
+            rootScroll.post(() -> {
+                try {
+                    int target = subPageContainer.getTop();
+                    rootScroll.scrollTo(0, Math.max(0, target));
+                } catch (Throwable ignored) {
+                }
+            });
         }
     }
 
@@ -870,7 +879,7 @@ public class ConnectionFragment extends Fragment {
         boolean serviceRunning = lifecycleState == SunshineService.LifecycleState.RUNNING;
         if (connected) {
             mirrorStatusText.setText("镜像中");
-            setButton(mirrorActionButton, "停止镜像", R.color.ui_danger,
+            setButton(mirrorActionButton, "停止服务", R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (lifecycleState == SunshineService.LifecycleState.STARTING
                 || lifecycleState == SunshineService.LifecycleState.STOPPING) {
@@ -883,7 +892,7 @@ public class ConnectionFragment extends Fragment {
                     R.color.ui_on_accent, true);
         } else {
             mirrorStatusText.setText("未启动");
-            setButton(mirrorActionButton, "开始镜像", R.color.ui_accent,
+            setButton(mirrorActionButton, "启动服务", R.color.ui_accent,
                     R.color.ui_on_accent, true);
         }
         updateQuickActions();
