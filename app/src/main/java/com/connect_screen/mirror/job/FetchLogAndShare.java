@@ -36,6 +36,7 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import com.connect_screen.mirror.R;
 
 public class FetchLogAndShare implements Job {
     private final AcquireShizuku acquireShizuku = new AcquireShizuku();
@@ -66,7 +67,7 @@ public class FetchLogAndShare implements Job {
                 State.resumeJobLater(1000);
                 throw new YieldException("waiting for user service");
             }
-            Toast.makeText(State.getContext(), "无法启动 user service 获取日志", Toast.LENGTH_SHORT).show();
+            Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_service_failed), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -74,7 +75,7 @@ public class FetchLogAndShare implements Job {
             if (!Environment.isExternalStorageManager()) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
                 State.getContext().startActivity(intent);
-                Toast.makeText(State.getContext(), "请授予文件访问权限", Toast.LENGTH_LONG).show();
+                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_need_file_perm), Toast.LENGTH_LONG).show();
                 return;
             }
         }
@@ -87,21 +88,21 @@ public class FetchLogAndShare implements Job {
             }
             String logDirPath = State.userService.fetchLogs();
             if (logDirPath == null || logDirPath.trim().isEmpty()) {
-                Toast.makeText(State.getContext(), "无法获取日志目录", Toast.LENGTH_SHORT).show();
+                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_dir_failed), Toast.LENGTH_SHORT).show();
                 return;
             }
             File logDir = new File(logDirPath);
             File[] logs = logDir.listFiles((dir, name) ->
                     name.startsWith(LOG_FILE_PREFIX) && name.endsWith(LOG_FILE_SUFFIX));
             if (logs == null || logs.length == 0) {
-                Toast.makeText(State.getContext(), "没有可导出的日志", Toast.LENGTH_SHORT).show();
+                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_none), Toast.LENGTH_SHORT).show();
                 return;
             }
 
             File exportDir = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS), "LibreDeX");
+                    Environment.DIRECTORY_DOWNLOADS), State.getContext().getString(R.string.notify_sunshine_title));
             if (!exportDir.exists() && !exportDir.mkdirs()) {
-                Toast.makeText(State.getContext(), "无法创建导出目录", Toast.LENGTH_SHORT).show();
+                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_mkdir_failed), Toast.LENGTH_SHORT).show();
                 return;
             }
 
@@ -138,7 +139,7 @@ public class FetchLogAndShare implements Job {
             State.getContext().startActivity(Intent.createChooser(
                     shareIntent, "分享日志压缩包"));
         } catch (RemoteException | IOException e) {
-            Toast.makeText(State.getContext(), "日志导出失败，请重新尝试", Toast.LENGTH_LONG).show();
+            Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_failed), Toast.LENGTH_LONG).show();
             throw new RuntimeException(e);
         }
     }

@@ -50,7 +50,7 @@ public final class DexTouchpadLauncher {
                 State.log("DeX touchpad root launch failed: " + rootFailure.getMessage());
             }
         }
-        Toast.makeText(context, "无法打开 DeX 触控板", Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, context.getString(R.string.touchpad_open_failed), Toast.LENGTH_SHORT).show();
     }
 
     // On the Flip5 the cover screen is a second internal display. Launching on
@@ -83,7 +83,7 @@ public final class DexTouchpadLauncher {
             }
             String name = display.getName();
             if (name != null && (name.startsWith("dex-anywhere-")
-                    || name.startsWith("LibreDeX")
+                    || name.startsWith(context.getString(R.string.notify_sunshine_title))
                     || name.startsWith("Moonlight-"))) {
                 continue;
             }

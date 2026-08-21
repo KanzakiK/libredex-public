@@ -32,18 +32,15 @@ public class AboutActivity extends AppCompatActivity {
         findViewById(R.id.releasesButton).setOnClickListener(v -> openUrl(RELEASES_URL));
 
         TextView header = findViewById(R.id.header);
-        header.setText("LibreDeX");
+        header.setText(getString(R.string.notify_sunshine_title));
 
         TextView aboutContent = findViewById(R.id.aboutContent);
-        aboutContent.setText(
-                "LibreDeX 把 Galaxy Z Flip 5 变成不依赖 Miracast 的 DeX 串流主机：Moonlight 客户端配对后，通过 Sunshine 串流 fake DeX 桌面，并把鼠标、键盘、触摸等控制输入回流到设备。\n\n"
-                        + "项目集成 LSPosed hooks（display flags / input / pointer / viewport / 层级修复）、Shizuku/UserService 系统接口、AudioPolicy loopback 音频采集，以及 Sunshine / Moonlight 兼容串流链路。\n\n"
-                        + "本项目为 GPL-3.0 开源项目；上游来源与修改说明见仓库 NOTICE.md。");
+        aboutContent.setText(getString(R.string.about_description));
 
         TextView versionText = findViewById(R.id.versionText);
         String androidVersion = android.os.Build.VERSION.RELEASE;
-        versionText.setText("版本 " + BuildConfig.VERSION_NAME + " ("
-                + BuildConfig.COMMIT + ") / Android " + androidVersion);
+        versionText.setText(getString(R.string.about_version_fmt,
+                BuildConfig.VERSION_NAME, BuildConfig.COMMIT, androidVersion));
 
         GestureDetector gestureDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
@@ -54,7 +51,7 @@ public class AboutActivity extends AppCompatActivity {
                 }
                 if (!ShizukuUtils.hasPermission()) {
                     State.log("ask shizuku permission");
-                    Toast.makeText(AboutActivity.this, "导出故障日志需要 Shizuku 权限", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(AboutActivity.this, getString(R.string.about_export_log_needs_shizuku), Toast.LENGTH_SHORT).show();
                     Shizuku.requestPermission(SHIZUKU_PERMISSION_REQUEST_CODE);
                     return false;
                 }

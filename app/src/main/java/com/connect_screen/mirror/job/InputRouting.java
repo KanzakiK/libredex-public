@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.connect_screen.mirror.R;
 
 public class InputRouting {
     public static Map<String, String> getInputDeviceDescriptorToPortMap() {
@@ -77,7 +78,7 @@ public class InputRouting {
                         State.log("改用 input port 仍然未能更新输入设备路由: " + inputDevice.getName() + ", " + e3.getMessage());
                         Context context = State.getContext();
                         if (ShizukuUtils.hasPermission() && context != null) {
-                            Toast.makeText(context, "由于操作系统版本的限制，需要点击'模拟熄屏'按钮才可以使用触摸屏", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(context, context.getString(R.string.input_simulate_off_required), Toast.LENGTH_SHORT).show();
                         }
                     }
                 }

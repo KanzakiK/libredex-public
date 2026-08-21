@@ -16,7 +16,7 @@ public final class DebugDialogs {
         if (handshakeInfo == null || handshakeInfo.trim().isEmpty()) {
             handshakeInfo = "尚无最近一次 Moonlight 连接握手信息";
         }
-        showReadonlyDebugDialog(context, "最近握手信息", handshakeInfo, "Moonlight 握手信息", "已复制握手信息");
+        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_handshake), handshakeInfo, "Moonlight 握手信息", "已复制握手信息");
     }
 
     public static void showLastMoonlightControlInputDialog(Context context) {
@@ -24,7 +24,7 @@ public final class DebugDialogs {
         if (controlInputInfo == null || controlInputInfo.trim().isEmpty()) {
             controlInputInfo = "尚无最近一次 Moonlight 控制输入统计";
         }
-        showReadonlyDebugDialog(context, "最近控制输入统计", controlInputInfo, "Moonlight 控制输入统计", "已复制控制输入统计");
+        showReadonlyDebugDialog(context, context.getString(R.string.encoder_recent_input_stats), controlInputInfo, "Moonlight 控制输入统计", "已复制控制输入统计");
     }
 
     public static void showReadonlyDebugDialog(Context context,
@@ -36,8 +36,8 @@ public final class DebugDialogs {
         new MaterialAlertDialogBuilder(context, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setTitle(title)
                 .setMessage(content)
-                .setPositiveButton("关闭", null)
-                .setNeutralButton("复制", (dialog, which) -> {
+                .setPositiveButton(context.getString(R.string.action_close), null)
+                .setNeutralButton(context.getString(R.string.action_copy), (dialog, which) -> {
                     ClipboardManager clipboardManager =
                             (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
                     if (clipboardManager != null) {

@@ -174,11 +174,11 @@ public class DexManageFragment extends Fragment {
         mirrorActionCard.setVisibility(mirror ? View.VISIBLE : View.GONE);
         // 屏幕设置（实验）入口不是 DeX 专属：镜像输出（DP/moonlight）时
         // 也需要用它设置外接屏分辨率/DPI/刷新率/旋转，所以镜像模式下
-        // 保留入口卡片和"实验"标题（保持布局完整）。
+        // 保留入口卡片和getString(R.string.dex_experimental)标题（保持布局完整）。
         dexExperimentalTitle.setVisibility(View.VISIBLE);
         dexExperimentalCard.setVisibility(View.VISIBLE);
 
-        dexSessionBadge.setText(connected ? "运行中" : "待机");
+        dexSessionBadge.setText(connected ? getString(R.string.connection_running) : getString(R.string.connection_standby));
         dexSessionBadge.setBackgroundResource(connected
                 ? R.drawable.bg_libredex_badge_accent
                 : R.drawable.bg_libredex_badge);
@@ -187,9 +187,9 @@ public class DexManageFragment extends Fragment {
                 : R.color.ui_text_secondary));
 
         int dexDisplay = dexDisplayId();
-        dexDisplayValue.setText((dexDisplay >= 0 ? String.valueOf(dexDisplay) : "--")
-                + " · 1920×1080 · 60Hz");
-        dexLauncherValue.setText(connected ? "已运行" : "待启动");
+        dexDisplayValue.setText(getString(R.string.dex_display_summary_fmt,
+                dexDisplay >= 0 ? String.valueOf(dexDisplay) : getString(R.string.value_placeholder)));
+        dexLauncherValue.setText(connected ? getString(R.string.dex_running) : getString(R.string.dex_pending_start));
 
         setEnabled(dexTouchpadButton, connected);
         setEnabled(dexRestartButton, connected);
@@ -306,28 +306,28 @@ public class DexManageFragment extends Fragment {
                         State.externalDisplayWidth,
                         State.externalDisplayHeight);
             } catch (Throwable e) {
-                showToast("DP 会话重启失败：" + e.getMessage());
+                showToast(getString(R.string.connection_dp_restart_failed_fmt, e.getMessage()));
             }
         } else if (TransportRegistry.restartActive(true, (displayId, error) -> {
                 if (getContext() == null) {
                     return;
                 }
                 if (error != null) {
-                    showToast("会话重启失败：" + error);
+                    showToast(getString(R.string.connection_restart_failed_fmt, error));
                 } else {
-                    showToast("会话已重启");
+                    showToast(getString(R.string.connection_session_restarted));
                 }
                 refreshStatus();
             })) {
             // optional transport restart handled above
         }
         new Handler(Looper.getMainLooper()).postDelayed(this::refreshStatus, 1200);
-        showToast("会话已重启");
+        showToast(getString(R.string.connection_session_restarted));
     }
 
     private void openWallpaperPicker() {
         if (dexDisplayId() < 0) {
-            showToast("请先连接 DeX");
+            showToast(getString(R.string.connection_connect_dex_first));
             return;
         }
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);

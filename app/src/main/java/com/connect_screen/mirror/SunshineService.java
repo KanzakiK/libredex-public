@@ -338,9 +338,9 @@ public class SunshineService extends Service {
             dnsServers.add(jmdns);
             ServiceInfo serviceInfo = ServiceInfo.create(
                     "_nvstream._tcp.local.",
-                    "LibreDeX",
+                    getString(R.string.notify_sunshine_title),
                     47989,
-                    "LibreDeX"
+                    getString(R.string.notify_sunshine_title)
             );
 
             jmdns.registerService(serviceInfo);
@@ -443,7 +443,7 @@ public class SunshineService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel serviceChannel = new NotificationChannel(
                     CHANNEL_ID,
-                    "Sunshine Service Channel",
+                    getString(R.string.notify_channel_name),
                     NotificationManager.IMPORTANCE_DEFAULT
             );
             serviceChannel.setSound(null, null);
@@ -456,8 +456,8 @@ public class SunshineService extends Service {
 
     private Notification createNotification() {
         return new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("LibreDeX")
-                .setContentText("Sunshine Host is running")
+                .setContentTitle(getString(R.string.notify_sunshine_title))
+                .setContentText(getString(R.string.notify_sunshine_text))
                 .setSmallIcon(R.drawable.ic_launcher_monochrome_v2)
                 .build();
     }

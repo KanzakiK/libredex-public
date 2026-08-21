@@ -150,11 +150,11 @@ public class SunshineServer {
             } else {
                 AlertDialog dialog = new MaterialAlertDialogBuilder(
                         context, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                        .setTitle("输入 PIN 码")
-                        .setMessage("请输入 Moonlight 端显示的 4 位数字 PIN 码")
+                        .setTitle(context.getString(R.string.pin_dialog_title))
+                        .setMessage(context.getString(R.string.pin_dialog_msg))
                         .setView(input)
-                        .setPositiveButton("确定", (d, which) -> submitPinFromDialog(input, context))
-                        .setNegativeButton("取消", (d, which) -> d.cancel())
+                        .setPositiveButton(context.getString(R.string.action_ok), (d, which) -> submitPinFromDialog(input, context))
+                        .setNegativeButton(context.getString(R.string.action_cancel), (d, which) -> d.cancel())
                         .create();
                 if (dialog.getWindow() != null) {
                     dialog.getWindow().setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY);
@@ -170,7 +170,7 @@ public class SunshineServer {
         if (pin.length() == 4) {
             submitPin(pin);
         } else {
-            Toast.makeText(context, "请输入4位数字PIN码", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, context.getString(R.string.pin_invalid_toast), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -574,9 +574,9 @@ public class SunshineServer {
             
             AlertDialog dialog = new MaterialAlertDialogBuilder(
                     context, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                    .setTitle("无法配置编码器")
+                    .setTitle(context.getString(R.string.encoder_config_failed))
                     .setMessage(message)
-                    .setPositiveButton("确定", (d, which) -> stopVirtualDisplay())
+                    .setPositiveButton(context.getString(R.string.action_ok), (d, which) -> stopVirtualDisplay())
                     .setCancelable(false)
                     .create();
             if (dialog.getWindow() != null) {

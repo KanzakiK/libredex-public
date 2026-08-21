@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <lint>
     <!-- i18n gate: hardcoded UI strings must go through resources.
-         Layouts are done (Phase 1); Java setText/Toast literals are reported
-         by SetTextI18n (27 warnings today) and are the Phase 2 backlog.
-         Phase 4: promote SetTextI18n to error once Java literals are gone. -->
+         Phase 1 cleared layouts (HardcodedText); Phase 2 cleared Java
+         setText/Toast/notify literals (SetTextI18n). Both are errors now. -->
     <issue id="HardcodedText" severity="error" />
+    <issue id="SetTextI18n" severity="error" />
 
     <!-- Intentional hook-project tech debt: reflective hidden API access,
          root-scope permissions. Not i18n related; do not block builds. -->
