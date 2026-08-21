@@ -4,15 +4,17 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Typeface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
-import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -30,7 +32,7 @@ public final class InitializationGuideDialog {
 
     private final Activity activity;
     private AlertDialog dialog;
-    private Button doneButton;   // activity.getString(R.string.action_done)
+    private Button doneButton;
     private LinearLayout content;
     private TextView pageTitle;
     private View[] pages;
@@ -84,32 +86,32 @@ public final class InitializationGuideDialog {
         content.setPadding(padding, dp(10), padding, 0);
 
         pageTitle = new TextView(activity);
-        pageTitle.setTextSize(18);
-        pageTitle.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        pageTitle.setTextSize(19);
+        pageTitle.setTypeface(Typeface.DEFAULT_BOLD);
         pageTitle.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_primary));
         content.addView(pageTitle, matchWrapParams());
 
         pages = new View[]{
                 createLspPage(),
                 createCorePage(),
-                createAudioPage(),
+                createPermissionPage(),
                 createFilePage(),
         };
 
         doneButton = null;
-        prevButton = new Button(activity);
-        nextButton = new Button(activity);
-        doneButton = new Button(activity);
+        prevButton = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
+        nextButton = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
+        doneButton = new Button(activity, null, 0, R.style.LibreDeXButtonPrimary);
+        doneButton.setLayoutParams(new LinearLayout.LayoutParams(
+                dp(0), 48));
+        ((LinearLayout.LayoutParams) doneButton.getLayoutParams()).weight = 1;
 
         LinearLayout nav = new LinearLayout(activity);
         nav.setOrientation(LinearLayout.HORIZONTAL);
-        nav.setPadding(0, dp(8), 0, dp(4));
+        nav.setPadding(0, dp(6), 0, dp(4));
         prevButton.setText(activity.getString(R.string.action_prev));
         nextButton.setText(activity.getString(R.string.action_next));
         doneButton.setText(activity.getString(R.string.action_done));
-        styleSmallButton(prevButton);
-        styleSmallButton(nextButton);
-        styleSmallButton(doneButton);
 
         prevButton.setOnClickListener(v -> goToPage(page - 1));
         nextButton.setOnClickListener(v -> goToPage(page + 1));
@@ -119,14 +121,20 @@ public final class InitializationGuideDialog {
         LinearLayout.LayoutParams gap = wrapParams();
         gap.setMarginStart(dp(8));
         nav.addView(nextButton, gap);
-        LinearLayout.LayoutParams doneP = wrapParams();
+        LinearLayout.LayoutParams doneP = matchWrapParams();
         doneP.setMarginStart(dp(8));
-        doneP.weight = 1;
+        doneP.height = dp(48);
         nav.addView(doneButton, doneP);
 
+        // 页面区包一层 ScrollView，页面内容长了也能滚动，避免小屏放不下。
         framePage = new LinearLayout(activity);
         framePage.setOrientation(LinearLayout.VERTICAL);
-        content.addView(framePage, matchWrapParams());
+        ScrollView scroll = new ScrollView(activity);
+        scroll.setFillViewport(true);
+        scroll.addView(framePage, new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        content.addView(scroll, matchWrapParams());
         content.addView(nav, matchWrapParams());
 
         dialog = new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
@@ -157,7 +165,7 @@ public final class InitializationGuideDialog {
             return;
         }
         framePage.removeAllViews();
-        String[] titles = {activity.getString(R.string.guide_page_title_lsposed), activity.getString(R.string.guide_page_title_environment), activity.getString(R.string.guide_page_title_recording), activity.getString(R.string.guide_page_title_files)};
+        String[] titles = {activity.getString(R.string.guide_page_title_lsposed), activity.getString(R.string.guide_page_title_environment), activity.getString(R.string.guide_page_title_permissions), activity.getString(R.string.guide_page_title_files)};
         pageTitle.setText(titles[index]);
         framePage.addView(pages[index], matchWrapParams());
 
@@ -248,21 +256,17 @@ public final class InitializationGuideDialog {
 
     // ---------- 第 0 页：LSPosed ----------
     private View createLspPage() {
-        lspStatusText = new TextView(activity);
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(0, dp(6), 0, 0);
-        col.addView(label(activity.getString(R.string.guide_label_result)), wrapParams());
-        col.addView(lspStatusText, matchWrapParams());
 
-        TextView hint = note(activity.getString(R.string.guide_lsposed_note));
-        col.addView(hint, matchWrapParams());
-
-        Button openLsp = new Button(activity);
-        openLsp.setText(activity.getString(R.string.guide_open_lsposed));
-        styleSmallButton(openLsp);
+        LinearLayout card = card();
+        card.addView(sectionTitle(activity.getString(R.string.guide_label_result)));
+        card.addView(statusTextLine(lspStatusText));
+        card.addView(note(activity.getString(R.string.guide_lsposed_note)));
+        Button openLsp = actionButton(activity.getString(R.string.guide_open_lsposed));
         openLsp.setOnClickListener(v -> openLsposedManager());
-        col.addView(openLsp, wrapParams());
+        card.addView(openLsp);
+        col.addView(card);
 
         return col;
     }
@@ -405,20 +409,18 @@ public final class InitializationGuideDialog {
                 .show();
     }
 
-    // ---------- 第 1 页：Root + Shizuku + 悬浮窗 ----------
+    // ---------- 第 1 页：Root + Shizuku ----------
     private View createCorePage() {
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(0, dp(6), 0, 0);
 
-        col.addView(label(activity.getString(R.string.guide_label_root_userservice)), wrapParams());
-        rootStatusText = new TextView(activity);
-        rootStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
-        rootStatusText.setTextSize(13);
-        col.addView(rootStatusText, matchWrapParams());
-        Button rootBtn = new Button(activity);
-        rootBtn.setText(activity.getString(R.string.guide_root_restart));
-        styleSmallButton(rootBtn);
+        // Root
+        LinearLayout cardRoot = card();
+        cardRoot.addView(sectionTitle(activity.getString(R.string.guide_label_root_userservice)));
+        rootStatusText = statusText();
+        cardRoot.addView(statusTextLine(rootStatusText));
+        cardRoot.addView(note(activity.getString(R.string.guide_root_note)));
+        Button rootBtn = actionButton(activity.getString(R.string.guide_root_restart));
         rootBtn.setOnClickListener(v -> {
             // root 重启涉及 su / 重绑定等阻塞操作，放后台线程，避免卡死主线程。
             rootBtn.setEnabled(false);
@@ -434,35 +436,59 @@ public final class InitializationGuideDialog {
                 });
             }, "guide-root-restart").start();
         });
-        col.addView(rootBtn, wrapParamsR());
-        col.addView(note(activity.getString(R.string.guide_root_note)),
-                matchWrapParams());
+        cardRoot.addView(rootBtn);
+        col.addView(cardRoot);
 
-        col.addView(label(activity.getString(R.string.brand_shizuku)), wrapParamsR());
-        shizukuStatusText = new TextView(activity);
-        shizukuStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
-        shizukuStatusText.setTextSize(13);
-        col.addView(shizukuStatusText, matchWrapParams());
-        Button shizukuBtn = new Button(activity);
-        shizukuBtn.setText(activity.getString(R.string.nav_connect));
-        styleSmallButton(shizukuBtn);
+        // Shizuku
+        LinearLayout cardShizuku = card();
+        cardShizuku.addView(sectionTitle(activity.getString(R.string.brand_shizuku)));
+        shizukuStatusText = statusText();
+        cardShizuku.addView(statusTextLine(shizukuStatusText));
+        Button shizukuBtn = actionButton(activity.getString(R.string.nav_connect));
         shizukuBtn.setOnClickListener(v -> {
             State.startNewJob(new AcquireShizuku());
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 800);
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 2500);
         });
-        col.addView(shizukuBtn, wrapParamsR());
+        cardShizuku.addView(shizukuBtn);
+        col.addView(cardShizuku);
 
-        col.addView(label(activity.getString(R.string.settings_overlay_permission)), wrapParamsR());
-        overlayStatusText = new TextView(activity);
-        overlayStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
-        overlayStatusText.setTextSize(13);
-        col.addView(overlayStatusText, matchWrapParams());
-        Button overlayBtn = new Button(activity);
-        overlayBtn.setText(activity.getString(R.string.action_grant));
-        styleSmallButton(overlayBtn);
+        return col;
+    }
+
+    // ---------- 第 2 页：悬浮窗 + 录音 ----------
+    private View createPermissionPage() {
+        LinearLayout col = new LinearLayout(activity);
+        col.setOrientation(LinearLayout.VERTICAL);
+
+        // 悬浮窗
+        LinearLayout cardOverlay = card();
+        cardOverlay.addView(sectionTitle(activity.getString(R.string.settings_overlay_permission)));
+        overlayStatusText = statusText();
+        cardOverlay.addView(statusTextLine(overlayStatusText));
+        Button overlayBtn = actionButton(activity.getString(R.string.action_grant));
         overlayBtn.setOnClickListener(v -> grantOverlay());
-        col.addView(overlayBtn, wrapParamsR());
+        cardOverlay.addView(overlayBtn);
+        col.addView(cardOverlay);
+
+        // 录音
+        LinearLayout cardAudio = card();
+        cardAudio.addView(sectionTitle(activity.getString(R.string.guide_label_recording_permission)));
+        audioStatusText = statusText();
+        cardAudio.addView(statusTextLine(audioStatusText));
+        cardAudio.addView(note(activity.getString(R.string.guide_recording_note)));
+        Button grantBtn = actionButton(activity.getString(R.string.action_grant));
+        grantBtn.setOnClickListener(v -> {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isRecordAudioGranted()) {
+                activity.requestPermissions(
+                        new String[]{Manifest.permission.RECORD_AUDIO},
+                        MirrorMainActivity.REQUEST_RECORD_AUDIO_PERMISSION);
+            }
+            MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 600);
+            MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1800);
+        });
+        cardAudio.addView(grantBtn);
+        col.addView(cardAudio);
 
         return col;
     }
@@ -506,44 +532,17 @@ public final class InitializationGuideDialog {
         }, "guide-overlay").start();
     }
 
-    // ---------- 第 2 页：录音 ----------
-    private View createAudioPage() {
-        audioStatusText = new TextView(activity);
-        LinearLayout col = new LinearLayout(activity);
-        col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(0, dp(6), 0, 0);
-        col.addView(label(activity.getString(R.string.guide_label_recording_permission)), wrapParams());
-        col.addView(audioStatusText, matchWrapParams());
-        col.addView(note(activity.getString(R.string.guide_recording_note)),
-                matchWrapParams());
-        Button grantBtn = new Button(activity);
-        grantBtn.setText(activity.getString(R.string.action_grant));
-        styleSmallButton(grantBtn);
-        grantBtn.setOnClickListener(v -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isRecordAudioGranted()) {
-                activity.requestPermissions(
-                        new String[]{Manifest.permission.RECORD_AUDIO},
-                        MirrorMainActivity.REQUEST_RECORD_AUDIO_PERMISSION);
-            }
-            MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 600);
-            MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1800);
-        });
-        col.addView(grantBtn, wrapParamsR());
-        return col;
-    }
-
-    // ---------- 第 3 页：文件访问 + 屏幕采集说明 ----------
+    // ---------- 第 3 页：文件访问 + 屏幕采集 ----------
     private View createFilePage() {
-        fileStatusText = new TextView(activity);
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
-        col.setPadding(0, dp(6), 0, 0);
-        col.addView(label(activity.getString(R.string.settings_file_permission)), wrapParams());
-        col.addView(fileStatusText, matchWrapParams());
-        col.addView(note(activity.getString(R.string.guide_file_note)), matchWrapParams());
-        Button fileBtn = new Button(activity);
-        fileBtn.setText(activity.getString(R.string.action_grant));
-        styleSmallButton(fileBtn);
+
+        LinearLayout cardFile = card();
+        cardFile.addView(sectionTitle(activity.getString(R.string.settings_file_permission)));
+        fileStatusText = statusText();
+        cardFile.addView(statusTextLine(fileStatusText));
+        cardFile.addView(note(activity.getString(R.string.guide_file_note)));
+        Button fileBtn = actionButton(activity.getString(R.string.action_grant));
         fileBtn.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 activity.startActivity(
@@ -554,37 +553,86 @@ public final class InitializationGuideDialog {
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1500);
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 3000);
         });
-        col.addView(fileBtn, wrapParamsR());
+        cardFile.addView(fileBtn);
+        col.addView(cardFile);
 
-        col.addView(label(activity.getString(R.string.guide_label_screen_capture)), wrapParamsR());
-        col.addView(note(activity.getString(R.string.guide_screen_capture_note)),
-                matchWrapParams());
+        LinearLayout cardScreen = card();
+        cardScreen.addView(sectionTitle(activity.getString(R.string.guide_label_screen_capture)));
+        cardScreen.addView(note(activity.getString(R.string.guide_screen_capture_note)));
+        col.addView(cardScreen);
+
         return col;
     }
 
-    // ---------- UI 辅助 ----------
-    private TextView label(String s) {
+    // ---------- UI 辅助（LibreDeX 主风格） ----------
+    /** 圆角卡片容器，与设置页 LibreDeXCard 同风格。 */
+    private LinearLayout card() {
+        LinearLayout c = new LinearLayout(activity);
+        c.setOrientation(LinearLayout.VERTICAL);
+        c.setBackgroundResource(R.drawable.bg_libredex_card);
+        c.setPadding(dp(16), dp(14), dp(16), dp(14));
+        LinearLayout.LayoutParams lp = matchWrapParams();
+        lp.bottomMargin = dp(12);
+        c.setLayoutParams(lp);
+        return c;
+    }
+
+    /** 卡片内小节标题（13sp 加粗次要色，同 LibreDeXSectionTitle）。 */
+    private TextView sectionTitle(String s) {
         TextView t = new TextView(activity);
         t.setText(s);
-        t.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_primary));
-        t.setTextSize(15);
-        t.setTypeface(android.graphics.Typeface.DEFAULT_BOLD);
+        t.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
+        t.setTextSize(13);
+        t.setTypeface(Typeface.DEFAULT_BOLD);
+        LinearLayout.LayoutParams lp = matchWrapParams();
+        lp.bottomMargin = dp(6);
+        t.setLayoutParams(lp);
         return t;
     }
 
+    /** 状态文字（次要色 13sp）。 */
+    private TextView statusText() {
+        TextView t = new TextView(activity);
+        t.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
+        t.setTextSize(13);
+        return t;
+    }
+
+    /** 状态行容器：状态文字占满一行并保留底部间距。 */
+    private LinearLayout statusTextLine(TextView status) {
+        LinearLayout row = new LinearLayout(activity);
+        row.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams lp = matchWrapParams();
+        lp.bottomMargin = dp(8);
+        row.setLayoutParams(lp);
+        if (status.getParent() != null) {
+            ((ViewGroup) status.getParent()).removeView(status);
+        }
+        row.addView(status);
+        return row;
+    }
+
+    /** 说明文字（次要色 13sp）。 */
     private TextView note(String s) {
         TextView t = new TextView(activity);
         t.setText(s);
         t.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
         t.setTextSize(13);
-        t.setPadding(0, dp(2), 0, 0);
+        t.setLineSpacing(dp(2), 1.1f);
+        LinearLayout.LayoutParams lp = matchWrapParams();
+        lp.bottomMargin = dp(10);
+        t.setLayoutParams(lp);
         return t;
     }
 
-    private void styleSmallButton(Button b) {
-        b.setMinHeight(0);
-        b.setMinimumHeight(0);
-        b.setPadding(dp(12), dp(4), dp(12), dp(4));
+    /** 卡片内主操作按钮（LibreDeXButtonSoft：圆角 accent 文字，满宽）。 */
+    private Button actionButton(String s) {
+        Button b = new Button(activity, null, 0, R.style.LibreDeXButtonSoft);
+        b.setText(s);
+        b.setLayoutParams(new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                dp(44)));
+        return b;
     }
 
     private void updateText(TextView view, String text) {
@@ -613,12 +661,6 @@ public final class InitializationGuideDialog {
         return new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-    }
-
-    private LinearLayout.LayoutParams wrapParamsR() {
-        LinearLayout.LayoutParams p = wrapParams();
-        p.topMargin = dp(4);
-        return p;
     }
 
     private int dp(int value) {

@@ -365,9 +365,10 @@
     <string name="debug_field_frame_pacer">Frame pacer</string>
     <string name="debug_field_sep">：</string>
     <string name="guide_page_title_lsposed">LSPosed Hook</string>
-    <string name="guide_page_title_environment">Shizuku / Root / 悬浮窗</string>
+    <string name="guide_page_title_environment">Root / Shizuku</string>
+    <string name="guide_page_title_permissions">悬浮窗 / 录音</string>
     <string name="guide_page_title_recording">录音</string>
-    <string name="guide_page_title_files">文件访问 · 完成</string>
+    <string name="guide_page_title_files">文件访问 · 屏幕采集</string>
     <string name="guide_label_result">检测结果</string>
     <string name="guide_lsposed_note">LibreDeX 的核心显示/输入钩子依赖 LSPosed（原版或 Vector 均可）。\n请在其中启用本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。\n提示：Vector 变种没有独立 App，入口在桌面的“LSPosed”快捷方式或通知栏里。</string>
     <string name="guide_lsposed_manager_not_open">未检测到 LSPosed / Vector 管理器打开</string>
