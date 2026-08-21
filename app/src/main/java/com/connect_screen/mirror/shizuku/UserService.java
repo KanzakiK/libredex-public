@@ -1019,11 +1019,12 @@ public class UserService extends IUserService.Stub  {
     }
 
     @Override
-    public int createExternalMirror(String name, int width, int height, int displayIdToMirror, Surface surface) throws RemoteException {
-        Ln.i("createExternalMirror: name=" + name + " mirroring displayId=" + displayIdToMirror + " sdk=" + Build.VERSION.SDK_INT);
+    public int createExternalMirror(String name, int width, int height, int displayIdToMirror, int frameRate, Surface surface) throws RemoteException {
+        Ln.i("createExternalMirror: name=" + name + " mirroring displayId=" + displayIdToMirror
+                + " fps=" + frameRate + " sdk=" + Build.VERSION.SDK_INT);
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                return createExternalMirrorApi31(name, width, height, displayIdToMirror, surface);
+                return createExternalMirrorApi31(name, width, height, displayIdToMirror, frameRate, surface);
             } else {
                 return createExternalMirrorApi30(name, width, height, displayIdToMirror, surface);
             }
@@ -1601,7 +1602,7 @@ public class UserService extends IUserService.Stub  {
         }
     }
 
-    private int createExternalMirrorApi31(String name, int width, int height, int displayIdToMirror, Surface surface) throws Exception {
+    private int createExternalMirrorApi31(String name, int width, int height, int displayIdToMirror, int frameRate, Surface surface) throws Exception {
         android.hardware.display.DisplayManager dm;
         if (context != null) {
             dm = (android.hardware.display.DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
@@ -1611,6 +1612,12 @@ public class UserService extends IUserService.Stub  {
             ctor.setAccessible(true);
             dm = ctor.newInstance(FakeContext.get());
         }
+        // Keep the legacy createVirtualDisplay(name,w,h,displayIdToMirror,surface)
+        // path for the mirror VD: building the VD ourselves with a
+        // VirtualDisplayConfig leaves it without mirrored content (black
+        // screen). The legacy API mirrors the panel correctly; we then push the
+        // requested frame rate onto the Display so the VD advertises a 120 Hz
+        // mode instead of the fixed 60 Hz default.
         Method method = android.hardware.display.DisplayManager.class
                 .getMethod("createVirtualDisplay", String.class, int.class, int.class, int.class, Surface.class);
         if (mirrorVirtualDisplay != null) {
@@ -1620,6 +1627,11 @@ public class UserService extends IUserService.Stub  {
         mirrorVirtualDisplay = (VirtualDisplay) method.invoke(dm, name, width, height, displayIdToMirror, surface);
         int vdId = mirrorVirtualDisplay.getDisplay().getDisplayId();
         Ln.i("createExternalMirror [API31+] success, virtualDisplayId=" + vdId);
+        // NOTE: pushing a refresh rate onto the mirror VD (Display
+        // setRequestedRefreshRate / VirtualDisplayConfig setRequestedRefreshRate)
+        // breaks mouse-to-touch injection (InputDispatcher rejects the events),
+        // so the mirror path intentionally keeps the legacy 60 Hz VD. The DeX
+        // path (createDexMirror) keeps its own requested-refresh-rate support.
         return vdId;
     }
 

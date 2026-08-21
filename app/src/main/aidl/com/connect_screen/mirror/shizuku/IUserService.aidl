@@ -34,7 +34,7 @@ interface IUserService {
 
     IBinder createDisplay(String name, boolean secure) = 12;
 
-    int createExternalMirror(String name, int width, int height, int displayIdToMirror, in Surface surface) = 13;
+    int createExternalMirror(String name, int width, int height, int displayIdToMirror, int frameRate, in Surface surface) = 13;
     void destroyExternalMirror() = 14;
     String executeShellCommand(String command) = 15;
    int redirectDisplayToSurface(int displayId, in Surface surface) = 18;

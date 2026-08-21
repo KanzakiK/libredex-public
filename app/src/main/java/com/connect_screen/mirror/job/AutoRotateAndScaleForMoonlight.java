@@ -359,6 +359,7 @@ public class AutoRotateAndScaleForMoonlight {
                     targetWidth,
                     targetHeight,
                     mirrorDisplayId,
+                    virtualDisplayArgs.refreshRate,
                     targetSurface);
             if (result < 0) {
                 State.showErrorStatus(failureMessage);
