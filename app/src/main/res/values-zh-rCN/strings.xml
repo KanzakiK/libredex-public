@@ -418,4 +418,5 @@
     <string name="log_share_archive">分享日志压缩包</string>
     <string name="dp_dex_need_root_shizuku">DP DeX 需要以 root 启动 Shizuku</string>
     <string name="sunshine_auto_fallback">\n\n已自动回退到 H.264/AVC，请重新连接 Moonlight。</string>
+    <string name="screen_builtin_display">内置屏幕</string>
 </resources>
