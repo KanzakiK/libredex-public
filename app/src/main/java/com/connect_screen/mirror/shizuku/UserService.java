@@ -1093,9 +1093,14 @@ public class UserService extends IUserService.Stub  {
                 }
             }
             try {
-                float refreshRate = frameRate > 0 ? Math.min(frameRate, 120f) : 60f;
+                // Follow the streamed frame rate (Sunshine passes the
+                // moonlight client's requested fps here) instead of clamping
+                // to 120: the DeX VD is an independent software display and
+                // can run at 144 Hz (2K144 clients) just fine.
+                float refreshRate = frameRate > 0 ? frameRate : 60f;
                 builderClass.getMethod("setRequestedRefreshRate", float.class)
                         .invoke(builder, refreshRate);
+                Ln.i("createDexMirror requestedRefreshRate=" + refreshRate);
             } catch (Throwable t) {
                 Ln.w("setRequestedRefreshRate unavailable: " + t.getMessage());
             }
