@@ -868,7 +868,12 @@ public class UserService extends IUserService.Stub  {
 
     @Override
     public boolean isRooted() throws RemoteException {
-        return android.os.Process.myUid() == 0 || findSuBinary() != null;
+        // A real root check: only uid 0 means the process (and any
+        // ProcessBuilder children like the qti probe) runs with full
+        // permissions. findSuBinary() is NOT a valid proxy here - the shell
+        // process has the Magisk su dir on PATH (added by executeShellCommand)
+        // and would report true while still being a restricted shell process.
+        return android.os.Process.myUid() == 0;
     }
 
     @Override
