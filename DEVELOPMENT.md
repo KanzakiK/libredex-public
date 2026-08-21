@@ -49,6 +49,24 @@ Exact module path and provider class are intentionally kept in the private
 maintenance checklist. In this workspace, read
 `docs\repo-maintenance.md` before building the full variant.
 
+## i18n maintenance rules
+
+- All user-visible strings go through `res/values/strings.xml` (English,
+  default locale) and `res/values-zh-rCN/strings.xml` (Simplified Chinese).
+  Never hardcode UI text in layouts or Java; lint enforces this
+  (`HardcodedText` / `SetTextI18n` are errors via `app/lint.xml`).
+- New strings: add the key to both files, run the consistency checker:
+  `python scripts/check_i18n_consistency.py` (also validates placeholder
+  types/order). Brand words (DeX, Moonlight, Shizuku, Sunshine, LSPosed,
+  DP/HDMI, FEC, Hz...) stay identical in both locales.
+- Format strings: use indexed placeholders (`%1$d` for ints, `%1$s` for
+  strings); ints must use `%d` or lint `StringFormatMatches` fails. The two
+  locale files may order indexed placeholders differently (natural word order
+  per language).
+- Scripts under `scripts/` (extract_i18n_strings.py, gen_i18n_inventory.py,
+  gen_i18n_resources.py, replace_java_strings.py, check_i18n_consistency.py)
+  regenerate inventory/resources; `docs/i18n/` is git-ignored (regenerable).
+
 ## Public content rules
 
 - Keep changelog and release notes generic.
