@@ -1721,7 +1721,42 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     // Returns the mode id of the highest-refresh-rate mode of the given
     // display, or null when it cannot be resolved. Mirrors defaultModeId
     // semantics on this device (mode 1 = 120 Hz).
+    // IMPORTANT: this queries DisplayManagerGlobal.getDisplayInfo, which takes
+    // the DisplayManagerGlobal lock and issues a DMS binder call. It must not
+    // run on a hook callback thread that already holds DMS locks (binder call
+    // to the same process waits on the very lock this thread holds -> self
+    // deadlock, same family as the sessionOrDockActive watchdog reboot).
+    // Result is cached and refreshed on a background thread.
+    private static volatile Integer dockHighestModeIdCached;
+    private static volatile long dockHighestModeIdCachedAtMs;
+    private static volatile boolean dockHighestModeRefreshScheduled;
+
     private static Integer findHighestRefreshModeId(ClassLoader cl, int displayId) {
+        long now = android.os.SystemClock.uptimeMillis();
+        if (dockHighestModeIdCached != null
+                && now - dockHighestModeIdCachedAtMs < 5000L) {
+            return dockHighestModeIdCached;
+        }
+        if (!dockHighestModeRefreshScheduled) {
+            dockHighestModeRefreshScheduled = true;
+            final ClassLoader fcl = cl;
+            final int fid = displayId;
+            new Thread(() -> {
+                try {
+                    Integer id = probeHighestRefreshModeId(fcl, fid);
+                    dockHighestModeIdCached = id;
+                    dockHighestModeIdCachedAtMs = android.os.SystemClock.uptimeMillis();
+                } catch (Throwable ignored) {
+                } finally {
+                    dockHighestModeRefreshScheduled = false;
+                }
+            }, TAG + "-mode-probe").start();
+        }
+        return dockHighestModeIdCached;
+    }
+
+    /** Runs on a background thread only; never call from a hook callback. */
+    private static Integer probeHighestRefreshModeId(ClassLoader cl, int displayId) {
         try {
             Class<?> displayManagerGlobal = Class.forName(
                     "android.hardware.display.DisplayManagerGlobal", false, cl);
@@ -1842,8 +1877,16 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     // session active. Probe results are cached to avoid binder traffic on the
     // hot updateVote/notifyHFRmode paths, and probing is skipped until the
     // system has booted (DMS is not safe to query during early boot).
+    // IMPORTANT: the probe (DisplayManagerGlobal.getDisplayIds) takes the
+    // DisplayManagerGlobal lock and issues a DMS binder call. It must NEVER
+    // run on a hook callback thread: two threads entering the probe at once
+    // can deadlock (each holds one of the DMS/DisplayManagerGlobal locks and
+    // waits for the other), which starves system_server's main/ui/display
+    // threads and trips the watchdog -> soft reboot (seen twice). Probing is
+    // therefore done on a background thread; callbacks only read the cache.
     private static volatile Boolean dockActiveCached;
     private static volatile long dockActiveCachedAtMs;
+    private static volatile boolean dockRefreshScheduled;
 
     private static boolean sessionOrDockActive(ClassLoader cl) {
         if (sessionActiveEnabled()) {
@@ -1863,6 +1906,25 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         if (dockActiveCached != null && now - dockActiveCachedAtMs < 5000L) {
             return dockActiveCached;
         }
+        if (!dockRefreshScheduled) {
+            dockRefreshScheduled = true;
+            final ClassLoader fcl = cl;
+            new Thread(() -> {
+                try {
+                    boolean active = probeDockActive(fcl);
+                    dockActiveCached = active;
+                    dockActiveCachedAtMs = android.os.SystemClock.uptimeMillis();
+                } catch (Throwable ignored) {
+                } finally {
+                    dockRefreshScheduled = false;
+                }
+            }, TAG + "-dock-probe").start();
+        }
+        return dockActiveCached != null ? dockActiveCached : false;
+    }
+
+    /** Runs on a background thread only; never call from a hook callback. */
+    private static boolean probeDockActive(ClassLoader cl) {
         boolean active = false;
         try {
             Class<?> dmg = Class.forName(
@@ -1889,8 +1951,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": sessionOrDockActive probe failed: " + t);
         }
-        dockActiveCached = active;
-        dockActiveCachedAtMs = now;
         return active;
     }
 
