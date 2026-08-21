@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.hardware.display.DisplayManager;
+
+import androidx.core.os.LocaleListCompat;
 import android.hardware.display.VirtualDisplay;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionConfig;
@@ -105,6 +107,13 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                 : "light".equals(themeMode)
                 ? AppCompatDelegate.MODE_NIGHT_NO
                 : AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+        // Apply the user's language override here (not in Application.onCreate):
+        // the default "follow system" path must make zero locale calls to stay
+        // identical to pre-i18n behavior, and we want it after super.onCreate.
+        String lang = Pref.getLanguageMode();
+        if (lang != null && !lang.isEmpty() && !"system".equals(lang)) {
+            AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang));
+        }
         super.onCreate(savedInstanceState);
         State.setCurrentActivity(this);
         getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);

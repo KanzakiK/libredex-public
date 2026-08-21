@@ -160,6 +160,7 @@ EXTRA = [
     ("guide_file_note", "Used to write logs / archives to the Downloads folder.", "用于把日志/压缩包写入下载目录。"),
     ("guide_label_screen_capture", "Screen capture (projection)", "屏幕采集（投屏）"),
     ("guide_screen_capture_note", "The system prompts for projection authorization when a connection starts; just confirm it there. No need to grant it in advance here.", "开始连接时系统会自动弹出投屏授权，确认即可；无需在此提前授权。"),
+    ("debug_no_handshake", "No recent Moonlight connection handshake info", "尚无最近一次 Moonlight 连接握手信息"),
 ]
 
 # pre-existing entries to keep in values/ (app_name referenced by manifest; the

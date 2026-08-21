@@ -380,4 +380,5 @@
     <string name="guide_file_note">用于把日志/压缩包写入下载目录。</string>
     <string name="guide_label_screen_capture">屏幕采集（投屏）</string>
     <string name="guide_screen_capture_note">开始连接时系统会自动弹出投屏授权，确认即可；无需在此提前授权。</string>
+    <string name="debug_no_handshake">尚无最近一次 Moonlight 连接握手信息</string>
 </resources>
