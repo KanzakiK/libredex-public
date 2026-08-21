@@ -364,4 +364,20 @@
     <string name="debug_field_native">Native</string>
     <string name="debug_field_frame_pacer">Frame pacer</string>
     <string name="debug_field_sep">: </string>
+    <string name="guide_page_title_lsposed">LSPosed Hook</string>
+    <string name="guide_page_title_environment">Shizuku / Root / overlay</string>
+    <string name="guide_page_title_recording">Recording</string>
+    <string name="guide_page_title_files">File access · Done</string>
+    <string name="guide_label_result">Result</string>
+    <string name="guide_lsposed_note">LibreDeX core display/input hooks depend on LSPosed (stock or Vector).\nEnable this module there, scope it to android / Samsung Settings / launcher, then reboot for the hooks to take effect.\nNote: Vector variants have no standalone app icon; the entry is the LSPosed shortcut on the home screen or in the notification shade.</string>
+    <string name="guide_lsposed_manager_not_open">Could not detect that the LSPosed / Vector manager is open</string>
+    <string name="guide_launch_failed_fmt">Failed to launch: %1$s</string>
+    <string name="guide_open_lsposed_manual">Please open it manually:\n· the LSPosed (Vector) shortcut on the home screen, or\n· the LSPosed / Vector entry in the notification shade.\n\nIf you already opened and enabled this module, scope it to android / Samsung Settings / launcher, then reboot for the hooks to take effect.</string>
+    <string name="guide_label_root_userservice">Root / UserService</string>
+    <string name="guide_root_note">Root is the basis for one-tap silent authorization of overlay/projection; the app tries to request it automatically on launch.</string>
+    <string name="guide_label_recording_permission">Recording permission</string>
+    <string name="guide_recording_note">Used to capture system playback audio; without it, video still streams but there is no sound. Can be skipped.</string>
+    <string name="guide_file_note">Used to write logs / archives to the Downloads folder.</string>
+    <string name="guide_label_screen_capture">Screen capture (projection)</string>
+    <string name="guide_screen_capture_note">The system prompts for projection authorization when a connection starts; just confirm it there. No need to grant it in advance here.</string>
 </resources>

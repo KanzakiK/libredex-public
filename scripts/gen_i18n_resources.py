@@ -144,6 +144,22 @@ EXTRA = [
     ("debug_field_native", "Native", "Native"),
     ("debug_field_frame_pacer", "Frame pacer", "Frame pacer"),
     ("debug_field_sep", ": ", "："),
+    ("guide_page_title_lsposed", "LSPosed Hook", "LSPosed Hook"),
+    ("guide_page_title_environment", "Shizuku / Root / overlay", "Shizuku / Root / 悬浮窗"),
+    ("guide_page_title_recording", "Recording", "录音"),
+    ("guide_page_title_files", "File access · Done", "文件访问 · 完成"),
+    ("guide_label_result", "Result", "检测结果"),
+    ("guide_lsposed_note", "LibreDeX core display/input hooks depend on LSPosed (stock or Vector).\nEnable this module there, scope it to android / Samsung Settings / launcher, then reboot for the hooks to take effect.\nNote: Vector variants have no standalone app icon; the entry is the LSPosed shortcut on the home screen or in the notification shade.", "LibreDeX 的核心显示/输入钩子依赖 LSPosed（原版或 Vector 均可）。\n请在其中启用本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。\n提示：Vector 变种没有独立 App，入口在桌面的“LSPosed”快捷方式或通知栏里。"),
+    ("guide_lsposed_manager_not_open", "Could not detect that the LSPosed / Vector manager is open", "未检测到 LSPosed / Vector 管理器打开"),
+    ("guide_launch_failed_fmt", "Failed to launch: %1$s", "拉起失败：%1$s"),
+    ("guide_open_lsposed_manual", "Please open it manually:\n· the LSPosed (Vector) shortcut on the home screen, or\n· the LSPosed / Vector entry in the notification shade.\n\nIf you already opened and enabled this module, scope it to android / Samsung Settings / launcher, then reboot for the hooks to take effect.", "请手动打开：\n· 桌面上的“LSPosed（Vector）”快捷方式，或\n· 下拉通知栏里的 LSPosed / Vector 入口。\n\n若已打开并启用了本模块，作用域勾选 android / 三星设置 / 桌面，然后重启手机使 Hook 生效。"),
+    ("guide_label_root_userservice", "Root / UserService", "Root / UserService"),
+    ("guide_root_note", "Root is the basis for one-tap silent authorization of overlay/projection; the app tries to request it automatically on launch.", "Root 是悬浮窗/投屏“一键静默授权”的基础；应用打开时会自动尝试拉起授权。"),
+    ("guide_label_recording_permission", "Recording permission", "录音权限"),
+    ("guide_recording_note", "Used to capture system playback audio; without it, video still streams but there is no sound. Can be skipped.", "用于采集系统播放音频；未授权仍可串流画面，只是没有声音。可跳过。"),
+    ("guide_file_note", "Used to write logs / archives to the Downloads folder.", "用于把日志/压缩包写入下载目录。"),
+    ("guide_label_screen_capture", "Screen capture (projection)", "屏幕采集（投屏）"),
+    ("guide_screen_capture_note", "The system prompts for projection authorization when a connection starts; just confirm it there. No need to grant it in advance here.", "开始连接时系统会自动弹出投屏授权，确认即可；无需在此提前授权。"),
 ]
 
 # pre-existing entries to keep in values/ (app_name referenced by manifest; the
