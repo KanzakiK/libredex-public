@@ -64,7 +64,7 @@ LibreDeX 为 SM-F731B 带来完整的桌面体验：基于 One UI 固件中预�
 ## 环境要求
 
 - **Galaxy Z Flip 5 / SM-F731B**
-- **One UI 8（Android 16，编译版本 F7310ZCS9GZF1）** 基线——当前真机验证环境；**One UI 8.5（Android 16 QPR2）** 也已有用户验证。基于 One UI 8 固件研究开发，理论上 **One UI 8+ / Android 16+** 可用，目前仅 SM-F731B 经过验证。
+- **One UI 8（Android 16，编译版本 F731BXXS5FZA1）** 基线——当前真机验证环境；**One UI 8.5（Android 16 QPR2）** 也已有用户验证。基于 One UI 8 固件研究开发，理论上 **One UI 8+ / Android 16+** 可用，目前仅 SM-F731B 经过验证。
 - **Root**（Magisk 或 KernelSU）
 - **Shizuku** 授权
 - **LSPosed**（含 Vector/LSPosed）；启用 LibreDeX 模块并重启

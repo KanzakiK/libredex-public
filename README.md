@@ -64,7 +64,7 @@ LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — p
 ## Requirements
 
 - **Galaxy Z Flip 5 / SM-F731B**
-- **One UI 8 (Android 16, build F7310ZCS9GZF1)** baseline — the current device-verified environment; **One UI 8.5 (Android 16 QPR2)** has also been user-verified. Developed against One UI 8 firmware; in theory works on **One UI 8+ / Android 16+**, only SM-F731B verified so far.
+- **One UI 8 (Android 16, build F731BXXS5FZA1)** baseline — the current device-verified environment; **One UI 8.5 (Android 16 QPR2)** has also been user-verified. Developed against One UI 8 firmware; in theory works on **One UI 8+ / Android 16+**, only SM-F731B verified so far.
 - **Root** (Magisk or KernelSU)
 - **Shizuku** authorization
 - **LSPosed** (including Vector/LSPosed); enable the LibreDeX module and reboot
