@@ -63,6 +63,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         XposedBridge.log(TAG + ": hooking system_server");
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
+        installRefreshRateUnlockHooks(cl);
         try {
             Class<?> adapter = XposedHelpers.findClass(
                     "com.android.server.display.VirtualDisplayAdapter", cl);
@@ -1467,6 +1468,123 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     }
 
     private static volatile int fakeScreenPowerMode = 0;
+
+    // Vote priorities on One UI 16 (services.jar com.android.server.display.mode.Vote):
+    //   15 = PRIORITY_SYNCHRONIZED_REFRESH_RATE
+    //   16 = PRIORITY_SYNCHRONIZED_RENDER_FRAME_RATE
+    //   17 = PRIORITY_LIMIT_MODE
+    //   22 = PRIORITY_LOW_POWER_MODE_MODES
+    // All of them cap the physical display refresh rate (60 Hz) when a
+    // virtual/external display activates. We drop them while a LibreDeX
+    // session is active so the panel stays at its native 120 Hz and the
+    // streaming virtual display can actually be fed at >60 fps.
+    private static volatile boolean refreshRateUnlockHooksInstalled;
+
+    private static void installRefreshRateUnlockHooks(ClassLoader cl) {
+        if (refreshRateUnlockHooksInstalled) {
+            return;
+        }
+        refreshRateUnlockHooksInstalled = true;
+        try {
+            Class<?> voteClass = XposedHelpers.findClass(
+                    "com.android.server.display.mode.Vote", cl);
+            Class<?> votesStorage = XposedHelpers.findClass(
+                    "com.android.server.display.mode.VotesStorage", cl);
+            Method updateVote = votesStorage.getDeclaredMethod(
+                    "updateVote", int.class, int.class, voteClass);
+            XposedBridge.hookMethod(updateVote, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    if (!sessionActiveEnabled()) {
+                        return;
+                    }
+                    int displayId = (Integer) param.args[0];
+                    int priority = (Integer) param.args[1];
+                    Object vote = param.args[2];
+                    if (displayId == -1 && vote != null && isRefreshRateLimitPriority(priority)) {
+                        XposedBridge.log(TAG + ": dropped refresh-rate limiting vote priority="
+                                + priority + " displayId=" + displayId);
+                        param.setResult(null);
+                    }
+                }
+            });
+            XposedBridge.log(TAG + ": refresh-rate unlock hooks installed");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": refresh-rate unlock hook setup failed: " + t);
+        }
+        try {
+            // Samsung VRR talks to SurfaceFlinger directly through
+            // SurfaceControl.notifyHFRmode(token, mode). In SEAMLESS mode
+            // (value 1) the panel drops to 60 Hz whenever content looks static,
+            // which keeps the streaming virtual display at 60 fps. While a
+            // LibreDeX session is active we force HIGH (value 2 = 120 Hz fixed).
+            Class<?> surfaceControl = XposedHelpers.findClass(
+                    "android.view.SurfaceControl", cl);
+            for (Method method : surfaceControl.getDeclaredMethods()) {
+                if ("notifyHFRmode".equals(method.getName())) {
+                    XposedBridge.hookMethod(method, new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            boolean sessionActive = sessionActiveEnabled();
+                            int mode = (Integer) param.args[1];
+                            XposedBridge.log(TAG + ": notifyHFRmode mode=" + mode
+                                    + " session=" + sessionActive);
+                            if (sessionActive && mode != 2) {
+                                param.args[1] = 2;
+                                XposedBridge.log(TAG + ": forced notifyHFRmode -> HIGH(2)");
+                            }
+                        }
+                    });
+                    XposedBridge.log(TAG + ": notifyHFRmode hook installed");
+                    break;
+                }
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": notifyHFRmode hook setup failed: " + t);
+        }
+    }
+
+    private static boolean isRefreshRateLimitPriority(int priority) {
+        switch (priority) {
+            case 15: // PRIORITY_SYNCHRONIZED_REFRESH_RATE
+            case 16: // PRIORITY_SYNCHRONIZED_RENDER_FRAME_RATE
+            case 17: // PRIORITY_LIMIT_MODE
+            case 22: // PRIORITY_LOW_POWER_MODE_MODES
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // Returns the mode id of the highest-refresh-rate mode of the given
+    // display, or null when it cannot be resolved. Mirrors defaultModeId
+    // semantics on this device (mode 1 = 120 Hz).
+    private static Integer findHighestRefreshModeId(ClassLoader cl, int displayId) {
+        try {
+            Class<?> displayManagerGlobal = Class.forName(
+                    "android.hardware.display.DisplayManagerGlobal", false, cl);
+            Object global = displayManagerGlobal.getMethod("getInstance").invoke(null);
+            Object info = displayManagerGlobal.getMethod(
+                    "getDisplayInfo", int.class).invoke(global, displayId);
+            if (info == null) {
+                return null;
+            }
+            Object[] modes = (Object[]) info.getClass().getField("supportedModes").get(info);
+            float bestRate = -1f;
+            int bestId = -1;
+            for (Object mode : modes) {
+                float rate = (Float) mode.getClass().getMethod("getRefreshRate").invoke(mode);
+                if (rate > bestRate) {
+                    bestRate = rate;
+                    bestId = (Integer) mode.getClass().getMethod("getModeId").invoke(mode);
+                }
+            }
+            return bestRate >= 119f ? bestId : null;
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": findHighestRefreshModeId failed: " + t);
+            return null;
+        }
+    }
 
     private static void installFakeScreenHooks(ClassLoader cl) {
         try {

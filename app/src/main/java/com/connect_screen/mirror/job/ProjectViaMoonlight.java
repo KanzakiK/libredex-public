@@ -167,7 +167,7 @@ public class ProjectViaMoonlight implements Job {
                 mirrorSurface = framePacer.getInputSurface();
             }
             State.log(logPrefix + " call userService.createExternalMirror");
-            int result = State.userService.createExternalMirror(mirrorName, width, height, displayIdToMirror, mirrorSurface);
+            int result = State.userService.createExternalMirror(mirrorName, width, height, displayIdToMirror, frameRate, mirrorSurface);
             State.log(logPrefix + " createExternalMirror result=" + result);
             if (result < 0) {
                 SunshineMouse.stopExternalDisplayFramePacer(sessionId, false);
