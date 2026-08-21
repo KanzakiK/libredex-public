@@ -2,10 +2,17 @@
 
 LibreDeX (application id `com.libredex`) is a combined and modified work
 distributed under GPL-3.0. The full license text is in `LICENSE`. The
-upstream components (TNT-Anywhere, Sunshine) are also GPL-3.0 and are
-compatible with this combined distribution.
+upstream components (connect-screen.com, TNT-Anywhere, Sunshine) are also
+GPL-3.0 and are compatible with this combined distribution.
 
 ## Upstreams
+
+- connect-screen.com
+  - Source: https://github.com/taowen/connect-screen.com
+  - License: GPL-3.0
+  - The root upstream of this project: the original "connect screen to
+    external display" project by taowen. TNT-Anywhere (below) derives from
+    it; LibreDeX inherits its architecture and screen-projection approach.
 
 - TNT-Anywhere
   - Source: https://github.com/KanzakiK/TNT-Anywhere.git

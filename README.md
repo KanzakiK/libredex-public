@@ -1,59 +1,139 @@
 # LibreDeX
 
-LibreDeX 让没有官方 DeX 支持的 Galaxy Z Flip 5（SM-F731B）也能使用桌面模式。本仓库是公开主仓库，包含 Moonlight 串流与 USB-C DP/HDMI 有线输出。
+**English** · [简体中文](README.zh-CN.md)
 
-## 功能
+**Native DeX desktop mode for the Galaxy Z Flip 5 — the phone Samsung left without official DeX support.**
 
-- fake DeX 桌面：1920x1080@60 虚拟显示，系统 SecondaryLauncher 全屏 home，可重启/释放会话、换壁纸。
-- Moonlight 串流：H.264 1080P60，鼠标/键盘/触摸输入回流，手机本机可静音。
-- DP/HDMI 有线输出：外接屏显示 DeX 桌面或镜像，拔线自动停止；支持读取外接屏分辨率列表与自定义分辨率/刷新率（高通 `vendor.display.hdmi_cfg_idx`，应用后需插拔 DP 线生效）。
-- 屏幕管理：真实息屏、黑色图片模拟息屏、防自动锁屏、假熄屏（投屏会话中电源键只熄屏不锁屏）、阻止休眠。
-- 镜像适配：自动匹配宽高比、自动旋转，识别内屏/外屏（Flip 5 cover）并按当前屏执行。
-- 多语言：界面跟随系统语言，支持简体中文与 English（其他语言回退英文）；UI 文案全部资源化并带 lint 门禁防回归。
+LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — powered by the DeX components Samsung left embedded in the One UI firmware and completed with LSPosed hooks — plus Moonlight streaming at up to 120 fps and USB-C DP/HDMI wired output with high refresh rates. Samsung never enabled DeX on this phone — LibreDeX does.
 
-## 发布件
+---
 
-- `libredex-public-release.apk`：0.2.6 release 构建（arm64-v8a）。
+## Features
 
-## 环境要求
+### Desktop mode (native DeX)
+- Virtual display with the system SecondaryLauncher as a fullscreen home
+- Resolution is configurable in-app — 1920×1080 by default, **4K verified** (higher untested)
+- Start / restart / release desktop sessions at any time
+- Change the DeX wallpaper from the app — the stock wallpaper setting inside the system DeX settings is dead, so LibreDeX ships its own
+- Quick virtual touchpad — the stock DeX touchpad entry is not exposed in system settings, so a dedicated shortcut lives on the app's home page
 
-- Galaxy Z Flip 5 / SM-F731B，One UI 8 基线（当前真机验证环境）。
-- Root（Magisk 或 KernelSU）。
-- Shizuku 授权。
-- LSPosed（含 Vector/LSPosed），启用 LibreDeX 模块并重启。
-- 仅 arm64-v8a。
+### DeX settings (unlocked in system Settings)
+- Unlocks Samsung's hidden DeX settings page in the system Settings app
+- Adjust DeX resolution, font size & scaling, and whether the IME shows on the DeX screen
+- **Official wireless DeX via Miracast** — cast the desktop to Miracast displays / Smart TVs wirelessly
+- No in-app entry needed — just open the system Settings app and search "DeX"
 
-## 安装与使用
+### Moonlight streaming
+- HEVC encoding (auto-fallback to H.264), up to **4K120** — frame rate follows the client's request
+- High resolutions work but push the phone hard: expect noticeable heat at 4K120, keep an eye on thermals
+- Full input relay: mouse, keyboard, and touch come back to the device
+- Mute the phone speaker locally during a stream; audio stays on the client
+- Live session stats (input fps / output fps) and encoder/transport settings in-app
 
-1. 安装 `libredex-public-release.apk`。
-2. 在 LSPosed 中勾选 LibreDeX 模块，作用域覆盖 `android` 与 `system_server` 相关进程，重启手机。
-3. 打开 LibreDeX，授予 Shizuku 权限与录屏权限。
-4. Moonlight：首页/连接页启动服务，在 Moonlight 客户端添加手机 IP 并配对。
-5. DP：插入 USB-C DP 线后进入 DP 页，点击“开始 DP 输出”；改分辨率后按提示插拔一次线。
+### USB-C DP / HDMI wired output
+- External display shows the DeX desktop or a mirror of the phone screen
+- **High refresh rate on the external display** (e.g. 2K144) with the phone screen staying at 120 Hz while docked
+- Read the external display's supported mode list; set custom resolution / DPI / refresh rate (Qualcomm `vendor.display.hdmi_cfg_idx`; re-plug the DP cable once after applying)
+- Auto-stops the output when the cable is unplugged
 
-## 构建
+### Screen management
+- Real screen-off and black-image simulated screen-off
+- Fake screen-off: during a projection session the power key only blanks the screen, it does not lock it
+- Prevent auto-lock and block sleep while a session is running
+
+### Mirror adaptation
+- Auto aspect-ratio matching and auto-rotation
+- Detects the inner and outer (Flip 5 cover) displays and acts on the active one
+
+### Screen settings (experimental)
+- Per-display resolution / DPI / refresh-mode / rotation controls
+- The built-in screen is view-only to protect system display parameters
+
+### Multi-language
+- UI follows the system language — Simplified Chinese and English, other languages fall back to English
+- In-app language switcher (Settings → Appearance → Language): Follow system / 简体中文 / English
+- All UI strings are resource-based; lint gates (`HardcodedText` / `SetTextI18n`) prevent regressions
+
+### Diagnostics & logs
+- In-app log panel with one-tap export (bundles device model, OS version, app version, and LSPosed logs)
+- Recent Moonlight handshake / control-input stats for remote debugging
+- Logs auto-clean so they never grow unbounded
+
+---
+
+## Requirements
+
+- **Galaxy Z Flip 5 / SM-F731B**
+- **One UI 8 (Android 16, build F7310ZCS9GZF1)** baseline — the current device-verified environment; **One UI 8.5 (Android 16 QPR2)** has also been user-verified. Developed against One UI 8 firmware; in theory works on **One UI 8+ / Android 16+**, only SM-F731B verified so far.
+- **Root** (Magisk or KernelSU)
+- **Shizuku** authorization
+- **LSPosed** (including Vector/LSPosed); enable the LibreDeX module and reboot
+
+---
+
+## Installation & Usage
+
+1. **Install** `libredex-public-release.apk` from the [Releases page](https://github.com/KanzakiK/libredex-public/releases).
+2. **Enable the module**: open LSPosed, enable the LibreDeX module, scope it to `android` (system_server), `com.android.settings`, and `com.sec.android.app.launcher` (One UI Home), then **reboot the phone**.
+3. **Open LibreDeX**: the setup wizard walks through Shizuku / root, overlay, audio recording, file access, and screen capture. Grant the requested permissions.
+4. **Moonlight streaming**: open the connection page, start the service, then add the phone's IP in a Moonlight client and pair.
+5. **DP / HDMI output**: plug in a USB-C DP cable, open the DP page and tap **Start DP output**. After changing resolution/refresh rate, re-plug the cable once as prompted.
+
+> **First run check**: the setup wizard's first page shows *"Hook active"* only when the module is actually injected into `system_server`. If it says *"Hook not active"*, the module isn't enabled or the phone hasn't been rebooted since enabling it.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Wizard says "Hook not active" | Module not enabled, or no reboot since enabling. Re-check LSPosed scope and reboot. |
+| DP shows no signal | Make sure the cable/adapter supports DP Alt Mode; re-plug after changing output settings. |
+| Stream is stuck at 60 fps | Client requested a high refresh rate but the session started at 1080P60; start a 2K120/2K144 session, or re-create the DeX session. |
+| Phone freezes / reboots | Export logs from the debug panel (logcat export) and report them with the issue. |
+
+---
+
+## Building
+
+Debug build:
 
 ```powershell
 .\gradlew.bat :app:assembleDebug
 ```
 
-发布构建与签名：
+Signed release build:
 
 ```powershell
 .\scripts\gen-keystore.ps1
-# 按输出设置 DEXANYWHERE_KEYSTORE / DEXANYWHERE_KEYSTORE_PASSWORD /
-# DEXANYWHERE_KEY_ALIAS / DEXANYWHERE_KEY_PASSWORD
+# set DEXANYWHERE_KEYSTORE / DEXANYWHERE_KEYSTORE_PASSWORD /
+# DEXANYWHERE_KEY_ALIAS / DEXANYWHERE_KEY_PASSWORD from the output
 .\scripts\build.ps1 -Configuration Release
 ```
 
-详见 `scripts/signing/README.md`。keystore 不入库，密码走本机环境变量。
+See `scripts/signing/README.md`. The keystore is not committed; passwords come from local environment variables.
 
-## 授权
+---
 
-- 本仓库整体按 GPL-3.0 分发，见 `LICENSE`；上游 TNT-Anywhere / Sunshine 同为 GPL-3.0。
-- 上游来源与修改说明见 `NOTICE.md`。
-- 当前产品需要 root；DRM 受保护内容未测试。
+## License
 
-## 文档
+- Distributed under **GPL-3.0**, see `LICENSE`; upstreams connect-screen.com, TNT-Anywhere and Sunshine are also GPL-3.0.
+- Upstream sources and modifications are described in `NOTICE.md`.
+- The current product requires root; DRM-protected content is untested.
 
-- 更新记录：`CHANGELOG.md`
+## Disclaimer
+
+- **DeX, One UI and Samsung are trademarks of Samsung Electronics Co., Ltd.** The DeX components and system firmware remain the property of their respective owners; LibreDeX only unlocks and extends them on your own device.
+- Running the device beyond its designed thermal envelope (e.g. sustained 4K120 streaming) may cause high temperatures and potential hardware damage. **Use at your own risk.**
+- Rooting and using this tool may void your warranty and carries inherent security risks. You are responsible for your own device.
+
+---
+
+## Docs
+
+- Changelog: `CHANGELOG.md`
+- Developer notes: `DEVELOPMENT.md`
+
+---
+
+*Developed with AI-assisted tooling (GitHub Copilot / Codex / DeepSeek etc.).*
