@@ -261,6 +261,7 @@ public final class InitializationGuideDialog {
 
         LinearLayout card = card();
         card.addView(sectionTitle(activity.getString(R.string.guide_label_result)));
+        lspStatusText = statusText();
         card.addView(statusTextLine(lspStatusText));
         card.addView(note(activity.getString(R.string.guide_lsposed_note)));
         Button openLsp = actionButton(activity.getString(R.string.guide_open_lsposed));
@@ -605,10 +606,9 @@ public final class InitializationGuideDialog {
         LinearLayout.LayoutParams lp = matchWrapParams();
         lp.bottomMargin = dp(8);
         row.setLayoutParams(lp);
-        if (status.getParent() != null) {
-            ((ViewGroup) status.getParent()).removeView(status);
+        if (status != null) {
+            row.addView(status);
         }
-        row.addView(status);
         return row;
     }
 
