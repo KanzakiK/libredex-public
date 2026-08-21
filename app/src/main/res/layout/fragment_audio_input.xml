@@ -24,7 +24,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="返回"
+                android:contentDescription="@string/action_back"
                 android:padding="8dp"
                 android:src="@drawable/ic_back"
                 app:tint="@color/ui_text_primary" />
@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="音频与输入"
+                android:text="@string/audio_title"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -49,7 +49,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="禁用 USB 外接屏音频输出"
+                        android:text="@string/audio_disable_usb_audio"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -57,7 +57,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="音频走 Moonlight 采集"
+                        android:text="@string/audio_moonlight_capture"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -75,7 +75,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="安卓端叠加光标"
+                        android:text="@string/audio_overlay_cursor"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -83,7 +83,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="兼容模式"
+                        android:text="@string/audio_compat_mode"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -101,7 +101,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="鼠标事件映射为触控"
+                        android:text="@string/audio_mouse_to_touch"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -109,7 +109,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
-                        android:text="兼容模式"
+                        android:text="@string/audio_compat_mode"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -125,7 +125,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:lineSpacingExtra="2dp"
-                android:text="音频与输入选项作用于当前连接会话，切换连接方式后仍保留各自持久化设置。"
+                android:text="@string/audio_note"
                 android:textColor="@color/ui_text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>

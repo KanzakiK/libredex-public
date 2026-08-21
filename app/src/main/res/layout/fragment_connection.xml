@@ -24,12 +24,12 @@
             <Button
                 android:id="@+id/transportMoonlight"
                 style="@style/LibreDeXTransportTab"
-                android:text="Moonlight" />
+                android:text="@string/brand_moonlight" />
 
             <Button
                 android:id="@+id/transportDp"
                 style="@style/LibreDeXTransportTab"
-                android:text="DP / HDMI" />
+                android:text="@string/brand_dp_hdmi" />
 
         </LinearLayout>
 
@@ -48,7 +48,7 @@
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="首次使用？"
+                        android:text="@string/connection_first_time"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -57,7 +57,7 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="2dp"
                         android:lineSpacingExtra="2dp"
-                        android:text="完成授权与连接指引"
+                        android:text="@string/connection_guide_desc"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -65,14 +65,14 @@
                 <Button
                     android:id="@+id/openWizardButton"
                     style="@style/LibreDeXButtonSoft"
-                    android:text="打开向导" />
+                    android:text="@string/connection_open_guide" />
 
                 <ImageButton
                     android:id="@+id/hideFirstUseButton"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="隐藏"
+                    android:contentDescription="@string/connection_hide"
                     android:padding="10dp"
                     android:src="@drawable/ic_close"
                     app:tint="@color/ui_text_secondary" />
@@ -83,7 +83,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="画面源"
+                android:text="@string/connection_source"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="15sp"
                 android:textStyle="bold" />
@@ -91,7 +91,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="选择要投送的画面"
+                android:text="@string/connection_source_desc"
                 android:textColor="@color/ui_text_secondary"
                 android:textSize="12sp" />
 
@@ -107,18 +107,18 @@
                 <Button
                     android:id="@+id/sourceDexButton"
                     style="@style/LibreDeXSegButton"
-                    android:text="DeX 桌面" />
+                    android:text="@string/connection_dex_desktop" />
                 <Button
                     android:id="@+id/sourceMirrorButton"
                     style="@style/LibreDeXSegButton"
-                    android:text="纯镜像" />
+                    android:text="@string/connection_mirror" />
             </LinearLayout>
         </LinearLayout>
 
         <TextView
             android:id="@+id/quickActionsTitle"
             style="@style/LibreDeXSectionTitle"
-            android:text="快捷操作" />
+            android:text="@string/connection_quick_actions" />
 
         <LinearLayout
             android:id="@+id/quickActionsRow"
@@ -131,25 +131,25 @@
                 style="@style/LibreDeXQuickAction"
                 android:drawableTop="@drawable/ic_touchpad"
                 android:drawableTint="@color/ui_accent"
-                android:text="触控板" />
+                android:text="@string/connection_touchpad" />
             <Button
                 android:id="@+id/quickScreenOff"
                 style="@style/LibreDeXQuickAction"
                 android:drawableTop="@drawable/ic_screen_off"
                 android:drawableTint="@color/ui_accent"
-                android:text="息屏" />
+                android:text="@string/connection_off_screen" />
             <Button
                 android:id="@+id/quickWallpaper"
                 style="@style/LibreDeXQuickAction"
                 android:drawableTop="@drawable/ic_wallpaper"
                 android:drawableTint="@color/ui_accent"
-                android:text="壁纸" />
+                android:text="@string/connection_wallpaper" />
             <Button
                 android:id="@+id/quickRestart"
                 style="@style/LibreDeXQuickAction"
                 android:drawableTop="@drawable/ic_restart"
                 android:drawableTint="@color/ui_accent"
-                android:text="重启会话" />
+                android:text="@string/connection_restart_session" />
         </LinearLayout>
 
         <LinearLayout
@@ -166,7 +166,7 @@
 
                 <TextView
                     style="@style/LibreDeXSectionTitle"
-                    android:text="服务" />
+                    android:text="@string/connection_service" />
 
                 <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
                     <LinearLayout style="@style/LibreDeXRow">
@@ -179,7 +179,7 @@
                                 android:id="@+id/serviceTitle"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="Sunshine 服务"
+                                android:text="@string/connection_sunshine_service"
                                 android:textColor="@color/ui_text_primary"
                                 android:textSize="15sp"
                                 android:textStyle="bold" />
@@ -201,7 +201,7 @@
                             android:minWidth="64dp"
                             android:paddingStart="10dp"
                             android:paddingEnd="10dp"
-                            android:text="待机"
+                            android:text="@string/connection_standby"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
@@ -212,7 +212,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="IP：--"
+                        android:text="@string/connection_ip_placeholder"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -223,7 +223,7 @@
                         android:id="@+id/serviceActionButton"
                         style="@style/LibreDeXButtonPrimary"
                         android:layout_marginTop="14dp"
-                        android:text="启动服务" />
+                        android:text="@string/connection_start_service" />
                 </LinearLayout>
 
                 
@@ -238,7 +238,7 @@
 
                 <TextView
                     style="@style/LibreDeXSectionTitle"
-                    android:text="镜像" />
+                    android:text="@string/connection_mirror_short" />
 
                 <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
                     <LinearLayout style="@style/LibreDeXRow">
@@ -246,7 +246,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="镜像源"
+                            android:text="@string/connection_mirror_source"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -254,7 +254,7 @@
                             android:id="@+id/mirrorSourceText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="手机主屏 Display 0"
+                            android:text="@string/connection_display_0"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -263,7 +263,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="状态"
+                            android:text="@string/connection_status"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -271,7 +271,7 @@
                             android:id="@+id/mirrorStatusText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="未启动"
+                            android:text="@string/connection_not_started"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -280,7 +280,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="输出"
+                            android:text="@string/connection_output"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -288,7 +288,7 @@
                             android:id="@+id/mirrorOutputText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Moonlight 客户端"
+                            android:text="@string/connection_moonlight_client"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="13sp" />
                     </LinearLayout>
@@ -298,14 +298,14 @@
                     <Button
                         android:id="@+id/mirrorActionButton"
                         style="@style/LibreDeXButtonPrimary"
-                        android:text="启动服务" />
+                        android:text="@string/connection_start_service" />
                     <TextView
                         android:id="@+id/mirrorHintText"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:lineSpacingExtra="2dp"
-                        android:text="纯镜像需要 Shizuku 权限来采集主屏画面。"
+                        android:text="@string/connection_mirror_needs_shizuku"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -334,7 +334,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="编码器" />
+                                android:text="@string/connection_encoder" />
                             <TextView
                                 android:id="@+id/chipCodecValue"
                                 style="@style/LibreDeXChipValue" />
@@ -342,7 +342,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="分辨率" />
+                                android:text="@string/connection_resolution" />
                             <TextView
                                 android:id="@+id/chipResolutionValue"
                                 style="@style/LibreDeXChipValue" />
@@ -350,7 +350,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="码率" />
+                                android:text="@string/connection_bitrate" />
                             <TextView
                                 android:id="@+id/chipBitrateValue"
                                 style="@style/LibreDeXChipValue" />
@@ -365,7 +365,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="输入帧率" />
+                                android:text="@string/connection_input_fps" />
                             <TextView
                                 android:id="@+id/chipInputFpsValue"
                                 style="@style/LibreDeXChipValue" />
@@ -373,7 +373,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="输出帧率" />
+                                android:text="@string/connection_output_fps" />
                             <TextView
                                 android:id="@+id/chipOutputFpsValue"
                                 style="@style/LibreDeXChipValue" />
@@ -381,7 +381,7 @@
                         <LinearLayout style="@style/LibreDeXChip">
                             <TextView
                                 style="@style/LibreDeXChipLabel"
-                                android:text="Ping" />
+                                android:text="@string/connection_ping" />
                             <TextView
                                 android:id="@+id/chipPingValue"
                                 style="@style/LibreDeXChipValue" />
@@ -390,7 +390,7 @@
                 </LinearLayout>
 <TextView
                 style="@style/LibreDeXSectionTitle"
-                android:text="客户端" />
+                android:text="@string/connection_client" />
 
             <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
                 <LinearLayout style="@style/LibreDeXRow">
@@ -402,7 +402,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="自动连接 Moonlight 客户端"
+                            android:text="@string/connection_auto_connect_client"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -411,7 +411,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:lineSpacingExtra="2dp"
-                            android:text="启动后自动连接已选客户端"
+                            android:text="@string/connection_auto_connect_desc"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
@@ -434,12 +434,12 @@
                     android:id="@+id/manualClientButton"
                     style="@style/LibreDeXButtonSoft"
                     android:layout_marginTop="12dp"
-                    android:text="手动输入 IP / 端口" />
+                    android:text="@string/connection_manual_input" />
             </LinearLayout>
 
             <TextView
                 style="@style/LibreDeXSectionTitle"
-                android:text="传输" />
+                android:text="@string/connection_transport" />
 
             <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
                 <LinearLayout
@@ -453,7 +453,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="编码与传输"
+                            android:text="@string/connection_encode_transport"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -462,14 +462,14 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="H.264 · 码率 100% · 60fps"
+                            android:text="@string/connection_h264_100_60"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="进入"
+                        android:contentDescription="@string/action_enter"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/ui_text_secondary" />
                 </LinearLayout>
@@ -485,7 +485,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="音频与输入"
+                            android:text="@string/audio_title"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -493,14 +493,14 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="音频路由与输入兼容选项"
+                            android:text="@string/connection_audio_options"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="进入"
+                        android:contentDescription="@string/action_enter"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/ui_text_secondary" />
                 </LinearLayout>
@@ -516,7 +516,7 @@
                         <TextView
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="查看日志"
+                            android:text="@string/connection_view_log"
                             android:textColor="@color/ui_text_primary"
                             android:textSize="15sp"
                             android:textStyle="bold" />
@@ -524,14 +524,14 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
-                            android:text="会话与流媒体日志"
+                            android:text="@string/connection_session_log"
                             android:textColor="@color/ui_text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
                     <ImageView
                         android:layout_width="20dp"
                         android:layout_height="20dp"
-                        android:contentDescription="进入"
+                        android:contentDescription="@string/action_enter"
                         android:src="@drawable/ic_chevron_right"
                         app:tint="@color/ui_text_secondary" />
                 </LinearLayout>
@@ -550,7 +550,7 @@
                     android:id="@+id/placeholderTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="DP / HDMI 有线"
+                    android:text="@string/connection_dp_hdmi_wired"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="17sp"
                     android:textStyle="bold" />
@@ -559,7 +559,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="2dp"
-                    android:text="外接屏直连 DeX，后续版本支持"
+                    android:text="@string/connection_dex_external_note"
                     android:textColor="@color/ui_text_secondary"
                     android:textSize="12sp" />
                 <LinearLayout style="@style/LibreDeXRow">
@@ -567,7 +567,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="状态"
+                        android:text="@string/connection_status"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="15sp"
                         android:textStyle="bold" />
@@ -575,7 +575,7 @@
                         android:id="@+id/placeholderStatusText"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="尚未连接"
+                        android:text="@string/connection_not_connected"
                         android:textColor="@color/ui_text_secondary"
                         android:textSize="13sp" />
                 </LinearLayout>
@@ -583,7 +583,7 @@
                     android:id="@+id/placeholderActionButton"
                     style="@style/LibreDeXButtonPrimary"
                     android:layout_marginTop="12dp"
-                    android:text="开始 DP 输出" />
+                    android:text="@string/connection_start_dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -594,7 +594,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="外接屏分辨率"
+                    android:text="@string/connection_external_resolution"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -602,7 +602,7 @@
                     android:id="@+id/placeholderModeButton"
                     style="@style/LibreDeXButtonNeutral"
                     android:layout_marginTop="10dp"
-                    android:text="读取外接屏分辨率列表" />
+                    android:text="@string/connection_read_external_modes" />
                 <LinearLayout
                     android:id="@+id/placeholderCustomModeCard"
                     android:layout_width="match_parent"
@@ -613,7 +613,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="10dp"
-                        android:text="自定义模式"
+                        android:text="@string/connection_custom_mode"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="13sp"
                         android:textStyle="bold" />
@@ -628,7 +628,7 @@
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
                             android:gravity="center"
-                            android:hint="宽"
+                            android:hint="@string/connection_width"
                             android:inputType="number"
                             android:maxLines="1" />
                         <EditText
@@ -638,7 +638,7 @@
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
                             android:gravity="center"
-                            android:hint="高"
+                            android:hint="@string/connection_height"
                             android:inputType="number"
                             android:maxLines="1" />
                         <EditText
@@ -648,7 +648,7 @@
                             android:layout_weight="1"
                             android:layout_marginStart="6dp"
                             android:gravity="center"
-                            android:hint="刷新率"
+                            android:hint="@string/connection_refresh_rate"
                             android:inputType="number"
                             android:maxLines="1" />
                     </LinearLayout>
@@ -656,7 +656,7 @@
                         android:id="@+id/placeholderCustomModeButton"
                         style="@style/LibreDeXButtonNeutral"
                         android:layout_marginTop="8dp"
-                        android:text="应用自定义模式" />
+                        android:text="@string/connection_apply_custom_mode" />
                 </LinearLayout>
             </LinearLayout>
 

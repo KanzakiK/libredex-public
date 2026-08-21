@@ -26,7 +26,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="DeX 会话"
+                android:text="@string/dex_session"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -67,7 +67,7 @@
             <androidx.appcompat.widget.SwitchCompat
                 android:id="@+id/dexLayerFixSwitch"
                 style="@style/LibreDeXSettingSwitch"
-                android:text="窗口/层级修复" />
+                android:text="@string/dex_window_fix_short" />
 
             <TextView
                 android:layout_width="match_parent"
@@ -75,7 +75,7 @@
                 android:paddingStart="@dimen/ui_row_side_padding"
                 android:paddingEnd="@dimen/ui_row_side_padding"
                 android:paddingBottom="10dp"
-                android:text="控制 persist.dex.lspmirror.mode，需 Shizuku/root 生效。"
+                android:text="@string/dex_lspmirror_note"
                 android:textColor="@color/ui_text_secondary"
                 android:textSize="12sp" />
         </LinearLayout>
@@ -96,7 +96,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:padding="0dp"
-                android:text="重启会话"
+                android:text="@string/connection_restart_session"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="14sp" />
 
@@ -111,7 +111,7 @@
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:padding="0dp"
-                android:text="释放会话"
+                android:text="@string/dex_release_session"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="14sp" />
         </LinearLayout>

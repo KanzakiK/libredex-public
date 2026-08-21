@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- i18n gate: hardcoded UI strings must go through resources.
+         Layouts are done (Phase 1); Java setText/Toast literals are reported
+         by SetTextI18n (27 warnings today) and are the Phase 2 backlog.
+         Phase 4: promote SetTextI18n to error once Java literals are gone. -->
+    <issue id="HardcodedText" severity="error" />
+
+    <!-- Intentional hook-project tech debt: reflective hidden API access,
+         root-scope permissions. Not i18n related; do not block builds. -->
+    <issue id="NewApi" severity="warning" />
+    <issue id="ProtectedPermissions" severity="warning" />
+    <issue id="QueryAllPackagesPermission" severity="warning" />
+
+    <!-- zh-rCN translations may lag behind values/; never fail for that. -->
+    <issue id="MissingTranslation" severity="ignore" />
+</lint>

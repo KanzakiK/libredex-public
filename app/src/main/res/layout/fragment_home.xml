@@ -17,7 +17,7 @@
             android:id="@+id/shizukuStatusPrefix"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Shizuku 权限状态: " />
+            android:text="@string/home_shizuku_status" />
 
         <TextView
             android:id="@+id/shizukuStatus"
@@ -29,7 +29,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="授权"
+            android:text="@string/action_grant"
             android:visibility="gone" />
 
     <Space
@@ -41,7 +41,7 @@
         android:id="@+id/exitBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="退出" />
+        android:text="@string/action_exit" />
     </LinearLayout>
 
     <Button
@@ -50,7 +50,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:minWidth="200dp"
-        android:text="屏幕" />
+        android:text="@string/home_screen" />
 
     <Button
         android:id="@+id/simulateScreenOffBtn"
@@ -58,7 +58,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:minWidth="200dp"
-        android:text="模拟熄屏" />
+        android:text="@string/home_simulate_off" />
 
     <Button
         android:id="@+id/inputDeviceBtn"
@@ -66,7 +66,7 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:minWidth="200dp"
-        android:text="设置" />
+        android:text="@string/settings_title" />
 
     <Button
         android:id="@+id/shizukuBtn"
@@ -74,13 +74,13 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
         android:minWidth="200dp"
-        android:text="Shizuku" />
+        android:text="@string/brand_shizuku" />
 
     <Button
         android:id="@+id/aboutBtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:minWidth="200dp"
-        android:text="关于" />
+        android:text="@string/action_about" />
 
 </LinearLayout>

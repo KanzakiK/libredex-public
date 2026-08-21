@@ -24,7 +24,7 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="返回"
+                android:contentDescription="@string/action_back"
                 android:padding="8dp"
                 android:src="@drawable/ic_back"
                 app:tint="@color/ui_text_primary" />
@@ -33,7 +33,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
                 android:layout_weight="1"
-                android:text="编码与传输"
+                android:text="@string/connection_encode_transport"
                 android:textColor="@color/ui_text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
@@ -41,62 +41,62 @@
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="编码格式" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_format" />
                 <Spinner
                     android:id="@+id/encoderCodecSpinner"
                     style="@style/LibreDeXFieldInput" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="码率比例" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_bitrate_ratio" />
                 <EditText
                     android:id="@+id/encoderBitrateEdit"
                     style="@style/LibreDeXFieldInput"
-                    android:hint="25-200"
+                    android:hint="@string/encoder_range_25_200"
                     android:inputType="number" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="码率模式" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_bitrate_mode" />
                 <Spinner
                     android:id="@+id/encoderBitrateModeSpinner"
                     style="@style/LibreDeXFieldInput" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="复杂度" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_complexity" />
                 <EditText
                     android:id="@+id/encoderComplexityEdit"
                     style="@style/LibreDeXFieldInput"
-                    android:hint="0-10"
+                    android:hint="@string/encoder_range_0_10"
                     android:inputType="number" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="I 帧间隔" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_i_frame_interval" />
                 <EditText
                     android:id="@+id/encoderIFrameEdit"
                     style="@style/LibreDeXFieldInput"
-                    android:hint="1-10"
+                    android:hint="@string/encoder_range_1_10"
                     android:inputType="number" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="最大 FPS" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_max_fps" />
                 <EditText
                     android:id="@+id/encoderMaxFpsEdit"
                     style="@style/LibreDeXFieldInput"
-                    android:hint="1-240"
+                    android:hint="@string/encoder_range_1_240"
                     android:inputType="number" />
             </LinearLayout>
             <LinearLayout style="@style/LibreDeXFieldRow">
-                <TextView style="@style/LibreDeXFieldLabel" android:text="FEC" />
+                <TextView style="@style/LibreDeXFieldLabel" android:text="@string/encoder_fec" />
                 <EditText
                     android:id="@+id/encoderFecEdit"
                     style="@style/LibreDeXFieldInput"
-                    android:hint="0-50"
+                    android:hint="@string/encoder_range_0_50"
                     android:inputType="number" />
             </LinearLayout>
         </LinearLayout>
 
         <TextView
             style="@style/LibreDeXSectionTitle"
-            android:text="开关" />
+            android:text="@string/encoder_toggle" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout style="@style/LibreDeXRow">
@@ -104,7 +104,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="低延迟编码"
+                    android:text="@string/encoder_low_latency"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -118,7 +118,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="禁用 B 帧"
+                    android:text="@string/encoder_disable_b_frame"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -132,7 +132,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="实时优先级"
+                    android:text="@string/encoder_realtime_priority"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -146,7 +146,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="动态帧率"
+                    android:text="@string/encoder_dynamic_fps"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
@@ -159,7 +159,7 @@
 
         <TextView
             style="@style/LibreDeXSectionTitle"
-            android:text="诊断" />
+            android:text="@string/encoder_diagnostics" />
 
         <LinearLayout style="@style/LibreDeXCard" android:orientation="vertical">
             <LinearLayout
@@ -169,14 +169,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="最近握手信息"
+                    android:text="@string/encoder_recent_handshake"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>
@@ -187,14 +187,14 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="最近控制输入统计"
+                    android:text="@string/encoder_recent_input_stats"
                     android:textColor="@color/ui_text_primary"
                     android:textSize="15sp"
                     android:textStyle="bold" />
                 <ImageView
                     android:layout_width="20dp"
                     android:layout_height="20dp"
-                    android:contentDescription="进入"
+                    android:contentDescription="@string/action_enter"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="@color/ui_text_secondary" />
             </LinearLayout>
@@ -204,12 +204,12 @@
             <Button
                 android:id="@+id/encoderSaveButton"
                 style="@style/LibreDeXButtonPrimary"
-                android:text="保存" />
+                android:text="@string/action_save" />
             <Button
                 android:id="@+id/encoderResetButton"
                 style="@style/LibreDeXButtonNeutral"
                 android:layout_marginTop="8dp"
-                android:text="恢复默认" />
+                android:text="@string/action_restore_default" />
         </LinearLayout>
     </LinearLayout>
 </ScrollView>
