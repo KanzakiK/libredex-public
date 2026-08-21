@@ -1600,11 +1600,76 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     // (mDisplayIdToMirror >= 0) are touched here.
     private static volatile boolean vdRefreshRateHookInstalled;
 
+    private static volatile long lastMainPanelForceMs;
+
     private static void installVdRefreshRateHook(ClassLoader cl) {
         if (vdRefreshRateHookInstalled) {
             return;
         }
         vdRefreshRateHookInstalled = true;
+        try {
+            // Docked case: with an HDMI panel attached the firmware pins the
+            // internal panel's SurfaceFlinger activeMode to 60 Hz even though
+            // the allowed range is 120 Hz. Force the desired specs committed to
+            // the physical panel (appRequest = [120,120]) so SF's frame-rate
+            // matching must pick the 120 Hz mode. Already-patched specs are
+            // skipped to avoid any re-entry loop.
+            Class<?> ldd = XposedHelpers.findClass(
+                    "com.android.server.display.LocalDisplayAdapter$LocalDisplayDevice", cl);
+            Class<?> specsClass = XposedHelpers.findClass(
+                    "com.android.server.display.mode.DisplayModeDirector$DesiredDisplayModeSpecs", cl);
+            Method setSpecs = ldd.getDeclaredMethod(
+                    "setDesiredDisplayModeSpecsLocked", specsClass);
+            XposedBridge.hookMethod(setSpecs, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                    try {
+                        if (!sessionOrDockActive(cl)) {
+                            return;
+                        }
+                        // Throttle: force at most once per 5 s window. This
+                        // replaces the (missing on this firmware)
+                        // RefreshRateRanges.getMax check and keeps the patch
+                        // from re-triggering on every specs commit.
+                        long now = android.os.SystemClock.uptimeMillis();
+                        if (now - lastMainPanelForceMs < 5000L) {
+                            return;
+                        }
+                        Object specs = param.args[0];
+                        if (specs == null) {
+                            return;
+                        }
+                        Integer targetModeId = findHighestRefreshModeId(cl, 0);
+                        if (targetModeId == null) {
+                            return;
+                        }
+                        specsClass.getField("baseModeId").setInt(specs, targetModeId);
+                        Class<?> rangesClass = Class.forName(
+                                "android.view.SurfaceControl$RefreshRateRanges", false, cl);
+                        Class<?> rangeClass = Class.forName(
+                                "android.view.SurfaceControl$RefreshRateRange", false, cl);
+                        Object fixedRateRange = rangeClass.getConstructor(
+                                float.class, float.class).newInstance(120.0f, 120.0f);
+                        Object fixedRanges = rangesClass.getConstructor(
+                                rangeClass, rangeClass).newInstance(
+                                fixedRateRange, fixedRateRange);
+                        for (String fieldName : new String[]{"primary", "appRequest"}) {
+                            java.lang.reflect.Field rangeField = specsClass.getField(fieldName);
+                            rangeField.setAccessible(true);
+                            rangeField.set(specs, fixedRanges);
+                        }
+                        lastMainPanelForceMs = now;
+                        XposedBridge.log(TAG + ": main panel specs forced to 120Hz "
+                                + "(baseModeId=" + targetModeId + ")");
+                    } catch (Throwable t) {
+                        XposedBridge.log(TAG + ": main panel specs force failed: " + t);
+                    }
+                }
+            });
+            XposedBridge.log(TAG + ": main panel specs hook installed");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": main panel specs hook setup failed: " + t);
+        }
         try {
             Class<?> vdd = XposedHelpers.findClass(
                     "com.android.server.display.VirtualDisplayAdapter$VirtualDisplayDevice", cl);
