@@ -406,13 +406,12 @@ public class UserService extends IUserService.Stub  {
         try {
             String su = findSuBinary();
             String prefix = su == null ? "" : (su + " -c ");
+            // Vector/LSPosed 的日志文件带时间戳后缀（modules_2026-08-21T20:53.log），
+            // 必须用 glob（runFileCat 经 sh -c 会展开），固定文件名永远匹配不到。
             String[] candidates = {
-                    "/data/adb/lspd/log/modules.log",
-                    "/data/adb/lspd/log/verbose.log",
-                    "/data/adb/lspd/log/manager.log",
-                    "/data/adb/lspd/log/main.log",
-                    "/data/adb/lspd/log/lspd.log",
-                    "/data/adb/lspd/log/bridge.log"
+                    "/data/adb/lspd/log/modules_*.log",
+                    "/data/adb/lspd/log/verbose_*.log",
+                    "/data/adb/lspd/log/kmsg.log"
             };
             for (String path : candidates) {
                 String out = runFileCat(prefix, path);

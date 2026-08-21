@@ -228,9 +228,9 @@ public final class InitializationGuideDialog {
                 ensureUserServiceForShell();
                 if (State.userService != null) {
                     String lsp = State.userService.fetchLspLogs();
-                    if (lsp != null
-                            && !lsp.replace("=====", "").trim().isEmpty()
-                            && lsp.toLowerCase(Locale.ROOT).contains("lsposedframework")) {
+                    // 判定依据：lspd 的 modules 日志会记录实际加载的模块，
+                    // 出现 "com.libredex" 即证明 LibreDeX 的 hook 已被注入。
+                    if (lsp != null && lsp.toLowerCase(Locale.ROOT).contains("com.libredex")) {
                         s = activity.getString(R.string.guide_framework_active);
                     }
                 }
