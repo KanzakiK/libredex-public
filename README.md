@@ -2,9 +2,9 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-**Native DeX desktop mode for the Galaxy Z Flip 5 — the phone Samsung left without official DeX support.**
+**Native DeX desktop mode for the Galaxy Flip series — Samsung never shipped wired DeX on any Flip (the Flip 7 got wireless only).**
 
-LibreDeX brings a full desktop experience to the SM-F731B: the DeX desktop — powered by the DeX components Samsung left embedded in the One UI firmware and completed with LSPosed hooks — plus Moonlight streaming at up to 120 fps and USB-C DP/HDMI wired output with high refresh rates. Samsung never enabled DeX on this phone — LibreDeX does.
+LibreDeX brings a full desktop experience to One UI 8 Flip phones: the DeX desktop — powered by the DeX components Samsung left embedded in the One UI firmware and completed with LSPosed hooks — plus Moonlight streaming at up to 120 fps and USB-C DP/HDMI wired output with high refresh rates. Samsung never enabled wired DeX on the Flip line — LibreDeX does. Verified on the Z Flip 5 (SM-F731B).
 
 ---
 

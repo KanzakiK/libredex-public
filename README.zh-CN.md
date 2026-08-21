@@ -2,9 +2,9 @@
 
 [English](README.md) · **简体中文**
 
-**原生 DeX 桌面模式，给 Galaxy Z Flip 5——三星没有给这台手机官方 DeX 支持。**
+**原生 DeX 桌面模式，给整个 Galaxy Flip 系列——三星从未给任何 Flip 提供官方有线 DeX（Flip 7 也只是无线）。**
 
-LibreDeX 为 SM-F731B 带来完整的桌面体验：基于 One UI 固件中预埋的 DeX 组件（经 LSPosed Hook 补全）实现的 DeX 桌面，加上最高 120fps 的 Moonlight 串流、支持高刷新率的 USB-C DP/HDMI 有线输出。三星没有为这台手机开启 DeX——LibreDeX 来开。
+LibreDeX 为 One UI 8 的 Flip 手机带来完整的桌面体验：基于 One UI 固件中预埋的 DeX 组件（经 LSPosed Hook 补全）实现的 DeX 桌面，加上最高 120fps 的 Moonlight 串流、支持高刷新率的 USB-C DP/HDMI 有线输出。三星从未给 Flip 系列提供有线 DeX——LibreDeX 来开。已在 Z Flip 5（SM-F731B）上验证。
 
 ---
 
