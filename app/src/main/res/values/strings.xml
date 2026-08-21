@@ -342,4 +342,26 @@
     <string name="screen_shizuku_granted_note">Shizuku permission granted. External displays can be modified; the built-in screen is view-only.</string>
     <string name="screen_shizuku_not_granted_note">Shizuku permission not granted; only basic screen info is visible.</string>
     <string name="settings_root_restart_failed">Failed to restart Shizuku as root</string>
+    <string name="connection_processing">Processing</string>
+    <string name="connection_waiting_connect">Waiting for connection</string>
+    <string name="mirror_sunshine_waiting">Sunshine service started, waiting for connection</string>
+    <string name="moonlight_cursor_hint">Press Ctrl+Alt+Shift+C to show the cursor\nIf it is unresponsive, switch the control mode in Moonlight</string>
+    <string name="debug_summary_placeholder">Encoder: not started\nEncoder: --\nResolution: --\nFPS: in -- / out --\nBitrate: --\nPing: --</string>
+    <string name="debug_label_status">Encoder status: </string>
+    <string name="debug_label_encoder">Encoder: </string>
+    <string name="debug_label_resolution">Resolution: </string>
+    <string name="debug_label_fps_req">Requested/encoded FPS: </string>
+    <string name="debug_label_fps_io">Input/output FPS: </string>
+    <string name="debug_label_bitrate">Bitrate: </string>
+    <string name="debug_label_ping">Ping: </string>
+    <string name="debug_join_level"> / Level %1$s</string>
+    <string name="debug_join_target"> / target %1$s</string>
+    <string name="debug_field_priority">Priority</string>
+    <string name="debug_field_audio">Audio</string>
+    <string name="debug_field_color">Color</string>
+    <string name="debug_field_output_gap">Output gap</string>
+    <string name="debug_field_queue">Queue</string>
+    <string name="debug_field_native">Native</string>
+    <string name="debug_field_frame_pacer">Frame pacer</string>
+    <string name="debug_field_sep">: </string>
 </resources>

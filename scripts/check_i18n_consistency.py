@@ -39,6 +39,9 @@ ZH_ALLOWED_UNTRANSLATED = {
     "connection_ip_placeholder": "IP：--",
     "dex_display_summary_fmt": "%1$s · 1920×1080 · 60Hz",
     "settings_root_status": "Root: -",
+    "debug_field_sep": "：",
+    "debug_join_level": " / Level %1$s",
+    "debug_label_ping": "Ping：",
 }
 
 def parse(path):
