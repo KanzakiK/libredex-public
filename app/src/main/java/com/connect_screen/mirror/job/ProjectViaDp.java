@@ -9,6 +9,7 @@ import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
+import com.connect_screen.mirror.R;
 
 /**
  * Wired DP output: tells the LSPosed hook which physical display to treat as a
@@ -160,13 +161,13 @@ public class ProjectViaDp implements Job {
             return;
         }
         if (!ShizukuUtils.hasPermission()) {
-            State.showErrorStatus("DP output needs Shizuku permission");
+            State.showErrorStatus(State.getContext().getString(R.string.dp_need_shizuku));
             return;
         }
         ExternalDisplayMonitor.refreshState(context);
         final int displayId = State.externalDisplayId;
         if (displayId <= 0) {
-            State.showErrorStatus("未检测到外接屏，请先连接 DP/HDMI 线");
+            State.showErrorStatus(State.getContext().getString(R.string.dp_no_external));
             return;
         }
         int[] preferred = resolvePreferredDpSize();
@@ -185,7 +186,7 @@ public class ProjectViaDp implements Job {
             }
         }
         if (width <= 0 || height <= 0) {
-            State.showErrorStatus("无法读取外接屏尺寸");
+            State.showErrorStatus(State.getContext().getString(R.string.dp_read_dimensions_failed));
             return;
         }
         if (refresh <= 0) {

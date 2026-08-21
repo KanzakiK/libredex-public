@@ -22,6 +22,7 @@ import android.opengl.GLES20;
 import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.SunshineService;
+import com.connect_screen.mirror.R;
 
 public class AutoRotateAndScaleForMoonlight {
 
@@ -155,7 +156,7 @@ public class AutoRotateAndScaleForMoonlight {
         autoScale = Pref.getAutoScale();
         boolean autoMatch = Pref.getAutoMatchAspectRatio();
         if (autoMatch) {
-            // The single "自动匹配宽高比" switch means the mirror output must
+            // The single State.getContext().getString(R.string.dex_auto_aspect) switch means the mirror output must
             // fill the connected screen, so force the fill/scale path even when
             // the separate auto-scale switch is off.
             autoScale = true;

@@ -6,6 +6,7 @@ import android.os.Build;
 import com.connect_screen.mirror.MirrorMainActivity;
 import com.connect_screen.mirror.SunshineService;
 import com.connect_screen.mirror.State;
+import com.connect_screen.mirror.R;
 
 public class StartSunshineService implements Job {
     @Override
@@ -17,7 +18,7 @@ public class StartSunshineService implements Job {
 
         MirrorMainActivity activity = State.getCurrentActivity();
         if (activity == null) {
-            State.showErrorStatus("Cannot start SunshineService without an active UI");
+            State.showErrorStatus(State.getContext().getString(R.string.sunshine_start_failed));
             return;
         }
 

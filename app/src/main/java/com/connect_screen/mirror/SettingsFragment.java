@@ -50,7 +50,7 @@ public class SettingsFragment extends Fragment {
                 if (granted && pendingLogExport) {
                     startLogExport();
                 } else if (pendingLogExport) {
-                    Toast.makeText(requireContext(), "未授予文件访问权限，无法导出日志",
+                    Toast.makeText(requireContext(), getString(R.string.settings_export_need_file_perm),
                             Toast.LENGTH_SHORT).show();
                 }
                 pendingLogExport = false;
@@ -145,9 +145,9 @@ public class SettingsFragment extends Fragment {
             userServiceStatus.setText(State.isUserServiceAlive() ? "online" : "offline");
         }
         updateRootShizukuStatus();
-        shizukuStatus.setText(shizuku ? "已授权 · UserService 在线" : "未授权");
-        overlayStatus.setText(overlay ? "已授权" : "未授权");
-        storageStatus.setText(storage ? "已授予" : "未授予");
+        shizukuStatus.setText(shizuku ? "已授权 · UserService 在线" : getString(R.string.settings_not_granted));
+        overlayStatus.setText(overlay ? "已授权" : getString(R.string.settings_not_granted));
+        storageStatus.setText(storage ? "已授予" : getString(R.string.settings_file_not_granted));
         shizukuGrantButton.setVisibility(shizuku ? View.GONE : View.VISIBLE);
         rootShizukuButton.setVisibility(shizuku ? View.VISIBLE : View.GONE);
 
@@ -163,12 +163,12 @@ public class SettingsFragment extends Fragment {
             pendingLogExport = true;
             new MaterialAlertDialogBuilder(requireContext(),
                     R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                    .setTitle("导出日志需要文件访问权限")
-                    .setMessage("导出日志会把日志文件写入下载目录，需要授予所有文件访问权限。")
-                    .setPositiveButton("去授权", (d, which) ->
+                    .setTitle(getString(R.string.settings_export_dialog_title))
+                    .setMessage(getString(R.string.settings_export_dialog_msg))
+                    .setPositiveButton(getString(R.string.action_grant_perm), (d, which) ->
                             storagePermissionLauncher.launch(
                                     new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)))
-                    .setNegativeButton("取消", null)
+                    .setNegativeButton(getString(R.string.action_cancel), null)
                     .show();
             return;
         }
@@ -181,10 +181,10 @@ public class SettingsFragment extends Fragment {
 
     private void restartUserService() {
         if (!ShizukuUtils.hasPermission()) {
-            Toast.makeText(requireContext(), "需要 Shizuku 权限", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.settings_need_shizuku), Toast.LENGTH_SHORT).show();
             return;
         }
-        Toast.makeText(requireContext(), "正在重启 UserService…", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), getString(R.string.settings_restarting_userservice), Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             try {
                 if (State.userService != null) {
@@ -197,7 +197,7 @@ public class SettingsFragment extends Fragment {
             State.ensureUserServiceBound();
             if (getActivity() != null) {
                 getActivity().runOnUiThread(() -> {
-                    Toast.makeText(requireContext(), "UserService 已重启", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), getString(R.string.settings_userservice_restarted), Toast.LENGTH_SHORT).show();
                     refreshStatus();
                 });
             }
@@ -216,13 +216,13 @@ public class SettingsFragment extends Fragment {
             return;
         }
         if (!ShizukuUtils.hasPermission() || !State.isUserServiceAlive()) {
-            rootShizukuStatus.setText("Root: -");
+            rootShizukuStatus.setText(getString(R.string.settings_root_status));
             return;
         }
         // isRooted() 是跨进程 Binder 调用，放后台线程，避免阻塞主线程（轮询时尤其不能卡）。
         final TextView statusView = rootShizukuStatus;
         new Thread(() -> {
-            String text = "Root: -";
+            String text = getString(R.string.settings_root_status);
             try {
                 text = State.userService.isRooted() ? "Root: root" : "Root: shell";
             } catch (Throwable ignored) {
@@ -238,10 +238,10 @@ public class SettingsFragment extends Fragment {
 
     private void restartRootShizuku() {
         if (!ShizukuUtils.hasPermission()) {
-            Toast.makeText(requireContext(), "需要 Shizuku 权限", Toast.LENGTH_SHORT).show();
+            Toast.makeText(requireContext(), getString(R.string.settings_need_shizuku), Toast.LENGTH_SHORT).show();
             return;
         }
-        Toast.makeText(requireContext(), "正在以 root 重启 Shizuku…", Toast.LENGTH_SHORT).show();
+        Toast.makeText(requireContext(), getString(R.string.settings_restarting_shizuku_root), Toast.LENGTH_SHORT).show();
         rootShizukuButton.setEnabled(false);
         new Thread(() -> {
             boolean ok = AcquireShizuku.fixRootShizuku();

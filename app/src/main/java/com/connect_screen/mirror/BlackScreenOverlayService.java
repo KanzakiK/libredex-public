@@ -34,7 +34,7 @@ public class BlackScreenOverlayService extends Service {
             return;
         }
         if (!Settings.canDrawOverlays(context)) {
-            State.showErrorStatus("需要悬浮窗权限才能使用黑色画面模拟息屏");
+            State.showErrorStatus(context.getString(R.string.overlay_need_permission));
             return;
         }
         Intent intent = new Intent(context, BlackScreenOverlayService.class);
@@ -66,7 +66,7 @@ public class BlackScreenOverlayService extends Service {
             return;
         }
         if (!Settings.canDrawOverlays(this)) {
-            State.showErrorStatus("需要悬浮窗权限才能使用黑色画面模拟息屏");
+            State.showErrorStatus(getString(R.string.overlay_need_permission));
             stopSelf();
             return;
         }
@@ -122,7 +122,7 @@ public class BlackScreenOverlayService extends Service {
             State.log("[BlackScreenOverlay] shown on display " + targetDisplay.getDisplayId());
         } catch (Throwable e) {
             blackView = null;
-            State.showErrorStatus("黑色画面模拟息屏启动失败: " + e.getMessage());
+            State.showErrorStatus(getString(R.string.overlay_start_failed_fmt, e.getMessage()));
             stopSelf();
         }
     }

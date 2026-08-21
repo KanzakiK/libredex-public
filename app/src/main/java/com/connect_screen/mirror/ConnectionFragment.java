@@ -241,7 +241,7 @@ public class ConnectionFragment extends Fragment {
         clientSpinner.setAdapter(new ArrayAdapter<>(
                 requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
-                new String[]{"192.168.50.50 · Moonlight"}));
+                new String[]{getString(R.string.connection_recent_client)}));
 
         syncTransportWithActiveSession();
         applySource();
@@ -309,7 +309,7 @@ public class ConnectionFragment extends Fragment {
         ArrayAdapter<String> bitrateModeAdapter = new ArrayAdapter<>(
                 requireContext(),
                 android.R.layout.simple_spinner_item,
-                new String[]{"CBR - 稳定带宽", "VBR - 动态码率", "CQ - 恒定质量"});
+                new String[]{getString(R.string.connection_bitrate_mode_cbr), getString(R.string.connection_bitrate_mode_vbr), getString(R.string.connection_bitrate_mode_cq)});
         bitrateModeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         bitrateModeSpinner.setAdapter(bitrateModeAdapter);
 
@@ -355,7 +355,7 @@ public class ConnectionFragment extends Fragment {
                     .apply();
             SunshineServer.setEncoderSettingsFromPreferences();
             SunshineServer.setVideoCodec(Pref.getEncoderCodec());
-            showToast("编码设置已保存");
+            showToast(getString(R.string.connection_encoder_saved));
             updateEncoderSummary();
         });
         view.findViewById(R.id.encoderResetButton).setOnClickListener(v -> {
@@ -372,9 +372,11 @@ public class ConnectionFragment extends Fragment {
                     .putBoolean(Pref.KEY_ENCODER_DYNAMIC_FRAME_RATE, false)
                     .putInt(Pref.KEY_STREAM_FEC_PERCENT, 0)
                     .apply();
+            //noinspection SetTextI18n
             bitrateEdit.setText("100");
             complexityEdit.setText("5");
             iframeEdit.setText("3");
+            //noinspection SetTextI18n
             maxFpsEdit.setText("60");
             fecEdit.setText("0");
             lowLatencySwitch.setChecked(true);
@@ -385,7 +387,7 @@ public class ConnectionFragment extends Fragment {
             bitrateModeSpinner.setSelection(2);
             SunshineServer.setEncoderSettingsFromPreferences();
             SunshineServer.setVideoCodec(Pref.getEncoderCodec());
-            showToast("编码设置已恢复默认");
+            showToast(getString(R.string.connection_encoder_restored));
             updateEncoderSummary();
         });
         view.findViewById(R.id.encoderHandshakeEntry).setOnClickListener(v ->
@@ -421,8 +423,8 @@ public class ConnectionFragment extends Fragment {
             return;
         }
         String codec = Pref.getEncoderCodec() == Pref.ENCODER_CODEC_H265 ? "H.265" : "H.264";
-        entryEncoderSub.setText(codec + " · 码率 " + Pref.getEncoderBitratePercent()
-                + "% · " + Pref.getEncoderMaxFps() + "fps");
+        entryEncoderSub.setText(getString(R.string.connection_encoder_sub_fmt,
+                codec, Pref.getEncoderBitratePercent(), Pref.getEncoderMaxFps()));
     }
 
     private void selectValue(Spinner spinner, int[] values, int target) {
@@ -494,8 +496,8 @@ public class ConnectionFragment extends Fragment {
             placeholderContent.setVisibility(moonlight ? View.GONE : View.VISIBLE);
         }
         if ("dp".equals(currentTransport)) {
-            placeholderTitle.setText("DP / HDMI 有线");
-            placeholderSub.setText("外接屏直连 DeX");
+            placeholderTitle.setText(getString(R.string.connection_dp_hdmi_wired));
+            placeholderSub.setText(getString(R.string.connection_dex_external_short));
         }
         refreshPlaceholderState();
     }
@@ -595,34 +597,34 @@ public class ConnectionFragment extends Fragment {
 
     private void stopAllOutputs() {
         ExitAll.stopServices(requireContext());
-        showToast("已停止全部输出");
+        showToast(getString(R.string.connection_stopped_all));
         refreshPlaceholderState();
     }
 
     private void toggleDpOutput() {
         if (ProjectViaDp.isActive()) {
             ProjectViaDp.stop();
-            showToast("已停止 DP 输出");
+            showToast(getString(R.string.connection_stopped_dp));
         } else {
             State.startNewJob(new ProjectViaDp(!OutputSource.isMirrorActive()));
-            showToast("正在启动 DP 输出");
+            showToast(getString(R.string.connection_starting_dp));
         }
         refreshPlaceholderState();
     }
 
     private void showDpModeDialog() {
         if (State.externalDisplayId <= 0) {
-            showToast("未检测到外接屏");
+            showToast(getString(R.string.connection_no_external));
             return;
         }
         android.view.Display display = ExternalDisplayMonitor.getPrimaryExternalDisplay(requireContext());
         if (display == null) {
-            showToast("未检测到外接屏");
+            showToast(getString(R.string.connection_no_external));
             return;
         }
         android.view.Display.Mode[] modes = display.getSupportedModes();
         if (modes == null || modes.length == 0) {
-            showToast("此屏幕没有可选模式");
+            showToast(getString(R.string.connection_no_modes));
             return;
         }
         String[] items = new String[modes.length];
@@ -632,7 +634,7 @@ public class ConnectionFragment extends Fragment {
                     + String.format(java.util.Locale.US, "%.1f Hz", mode.getRefreshRate());
         }
         new MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("选择外接屏模式")
+                .setTitle(getString(R.string.connection_select_external_mode))
                 .setItems(items, (dialog, which) -> applyDpMode(modes[which]))
                 .show();
     }
@@ -653,14 +655,14 @@ public class ConnectionFragment extends Fragment {
             int result = State.userService.applyExternalDisplayMode(
                     State.externalDisplayId, width, height, refresh);
             if (result == 0) {
-                showToast("已应用外接屏模式");
+                showToast(getString(R.string.connection_external_mode_applied));
             } else if (result == 1) {
                 showDpReplugDialog();
             } else {
-                showToast("外接屏模式应用失败");
+                showToast(getString(R.string.connection_external_mode_failed));
             }
         } catch (Throwable e) {
-            showToast("外接屏模式应用失败：" + e.getMessage());
+            showToast(getString(R.string.connection_external_mode_failed_fmt, e.getMessage()));
         }
     }
 
@@ -674,15 +676,15 @@ public class ConnectionFragment extends Fragment {
             }
             applyDpMode(width, height, refresh);
         } catch (NumberFormatException e) {
-            showToast("请输入有效的宽、高、刷新率");
+            showToast(getString(R.string.connection_invalid_whr));
         }
     }
 
     private void showDpReplugDialog() {
         new MaterialAlertDialogBuilder(requireContext(), R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("需要重新插拔 DP 线")
-                .setMessage("已写入外接屏模式属性，请拔下并重新插上 DP/HDMI 线，让显示驱动按新模式初始化。")
-                .setPositiveButton("知道了", null)
+                .setTitle(getString(R.string.connection_replug_dp))
+                .setMessage(getString(R.string.connection_replug_dp_msg))
+                .setPositiveButton(getString(R.string.action_got_it), null)
                 .show();
     }
 
@@ -733,22 +735,23 @@ public class ConnectionFragment extends Fragment {
             placeholderModeRefreshInput.setText(String.valueOf(refresh));
         }
         if (ProjectViaDp.isActive()) {
-            placeholderStatusText.setText("运行中 · 屏幕 " + State.externalDisplayId);
-            setButton(placeholderActionButton, "停止 DP 输出", R.color.ui_danger,
+            placeholderStatusText.setText(getString(R.string.connection_running_screen_fmt, State.externalDisplayId));
+            setButton(placeholderActionButton, getString(R.string.connection_stop_dp), R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (SunshineServer.isMoonlightSessionActive()
                 || TransportRegistry.isOptionalActive()) {
-            placeholderStatusText.setText("其他输出运行中 · 外接屏 " + State.externalDisplayId);
-            setButton(placeholderActionButton, "停止服务", R.color.ui_danger,
+            placeholderStatusText.setText(getString(R.string.connection_running_external_fmt, State.externalDisplayId));
+            setButton(placeholderActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (State.externalDisplayId > 0) {
-            placeholderStatusText.setText("外接屏 " + State.externalDisplayId
-                    + " · " + State.externalDisplayWidth + "x" + State.externalDisplayHeight);
-            setButton(placeholderActionButton, "开始 DP 输出", R.color.ui_accent,
+            placeholderStatusText.setText(getString(R.string.connection_external_fmt,
+                    State.externalDisplayId, State.externalDisplayWidth,
+                    State.externalDisplayHeight));
+            setButton(placeholderActionButton, getString(R.string.connection_start_dp), R.color.ui_accent,
                     R.color.ui_on_accent, true);
         } else {
-            placeholderStatusText.setText("未检测到外接屏");
-            setButton(placeholderActionButton, "开始 DP 输出", R.color.ui_accent,
+            placeholderStatusText.setText(getString(R.string.connection_no_external));
+            setButton(placeholderActionButton, getString(R.string.connection_start_dp), R.color.ui_accent,
                     R.color.ui_on_accent, true);
         }
     }
@@ -773,7 +776,7 @@ public class ConnectionFragment extends Fragment {
         if (changed && ProjectViaDp.isActive()) {
             ProjectViaDp.stop();
             State.startNewJob(new ProjectViaDp(!OutputSource.isMirrorActive()));
-            showToast("已切换 DP 输出源");
+            showToast(getString(R.string.connection_dp_source_switched));
         }
         applySource();
     }
@@ -833,7 +836,7 @@ public class ConnectionFragment extends Fragment {
         if (dex && connected) {
             DexTouchpadLauncher.launch(requireContext());
         } else {
-            showToast("需要 DeX 会话");
+            showToast(getString(R.string.connection_need_dex));
         }
     }
 
@@ -846,35 +849,35 @@ public class ConnectionFragment extends Fragment {
         updateTelemetryVisibility(connected);
         switch (lifecycleState) {
             case STARTING:
-                serviceSub.setText("Sunshine 服务启动中");
+                serviceSub.setText(getString(R.string.connection_sunshine_starting));
                 setBadge(serviceBadge, "处理中", false);
-                setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                         R.color.ui_on_accent, true);
                 break;
             case STOPPING:
-                serviceSub.setText("Sunshine 服务关闭中");
+                serviceSub.setText(getString(R.string.connection_sunshine_stopping));
                 setBadge(serviceBadge, "处理中", false);
-                setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                         R.color.ui_on_accent, true);
                 break;
             case RUNNING:
                 if (connected) {
-                    serviceSub.setText("已连接到客户端");
-                    setBadge(serviceBadge, "运行中", true);
-                    setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                    serviceSub.setText(getString(R.string.connection_client_connected));
+                    setBadge(serviceBadge, getString(R.string.connection_running), true);
+                    setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                             R.color.ui_on_accent, true);
                 } else {
-                    serviceSub.setText("Sunshine 服务已启动");
+                    serviceSub.setText(getString(R.string.connection_sunshine_started));
                     setBadge(serviceBadge, "等待连接", true);
-                    setButton(serviceActionButton, "停止服务", R.color.ui_danger,
+                    setButton(serviceActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                             R.color.ui_on_accent, true);
                 }
                 break;
             case STOPPED:
             default:
-                serviceSub.setText("Sunshine 服务未启动");
-                setBadge(serviceBadge, "待机", false);
-                setButton(serviceActionButton, "启动服务", R.color.ui_accent,
+                serviceSub.setText(getString(R.string.home_sunshine_stopped));
+                setBadge(serviceBadge, getString(R.string.connection_standby), false);
+                setButton(serviceActionButton, getString(R.string.connection_start_service), R.color.ui_accent,
                         R.color.ui_on_accent, true);
                 break;
         }
@@ -885,21 +888,21 @@ public class ConnectionFragment extends Fragment {
         setEnabled(quickScreenOff, screenOffEnabled);
         boolean serviceRunning = lifecycleState == SunshineService.LifecycleState.RUNNING;
         if (connected) {
-            mirrorStatusText.setText("镜像中");
-            setButton(mirrorActionButton, "停止服务", R.color.ui_danger,
+            mirrorStatusText.setText(getString(R.string.connection_mirroring));
+            setButton(mirrorActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (lifecycleState == SunshineService.LifecycleState.STARTING
                 || lifecycleState == SunshineService.LifecycleState.STOPPING) {
-            mirrorStatusText.setText("服务切换中");
-            setButton(mirrorActionButton, "停止服务", R.color.ui_danger,
+            mirrorStatusText.setText(getString(R.string.connection_service_switching));
+            setButton(mirrorActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else if (serviceRunning) {
-            mirrorStatusText.setText("服务已启动 · 等待连接");
-            setButton(mirrorActionButton, "停止服务", R.color.ui_danger,
+            mirrorStatusText.setText(getString(R.string.connection_waiting_client));
+            setButton(mirrorActionButton, getString(R.string.connection_stop_service), R.color.ui_danger,
                     R.color.ui_on_accent, true);
         } else {
-            mirrorStatusText.setText("未启动");
-            setButton(mirrorActionButton, "启动服务", R.color.ui_accent,
+            mirrorStatusText.setText(getString(R.string.connection_not_started));
+            setButton(mirrorActionButton, getString(R.string.connection_start_service), R.color.ui_accent,
                     R.color.ui_on_accent, true);
         }
         updateQuickActions();
@@ -1005,15 +1008,15 @@ public class ConnectionFragment extends Fragment {
         }
         try {
             Set<String> ips = SunshineService.getAllWifiIpAddresses(requireContext());
-            ipText.setText(ips.isEmpty() ? "IP：--" : "IP：" + TextUtils.join(" / ", ips));
+            ipText.setText(ips.isEmpty() ? getString(R.string.connection_ip_placeholder) : "IP：" + TextUtils.join(" / ", ips));
         } catch (Throwable e) {
-            ipText.setText("IP：--");
+            ipText.setText(getString(R.string.connection_ip_placeholder));
         }
     }
 
     private void updateSimpleDebugPanel(String info) {
         if (info == null || info.trim().isEmpty() || "串流未启动".equals(info.trim())) {
-            setSimpleDebugValues("--", "--", "--", "--", "--", "--");
+            setSimpleDebugValues(getString(R.string.value_placeholder), getString(R.string.value_placeholder), getString(R.string.value_placeholder), getString(R.string.value_placeholder), getString(R.string.value_placeholder), getString(R.string.value_placeholder));
             return;
         }
         String codec = valueAfterPrefix(info, "Codec:");
@@ -1162,7 +1165,7 @@ public class ConnectionFragment extends Fragment {
     }
 
     private String emptyAsDash(String value) {
-        return value == null || value.isEmpty() ? "--" : value;
+        return value == null || value.isEmpty() ? getString(R.string.value_placeholder) : value;
     }
 
     private void showDebugLogPanel() {
@@ -1171,7 +1174,7 @@ public class ConnectionFragment extends Fragment {
 
     private void openWallpaperPicker() {
         if (currentDexDisplayId() < 0) {
-            showToast("请先连接 DeX");
+            showToast(getString(R.string.connection_connect_dex_first));
             return;
         }
         Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -1194,7 +1197,7 @@ public class ConnectionFragment extends Fragment {
     }
 
     private void restartCurrentDexSession() {
-        showToast("正在重启会话…");
+        showToast(getString(R.string.connection_restarting_session));
         if (SunshineServer.isMoonlightSessionActive()) {
             SunshineServer.restartDexSession();
             return;
@@ -1206,7 +1209,7 @@ public class ConnectionFragment extends Fragment {
                         State.externalDisplayWidth,
                         State.externalDisplayHeight);
             } catch (Throwable e) {
-                showToast("DP 会话重启失败：" + e.getMessage());
+                showToast(getString(R.string.connection_dp_restart_failed_fmt, e.getMessage()));
             }
             return;
         }
@@ -1215,15 +1218,15 @@ public class ConnectionFragment extends Fragment {
                     return;
                 }
                 if (error != null) {
-                    showToast("会话重启失败：" + error);
+                    showToast(getString(R.string.connection_restart_failed_fmt, error));
                 } else {
-                    showToast("会话已重启");
+                    showToast(getString(R.string.connection_session_restarted));
                 }
                 refreshPlaceholderState();
             })) {
             return;
         }
-        showToast("没有可重启的 DeX 会话");
+        showToast(getString(R.string.connection_no_dex_session));
     }
 
     private void showManualClientDialog() {
@@ -1231,13 +1234,14 @@ public class ConnectionFragment extends Fragment {
                 .inflate(R.layout.dialog_manual_client_input, null);
         EditText ipEditText = dialogView.findViewById(R.id.ipEditText);
         EditText portEditText = dialogView.findViewById(R.id.portEditText);
+        //noinspection SetTextI18n
         portEditText.setText("42515");
         new MaterialAlertDialogBuilder(
                 requireContext(),
                 R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("手动客户端")
+                .setTitle(getString(R.string.connection_manual_client))
                 .setView(dialogView)
-                .setPositiveButton("连接", (dialog, which) -> {
+                .setPositiveButton(getString(R.string.nav_connect), (dialog, which) -> {
                     String ip = ipEditText.getText().toString().trim();
                     String port = portEditText.getText().toString().trim();
                     if (ip.isEmpty()) {
@@ -1250,7 +1254,7 @@ public class ConnectionFragment extends Fragment {
                     SunshineServer.suppressPin = String.valueOf(pin);
                     ConnectToClient.connect(pin);
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.action_cancel), null)
                 .show();
     }
 

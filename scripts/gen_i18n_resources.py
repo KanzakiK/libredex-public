@@ -18,18 +18,92 @@ INV = r"D:\dex_work\docs\i18n\strings-inventory.csv"
 
 # fmt entries: zh source literal -> zh string with placeholder (same shape as EN)
 ZH_FMT = {
-    "版本 ": "版本 %1$s",
-    "运行中 · 屏幕 ": "运行中 · 屏幕 %1$s",
-    "其他输出运行中 · 外接屏 ": "其他输出运行中 · 外接屏 %1$s",
-    "外接屏 ": "外接屏 %1$s",
-    "修改屏幕 ": "修改屏幕 %1$s",
+    "版本 ": "版本 %1$s (%2$s)",
+    "运行中 · 屏幕 ": "运行中 · 屏幕 %1$d",
+    "其他输出运行中 · 外接屏 ": "其他输出运行中 · 外接屏 %1$d",
+    "外接屏 ": "外接屏 %1$d · %2$dx%3$d",
+    "修改屏幕 ": "修改屏幕 %1$d",
     "修改分辨率失败: ": "修改分辨率失败: %1$s",
     "修改 DPI 失败: ": "修改 DPI 失败: %1$s",
-    "选择屏幕 ": "选择屏幕 %1$s",
+    "选择屏幕 ": "选择屏幕 %1$d",
     "设置刷新模式失败: ": "设置刷新模式失败: %1$s",
     "设置旋转失败: ": "设置旋转失败: %1$s",
     "恢复默认失败: ": "恢复默认失败: %1$s",
 }
+
+# en/zh value overrides for existing keys discovered during Phase 2
+OVERRIDES = {
+    "connection_running_screen_fmt": ("Running · Screen %1$d", "运行中 · 屏幕 %1$d"),
+    "connection_running_external_fmt": ("Other output running · External %1$d", "其他输出运行中 · 外接屏 %1$d"),
+    "about_version_fmt": ("Version %1$s (%2$s) / Android %3$s", "版本 %1$s (%2$s) / Android %3$s"),
+    "screen_edit_screen_fmt": ("Modify screen %1$d", "修改屏幕 %1$d"),
+    "screen_select_screen_fmt": ("Select screen %1$d", "选择屏幕 %1$d"),
+    "connection_external_fmt": ("External %1$d · %2$dx%3$d", "外接屏 %1$d · %2$dx%3$d"),
+}
+
+# extra keys added during Phase 2 (not in the inventory CSV)
+EXTRA = [
+    # (key, en, zh)
+    ("connection_running", "Running", "运行中"),
+    ("dex_running", "Running", "已运行"),
+    ("connection_stop_dp", "Stop DP output", "停止 DP 输出"),
+    ("connection_stop_service", "Stop service", "停止服务"),
+    ("notify_channel_name", "Sunshine Service Channel", "Sunshine Service Channel"),
+    ("notify_sunshine_title", "LibreDeX", "LibreDeX"),
+    ("notify_sunshine_text", "Sunshine Host is running", "Sunshine Host is running"),
+    ("about_version_app_fmt", "LibreDeX %1$s", "LibreDeX %1$s"),
+    ("screen_edit_screen_resolution_fmt", "Modify screen %1$d resolution", "修改屏幕 %1$d 分辨率"),
+    ("screen_edit_screen_dpi_fmt", "Modify screen %1$d DPI", "修改屏幕 %1$d DPI"),
+    ("screen_select_screen_mode_fmt", "Select screen %1$d refresh mode", "选择屏幕 %1$d 刷新模式"),
+    ("screen_edit_screen_rotation_fmt", "Modify screen %1$d rotation", "修改屏幕 %1$d 旋转"),
+    ("screen_rotation_none", "No force", "不强制"),
+    ("screen_rotation_0", "0°", "0°"),
+    ("screen_rotation_90", "90°", "90°"),
+    ("screen_rotation_180", "180°", "180°"),
+    ("screen_rotation_270", "270°", "270°"),
+    ("connection_bitrate_mode_cbr", "CBR - stable bitrate", "CBR - 稳定带宽"),
+    ("connection_bitrate_mode_vbr", "VBR - dynamic bitrate", "VBR - 动态码率"),
+    ("connection_bitrate_mode_cq", "CQ - constant quality", "CQ - 恒定质量"),
+    ("connection_encoder_sub_fmt", "%1$s · bitrate %2$d%% · %3$dfps", "%1$s · 码率 %2$d%% · %3$dfps"),
+    # Phase 2 showToast / showErrorStatus / misc
+    ("connection_encoder_saved", "Encoder settings saved", "编码设置已保存"),
+    ("connection_encoder_restored", "Encoder settings restored to defaults", "编码设置已恢复默认"),
+    ("connection_stopped_all", "All outputs stopped", "已停止全部输出"),
+    ("connection_stopped_dp", "DP output stopped", "已停止 DP 输出"),
+    ("connection_starting_dp", "Starting DP output…", "正在启动 DP 输出"),
+    ("connection_no_modes", "No modes available for this screen", "此屏幕没有可选模式"),
+    ("connection_external_mode_applied", "External display mode applied", "已应用外接屏模式"),
+    ("connection_external_mode_failed", "Failed to apply external display mode", "外接屏模式应用失败"),
+    ("connection_external_mode_failed_fmt", "Failed to apply external display mode: %1$s", "外接屏模式应用失败：%1$s"),
+    ("connection_invalid_whr", "Enter valid width, height and refresh rate", "请输入有效的宽、高、刷新率"),
+    ("connection_dp_source_switched", "DP output source switched", "已切换 DP 输出源"),
+    ("connection_need_dex", "DeX session required", "需要 DeX 会话"),
+    ("connection_connect_dex_first", "Connect DeX first", "请先连接 DeX"),
+    ("connection_restarting_session", "Restarting session…", "正在重启会话…"),
+    ("connection_dp_restart_failed_fmt", "DP session restart failed: %1$s", "DP 会话重启失败：%1$s"),
+    ("connection_restart_failed_fmt", "Session restart failed: %1$s", "会话重启失败：%1$s"),
+    ("connection_session_restarted", "Session restarted", "会话已重启"),
+    ("connection_no_dex_session", "No DeX session to restart", "没有可重启的 DeX 会话"),
+    ("connection_recent_client", "192.168.50.50 · Moonlight", "192.168.50.50 · Moonlight"),
+    ("about_description",
+     "LibreDeX turns the Galaxy Z Flip 5 into a DeX streaming host that does not rely on Miracast: after pairing the Moonlight client, the fake DeX desktop is streamed through Sunshine, and control input (mouse, keyboard, touch) flows back to the device.\n\nIt integrates LSPosed hooks (display flags / input / pointer / viewport / layer fixes), Shizuku/UserService system interfaces, AudioPolicy loopback audio capture, and a Sunshine / Moonlight-compatible streaming pipeline.\n\nThis project is open source under GPL-3.0; upstream sources and modifications are described in NOTICE.md.",
+     "LibreDeX 把 Galaxy Z Flip 5 变成不依赖 Miracast 的 DeX 串流主机：Moonlight 客户端配对后，通过 Sunshine 串流 fake DeX 桌面，并把鼠标、键盘、触摸等控制输入回流到设备。\n\n项目集成 LSPosed hooks（display flags / input / pointer / viewport / 层级修复）、Shizuku/UserService 系统接口、AudioPolicy loopback 音频采集，以及 Sunshine / Moonlight 兼容串流链路。\n\n本项目为 GPL-3.0 开源项目；上游来源与修改说明见仓库 NOTICE.md。"),
+    ("screen_confirm_resolution", "Confirm resolution", "确认分辨率"),
+    ("screen_confirm_resolution_msg_fmt",
+     "Keep the new resolution %2$dx%3$d for screen %1$d? It reverts if not confirmed within 5 s.",
+     "保留屏幕 %1$d 的新分辨率 %2$dx%3$d？5 秒内未确认会恢复。"),
+    ("overlay_need_permission", "Overlay permission is required to simulate screen-off with a black image", "需要悬浮窗权限才能使用黑色画面模拟息屏"),
+    ("overlay_start_failed_fmt", "Black screen-off failed to start: %1$s", "黑色画面模拟息屏启动失败: %1$s"),
+    ("dp_need_shizuku", "DP output needs Shizuku permission", "DP 输出需要 Shizuku 权限"),
+    ("dp_no_external", "No external display detected. Connect a DP/HDMI cable first.", "未检测到外接屏，请先连接 DP/HDMI 线"),
+    ("dp_read_dimensions_failed", "Cannot read external display dimensions", "无法读取外接屏尺寸"),
+    ("mirror_lost_shizuku", "Mirror mode lost the Shizuku user service while updating auto-rotate mirror", "更新自动旋转镜像时丢失了 Shizuku user service"),
+    ("mirror_need_shizuku", "Mirror mode needs Shizuku permission to capture display 0", "镜像模式需要 Shizuku 权限采集 Display 0"),
+    ("moonlight_mirror_need_shizuku", "Moonlight mirror needs Shizuku permission", "Moonlight 镜像需要 Shizuku 权限"),
+    ("moonlight_mirror_wait_failed", "Moonlight mirror failed to wait for the Shizuku user service. Confirm Shizuku is running, then retry.", "Moonlight 镜像等待 Shizuku user service 失败。请确认 Shizuku 已运行后重试。"),
+    ("sunshine_start_failed", "Cannot start SunshineService without an active UI", "没有活跃 UI 时无法启动 SunshineService"),
+    ("dex_display_summary_fmt", "%1$s · 1920×1080 · 60Hz", "%1$s · 1920×1080 · 60Hz"),
+]
 
 # pre-existing entries to keep in values/ (app_name referenced by manifest; the
 # three buttons were unused legacy, kept for safety)
@@ -63,8 +137,16 @@ def build_strings_xml(entries, legacy, is_en):
             val = en
         else:
             val = ZH_FMT.get(zh, zh)
+        if key in OVERRIDES:
+            val = OVERRIDES[key][0 if is_en else 1]
         # literal % (not a placeholder) must be flagged non-formatted so AAPT
         # does not treat it as a format string
+        if "%" in val and "%1$" not in val:
+            lines.append('    <string name="%s" formatted="false">%s</string>' % (key, esc(val)))
+        else:
+            lines.append('    <string name="%s">%s</string>' % (key, esc(val)))
+    for key, en, zh in EXTRA:
+        val = en if is_en else zh
         if "%" in val and "%1$" not in val:
             lines.append('    <string name="%s" formatted="false">%s</string>' % (key, esc(val)))
         else:

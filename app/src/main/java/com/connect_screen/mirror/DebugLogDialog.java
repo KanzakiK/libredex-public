@@ -35,7 +35,7 @@ public final class DebugLogDialog {
                 context,
                 R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setView(content)
-                .setPositiveButton("完成", null)
+                .setPositiveButton(context.getString(R.string.action_done), null)
                 .create();
         Handler handler = new Handler(Looper.getMainLooper());
         Runnable refreshRunnable = new Runnable() {
@@ -173,6 +173,6 @@ public final class DebugLogDialog {
     }
 
     private static String emptyAsDash(String value) {
-        return value == null || value.isEmpty() ? "--" : value;
+        return value == null || value.isEmpty() ? State.getContext().getString(R.string.value_placeholder) : value;
     }
 }

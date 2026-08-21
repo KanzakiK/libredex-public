@@ -121,7 +121,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         UiCompat.applyStripedBackground(this);
 
         TextView versionTitle = findViewById(R.id.versionTitle);
-        versionTitle.setText(getString(R.string.app_name) + " " + BuildConfig.VERSION_NAME);
+        versionTitle.setText(getString(R.string.about_version_app_fmt, BuildConfig.VERSION_NAME));
         versionTitle.setOnClickListener(v -> startActivity(new Intent(this, AboutActivity.class)));
 
         ImageButton themeToggleButton = findViewById(R.id.themeToggleButton);
@@ -378,7 +378,7 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         }
 
         MirrorUiState newUiState = new MirrorUiState();
-        newUiState.screenOffBtnText = "息屏";
+        newUiState.screenOffBtnText = getString(R.string.connection_off_screen);
 
         SunshineService.LifecycleState lifecycleState = SunshineService.getLifecycleState();
         boolean connected = SunshineServer.isMoonlightSessionActive()
@@ -386,19 +386,19 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                 || State.lastSingleAppDisplay != 0;
 
         if (lifecycleState == SunshineService.LifecycleState.STOPPED) {
-            newUiState.mirrorStatusText = "Sunshine 服务未启动";
+            newUiState.mirrorStatusText = getString(R.string.home_sunshine_stopped);
             newUiState.screenOffBtnVisibility = false;
             newUiState.screenOffBtnEnabled = false;
         } else if (lifecycleState == SunshineService.LifecycleState.STARTING) {
-            newUiState.mirrorStatusText = "Sunshine 服务启动中";
+            newUiState.mirrorStatusText = getString(R.string.connection_sunshine_starting);
             newUiState.screenOffBtnVisibility = false;
             newUiState.screenOffBtnEnabled = false;
         } else if (lifecycleState == SunshineService.LifecycleState.STOPPING) {
-            newUiState.mirrorStatusText = "Sunshine 服务关闭中";
+            newUiState.mirrorStatusText = getString(R.string.connection_sunshine_stopping);
             newUiState.screenOffBtnVisibility = false;
             newUiState.screenOffBtnEnabled = false;
         } else if (connected) {
-            newUiState.mirrorStatusText = "已连接到客户端";
+            newUiState.mirrorStatusText = getString(R.string.connection_client_connected);
             newUiState.screenOffBtnVisibility = true;
             newUiState.screenOffBtnEnabled = Pref.getUseBlackImage() || ShizukuUtils.hasPermission();
         } else {

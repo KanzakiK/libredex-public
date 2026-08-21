@@ -30,7 +30,7 @@ public final class InitializationGuideDialog {
 
     private final Activity activity;
     private AlertDialog dialog;
-    private Button doneButton;   // "完成"
+    private Button doneButton;   // activity.getString(R.string.action_done)
     private LinearLayout content;
     private TextView pageTitle;
     private View[] pages;
@@ -104,9 +104,9 @@ public final class InitializationGuideDialog {
         LinearLayout nav = new LinearLayout(activity);
         nav.setOrientation(LinearLayout.HORIZONTAL);
         nav.setPadding(0, dp(8), 0, dp(4));
-        prevButton.setText("上一步");
-        nextButton.setText("下一步");
-        doneButton.setText("完成");
+        prevButton.setText(activity.getString(R.string.action_prev));
+        nextButton.setText(activity.getString(R.string.action_next));
+        doneButton.setText(activity.getString(R.string.action_done));
         styleSmallButton(prevButton);
         styleSmallButton(nextButton);
         styleSmallButton(doneButton);
@@ -130,7 +130,7 @@ public final class InitializationGuideDialog {
         content.addView(nav, matchWrapParams());
 
         dialog = new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("连接向导")
+                .setTitle(activity.getString(R.string.guide_title))
                 .setView(content)
                 .setCancelable(false)
                 .create();
@@ -182,10 +182,10 @@ public final class InitializationGuideDialog {
 
     private void refreshStatusTexts() {
         // 快速本地状态（无 Binder/root），直接主线程更新
-        updateText(shizukuStatusText, ShizukuUtils.hasPermission() ? "已授权" : "未授权");
-        updateText(overlayStatusText, canDrawOverlays() ? "已授权" : "未授权");
-        updateText(audioStatusText, isRecordAudioGranted() ? "已授权" : "未授权");
-        updateText(fileStatusText, isFileAccessReady() ? "已授予" : "未授予");
+        updateText(shizukuStatusText, ShizukuUtils.hasPermission() ? "已授权" : activity.getString(R.string.settings_not_granted));
+        updateText(overlayStatusText, canDrawOverlays() ? "已授权" : activity.getString(R.string.settings_not_granted));
+        updateText(audioStatusText, isRecordAudioGranted() ? "已授权" : activity.getString(R.string.settings_not_granted));
+        updateText(fileStatusText, isFileAccessReady() ? "已授予" : activity.getString(R.string.settings_file_not_granted));
         // Root 与 LSPosed 状态涉及跨进程 Binder / root / logcat，必须在后台线程执行，
         // 否则会阻塞主线程导致输入超时 ANR（此前实测 lspStatusLine 卡死主线程）。
         refreshRootStatusAsync();
@@ -259,7 +259,7 @@ public final class InitializationGuideDialog {
         col.addView(hint, matchWrapParams());
 
         Button openLsp = new Button(activity);
-        openLsp.setText("打开 LSPosed / Vector");
+        openLsp.setText(activity.getString(R.string.guide_open_lsposed));
         styleSmallButton(openLsp);
         openLsp.setOnClickListener(v -> openLsposedManager());
         col.addView(openLsp, wrapParams());
@@ -309,7 +309,7 @@ public final class InitializationGuideDialog {
             final String err = error;
             MAIN_HANDLER.post(() -> {
                 if (err == null) {
-                    Toast.makeText(activity, "已在 LSPosed / Vector 中打开，请启用本模块后重启",
+                    Toast.makeText(activity, activity.getString(R.string.guide_lsposed_enabled_restart),
                             Toast.LENGTH_LONG).show();
                 } else {
                     showLsposedManualDialog();
@@ -398,14 +398,14 @@ public final class InitializationGuideDialog {
     /** 找不到可启动入口：给出明确的手动打开指引（桌面/通知栏），而不是一句模糊 toast。 */
     private void showLsposedManualDialog() {
         new MaterialAlertDialogBuilder(activity, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("未找到 LSPosed 入口")
-                .setMessage("LSPosed（含 Vector）变种没有独立 App 图标，入口是注入的快捷方式 / 通知栏。\n\n"
+                .setTitle(activity.getString(R.string.guide_lsposed_not_found))
+                .setMessage(activity.getString(R.string.guide_lsposed_entry_note)
                         + "请手动打开：\n"
                         + "· 桌面上的“LSPosed（Vector）”快捷方式，或\n"
                         + "· 下拉通知栏里的 LSPosed / Vector 入口。\n\n"
                         + "若已打开并启用了本模块，作用域勾选 android / 三星设置 / 桌面，"
                         + "然后重启手机使 Hook 生效。")
-                .setPositiveButton("知道了", null)
+                .setPositiveButton(activity.getString(R.string.action_got_it), null)
                 .show();
     }
 
@@ -421,7 +421,7 @@ public final class InitializationGuideDialog {
         rootStatusText.setTextSize(13);
         col.addView(rootStatusText, matchWrapParams());
         Button rootBtn = new Button(activity);
-        rootBtn.setText("以 root 重启");
+        rootBtn.setText(activity.getString(R.string.guide_root_restart));
         styleSmallButton(rootBtn);
         rootBtn.setOnClickListener(v -> {
             // root 重启涉及 su / 重绑定等阻塞操作，放后台线程，避免卡死主线程。
@@ -441,13 +441,13 @@ public final class InitializationGuideDialog {
         col.addView(note("Root 是悬浮窗/投屏“一键静默授权”的基础；应用打开时会自动尝试拉起授权。"),
                 matchWrapParams());
 
-        col.addView(label("Shizuku"), wrapParamsR());
+        col.addView(label(activity.getString(R.string.brand_shizuku)), wrapParamsR());
         shizukuStatusText = new TextView(activity);
         shizukuStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
         shizukuStatusText.setTextSize(13);
         col.addView(shizukuStatusText, matchWrapParams());
         Button shizukuBtn = new Button(activity);
-        shizukuBtn.setText("连接");
+        shizukuBtn.setText(activity.getString(R.string.nav_connect));
         styleSmallButton(shizukuBtn);
         shizukuBtn.setOnClickListener(v -> {
             State.startNewJob(new AcquireShizuku());
@@ -456,13 +456,13 @@ public final class InitializationGuideDialog {
         });
         col.addView(shizukuBtn, wrapParamsR());
 
-        col.addView(label("悬浮窗权限"), wrapParamsR());
+        col.addView(label(activity.getString(R.string.settings_overlay_permission)), wrapParamsR());
         overlayStatusText = new TextView(activity);
         overlayStatusText.setTextColor(ContextCompat.getColor(activity, R.color.ui_text_secondary));
         overlayStatusText.setTextSize(13);
         col.addView(overlayStatusText, matchWrapParams());
         Button overlayBtn = new Button(activity);
-        overlayBtn.setText("授权");
+        overlayBtn.setText(activity.getString(R.string.action_grant));
         styleSmallButton(overlayBtn);
         overlayBtn.setOnClickListener(v -> grantOverlay());
         col.addView(overlayBtn, wrapParamsR());
@@ -472,12 +472,12 @@ public final class InitializationGuideDialog {
 
     private void grantOverlay() {
         if (canDrawOverlays()) {
-            Toast.makeText(activity, "悬浮窗权限已授权", Toast.LENGTH_SHORT).show();
+            Toast.makeText(activity, activity.getString(R.string.guide_overlay_granted), Toast.LENGTH_SHORT).show();
             refreshStatusTexts();
             return;
         }
         // 先显示“处理中”，再在后台线程做 root 静默授权（Binder/root 不能放主线程）。
-        Toast.makeText(activity, "正在授权悬浮窗…", Toast.LENGTH_SHORT).show();
+        Toast.makeText(activity, activity.getString(R.string.guide_overlay_granting), Toast.LENGTH_SHORT).show();
         new Thread(() -> {
             boolean granted = false;
             try {
@@ -492,7 +492,7 @@ public final class InitializationGuideDialog {
             boolean still = canDrawOverlays();
             MAIN_HANDLER.post(() -> {
                 if (still) {
-                    Toast.makeText(activity, "悬浮窗权限已授权", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(activity, activity.getString(R.string.guide_overlay_granted), Toast.LENGTH_SHORT).show();
                     refreshStatusTexts();
                     return;
                 }
@@ -500,7 +500,7 @@ public final class InitializationGuideDialog {
                     activity.startActivity(new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
                             Uri.parse("package:" + activity.getPackageName())));
                 } catch (Throwable e) {
-                    Toast.makeText(activity, "请手动授予悬浮窗权限", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(activity, activity.getString(R.string.guide_overlay_grant_manual), Toast.LENGTH_SHORT).show();
                 }
                 MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 600);
                 MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1800);
@@ -520,7 +520,7 @@ public final class InitializationGuideDialog {
         col.addView(note("用于采集系统播放音频；未授权仍可串流画面，只是没有声音。可跳过。"),
                 matchWrapParams());
         Button grantBtn = new Button(activity);
-        grantBtn.setText("授权");
+        grantBtn.setText(activity.getString(R.string.action_grant));
         styleSmallButton(grantBtn);
         grantBtn.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isRecordAudioGranted()) {
@@ -541,18 +541,18 @@ public final class InitializationGuideDialog {
         LinearLayout col = new LinearLayout(activity);
         col.setOrientation(LinearLayout.VERTICAL);
         col.setPadding(0, dp(6), 0, 0);
-        col.addView(label("文件访问权限"), wrapParams());
+        col.addView(label(activity.getString(R.string.settings_file_permission)), wrapParams());
         col.addView(fileStatusText, matchWrapParams());
         col.addView(note("用于把日志/压缩包写入下载目录。"), matchWrapParams());
         Button fileBtn = new Button(activity);
-        fileBtn.setText("授权");
+        fileBtn.setText(activity.getString(R.string.action_grant));
         styleSmallButton(fileBtn);
         fileBtn.setOnClickListener(v -> {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 activity.startActivity(
                         new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION));
             } else {
-                Toast.makeText(activity, "当前系统无需额外文件权限", Toast.LENGTH_SHORT).show();
+                Toast.makeText(activity, activity.getString(R.string.guide_no_file_permission_needed), Toast.LENGTH_SHORT).show();
             }
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 1500);
             MAIN_HANDLER.postDelayed(this::refreshStatusTexts, 3000);

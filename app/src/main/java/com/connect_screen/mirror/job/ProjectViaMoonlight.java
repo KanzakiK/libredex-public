@@ -9,6 +9,7 @@ import android.view.Surface;
 import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
+import com.connect_screen.mirror.R;
 
 public class ProjectViaMoonlight implements Job {
     public interface StartupCallback {
@@ -58,7 +59,7 @@ public class ProjectViaMoonlight implements Job {
 
     private void startDefaultProjection(Context context) throws YieldException {
         if (!ShizukuUtils.hasPermission()) {
-            State.showErrorStatus("Mirror mode needs Shizuku permission to capture display 0");
+            State.showErrorStatus(State.getContext().getString(R.string.mirror_need_shizuku));
             return;
         }
         releaseStaleAppMirrorState();
@@ -228,7 +229,7 @@ public class ProjectViaMoonlight implements Job {
     private void waitForUserService(String reason) throws YieldException {
         State.log(reason);
         if (!ShizukuUtils.hasPermission()) {
-            State.showErrorStatus("Moonlight mirror needs Shizuku permission");
+            State.showErrorStatus(State.getContext().getString(R.string.moonlight_mirror_need_shizuku));
             throw new RuntimeException("Shizuku permission missing");
         }
         if (userServiceRequested) {

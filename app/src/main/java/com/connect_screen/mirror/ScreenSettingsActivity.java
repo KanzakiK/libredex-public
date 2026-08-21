@@ -52,7 +52,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         setContentView(R.layout.activity_screen_settings);
         UiCompat.applyStripedBackground(this);
         if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("屏幕设置");
+            getSupportActionBar().setTitle(getString(R.string.screen_title));
         }
 
         findViewById(R.id.screenSettingsBackButton).setOnClickListener(v -> finish());
@@ -92,7 +92,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
 
     private void requestShizukuPermission() {
         if (!ShizukuUtils.hasShizukuStarted()) {
-            Toast.makeText(this, "Shizuku 未启动", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_shizuku_not_started), Toast.LENGTH_SHORT).show();
             return;
         }
         if (ShizukuUtils.hasPermission()) {
@@ -179,7 +179,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         actions.addView(row2);
 
         LinearLayout row3 = createButtonRow();
-        row3.addView(createActionButton("恢复默认", canModifyDisplay, v -> resetDisplay(display.getDisplayId())));
+        row3.addView(createActionButton(getString(R.string.action_restore_default), canModifyDisplay, v -> resetDisplay(display.getDisplayId())));
         actions.addView(row3);
         return container;
     }
@@ -206,7 +206,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                 .append(mode.getModeId())
                 .append(")\n");
         builder.append("旋转: ").append(rotationName(display.getRotation())).append("\n");
-        builder.append("状态: ").append(display.getState() == Display.STATE_ON ? "开启" : "关闭");
+        builder.append("状态: ").append(display.getState() == Display.STATE_ON ? "开启" : getString(R.string.action_close));
 
         if (hasShizuku) {
             try {
@@ -242,24 +242,24 @@ public class ScreenSettingsActivity extends AppCompatActivity {
 
     private void showResolutionDialog(Display display) {
         LinearLayout view = createVerticalDialogView();
-        EditText widthInput = createNumberInput("宽度", display.getWidth());
-        EditText heightInput = createNumberInput("高度", display.getHeight());
+        EditText widthInput = createNumberInput(getString(R.string.dialog_resolution_width), display.getWidth());
+        EditText heightInput = createNumberInput(getString(R.string.dialog_resolution_height), display.getHeight());
         view.addView(widthInput);
         view.addView(heightInput);
 
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("修改屏幕 " + display.getDisplayId() + " 分辨率")
+                .setTitle(getString(R.string.screen_edit_screen_resolution_fmt, display.getDisplayId()))
                 .setView(view)
-                .setPositiveButton("应用", (dialog, which) -> {
+                .setPositiveButton(getString(R.string.action_apply), (dialog, which) -> {
                     int width = parsePositiveInt(widthInput, 0);
                     int height = parsePositiveInt(heightInput, 0);
                     if (width <= 0 || height <= 0) {
-                        Toast.makeText(this, "请输入有效分辨率", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.screen_invalid_resolution), Toast.LENGTH_SHORT).show();
                         return;
                     }
                     applyResolution(display.getDisplayId(), width, height);
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.action_cancel), null)
                 .show();
     }
 
@@ -271,11 +271,11 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             windowManager.setForcedDisplaySize(displayId, width, height);
             refreshDisplays();
             showConfirmOrRevertDialog(
-                    "确认分辨率",
-                    String.format(java.util.Locale.US, "保留屏幕 %d 的新分辨率 %dx%d？5 秒内未确认会恢复。", displayId, width, height),
+                    getString(R.string.screen_confirm_resolution),
+                    getString(R.string.screen_confirm_resolution_msg_fmt, displayId, width, height),
                     () -> windowManager.setForcedDisplaySize(displayId, oldSize.x, oldSize.y));
         } catch (Throwable e) {
-            Toast.makeText(this, "修改分辨率失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.screen_resolution_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
             State.log("修改分辨率失败: " + e);
         }
     }
@@ -288,17 +288,17 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         view.addView(dpiInput);
 
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("修改屏幕 " + display.getDisplayId() + " DPI")
+                .setTitle(getString(R.string.screen_edit_screen_dpi_fmt, display.getDisplayId()))
                 .setView(view)
-                .setPositiveButton("应用", (dialog, which) -> {
+                .setPositiveButton(getString(R.string.action_apply), (dialog, which) -> {
                     int dpi = parsePositiveInt(dpiInput, 0);
                     if (dpi <= 0) {
-                        Toast.makeText(this, "请输入有效 DPI", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.screen_invalid_dpi), Toast.LENGTH_SHORT).show();
                         return;
                     }
                     applyDpi(display.getDisplayId(), dpi, metrics.densityDpi);
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.action_cancel), null)
                 .show();
     }
 
@@ -312,7 +312,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     String.format(java.util.Locale.US, "保留屏幕 %d 的新 DPI %d？5 秒内未确认会恢复。", displayId, dpi),
                     () -> windowManager.setForcedDisplayDensityForUser(displayId, oldDpi, 0));
         } catch (Throwable e) {
-            Toast.makeText(this, "修改 DPI 失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.screen_dpi_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
             State.log("修改 DPI 失败: " + e);
         }
     }
@@ -320,7 +320,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
     private void showDisplayModeDialog(Display display) {
         Display.Mode[] modes = display.getSupportedModes();
         if (modes == null || modes.length == 0) {
-            Toast.makeText(this, "此屏幕没有可选刷新模式", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_no_refresh_modes), Toast.LENGTH_SHORT).show();
             return;
         }
         String[] items = new String[modes.length + 1];
@@ -336,7 +336,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     mode.getRefreshRate());
         }
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("选择屏幕 " + display.getDisplayId() + " 刷新模式")
+                .setTitle(getString(R.string.screen_select_screen_mode_fmt, display.getDisplayId()))
                 .setItems(items, (dialog, which) -> {
                     Display.Mode selectedMode = which == 0 ? null : modes[which - 1];
                     applyDisplayMode(display.getDisplayId(), selectedMode);
@@ -348,10 +348,10 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         try {
             IDisplayManager displayManager = ServiceUtils.getDisplayManager();
             displayManager.setUserPreferredDisplayMode(displayId, mode);
-            Toast.makeText(this, "刷新模式已应用", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_refresh_applied), Toast.LENGTH_SHORT).show();
             refreshDisplays();
         } catch (Throwable e) {
-            Toast.makeText(this, "设置刷新模式失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.screen_refresh_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
             State.log("设置刷新模式失败: " + e);
         }
     }
@@ -359,16 +359,16 @@ public class ScreenSettingsActivity extends AppCompatActivity {
     private void showRotationDialog(int displayId) {
         LinearLayout view = createVerticalDialogView();
         Spinner spinner = new Spinner(this);
-        String[] options = new String[]{"不强制", "0°", "90°", "180°", "270°"};
+        String[] options = new String[]{getString(R.string.screen_rotation_none), getString(R.string.screen_rotation_0), getString(R.string.screen_rotation_90), getString(R.string.screen_rotation_180), getString(R.string.screen_rotation_270)};
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, options);
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         spinner.setAdapter(adapter);
         view.addView(spinner);
 
         new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
-                .setTitle("修改屏幕 " + displayId + " 旋转")
+                .setTitle(getString(R.string.screen_edit_screen_rotation_fmt, displayId))
                 .setView(view)
-                .setPositiveButton("应用", (dialog, which) -> {
+                .setPositiveButton(getString(R.string.action_apply), (dialog, which) -> {
                     int rotation;
                     switch (spinner.getSelectedItemPosition()) {
                         case 1:
@@ -390,7 +390,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     }
                     applyRotation(displayId, rotation);
                 })
-                .setNegativeButton("取消", null)
+                .setNegativeButton(getString(R.string.action_cancel), null)
                 .show();
     }
 
@@ -426,10 +426,10 @@ public class ScreenSettingsActivity extends AppCompatActivity {
                     windowManager.freezeDisplayRotation(displayId, rotation);
                 }
             }
-            Toast.makeText(this, "旋转设置已应用", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_rotation_applied), Toast.LENGTH_SHORT).show();
             refreshDisplays();
         } catch (Throwable e) {
-            Toast.makeText(this, "设置旋转失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.screen_rotation_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
             State.log("设置旋转失败: " + e);
         }
     }
@@ -462,10 +462,10 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             } catch (Throwable e) {
                 State.log("恢复刷新模式失败: " + e.getMessage());
             }
-            Toast.makeText(this, "屏幕设置已恢复默认", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.screen_restored_default), Toast.LENGTH_SHORT).show();
             refreshDisplays();
         } catch (Throwable e) {
-            Toast.makeText(this, "恢复默认失败: " + e.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, getString(R.string.screen_restore_failed_fmt, e.getMessage()), Toast.LENGTH_LONG).show();
             State.log("恢复默认失败: " + e);
         }
     }
@@ -475,11 +475,11 @@ public class ScreenSettingsActivity extends AppCompatActivity {
         AlertDialog dialog = new MaterialAlertDialogBuilder(this, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("保留", (d, which) -> {
+                .setPositiveButton(getString(R.string.action_keep), (d, which) -> {
                     confirmed[0] = true;
                     refreshDisplays();
                 })
-                .setNegativeButton("恢复", (d, which) -> {
+                .setNegativeButton(getString(R.string.action_restore), (d, which) -> {
                     revertAction.run();
                     refreshDisplays();
                 })
@@ -488,7 +488,7 @@ public class ScreenSettingsActivity extends AppCompatActivity {
             if (!confirmed[0] && dialog.isShowing()) {
                 dialog.dismiss();
                 revertAction.run();
-                Toast.makeText(this, "未确认，已恢复原设置", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.screen_restored_reverted), Toast.LENGTH_SHORT).show();
                 refreshDisplays();
             }
         }, 5000);
@@ -557,13 +557,13 @@ public class ScreenSettingsActivity extends AppCompatActivity {
     private String rotationName(int rotation) {
         switch (rotation) {
             case Surface.ROTATION_0:
-                return "0°";
+                return getString(R.string.screen_rotation_0);
             case Surface.ROTATION_90:
-                return "90°";
+                return getString(R.string.screen_rotation_90);
             case Surface.ROTATION_180:
-                return "180°";
+                return getString(R.string.screen_rotation_180);
             case Surface.ROTATION_270:
-                return "270°";
+                return getString(R.string.screen_rotation_270);
             default:
                 return String.valueOf(rotation);
         }
