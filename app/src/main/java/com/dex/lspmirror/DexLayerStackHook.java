@@ -1709,12 +1709,48 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                     int width = (Integer) oldMode.getClass().getMethod("getPhysicalWidth").invoke(oldMode);
                     int height = (Integer) oldMode.getClass().getMethod("getPhysicalHeight").invoke(oldMode);
                     Class<?> modeClass = Class.forName("android.view.Display$Mode", false, cl);
-                    java.lang.reflect.Constructor<?> ctor = modeClass.getConstructor(
-                            int.class, int.class, int.class, float.class, float.class,
-                            boolean.class, float[].class, int[].class);
-                    Object mode120 = ctor.newInstance(
-                            modeId, width, height, 120.0f, 120.0f, false,
-                            new float[0], new int[0]);
+                    java.lang.reflect.Constructor<?> ctor = null;
+                    // Android 16 OneUI 8.5 changed Display Mode ctor (was 8 params)
+                    try {
+                        ctor = modeClass.getConstructor(
+                                int.class, int.class, int.class, float.class, float.class,
+                                boolean.class, float[].class, int[].class);
+                    } catch (NoSuchMethodException e) {
+                        for (java.lang.reflect.Constructor<?> cc : modeClass.getDeclaredConstructors()) {
+                            Class<?>[] pts = cc.getParameterTypes();
+                            if (pts.length >= 8 && pts[0] == int.class && pts[1] == int.class
+                                    && pts[2] == int.class && pts[3] == float.class && pts[4] == float.class) {
+                                ctor = cc;
+                                break;
+                            }
+                        }
+                    }
+                    if (ctor == null) {
+                        XposedBridge.log(TAG + ": Display Mode ctor not found, skipping vd refresh fix");
+                        return;
+                    }
+                    ctor.setAccessible(true);
+                    Object mode120;
+                    if (ctor.getParameterCount() == 8) {
+                        mode120 = ctor.newInstance(
+                                modeId, width, height, 120.0f, 120.0f, false,
+                                new float[0], new int[0]);
+                    } else {
+                        Object[] args = new Object[ctor.getParameterCount()];
+                        Class<?>[] pts2 = ctor.getParameterTypes();
+                        args[0] = modeId; args[1] = width; args[2] = height;
+                        args[3] = 120.0f; args[4] = 120.0f; args[5] = false;
+                        args[6] = new float[0]; args[7] = new int[0];
+                        for (int j = 8; j < args.length; j++) {
+                            if (pts2[j] == int.class) args[j] = 0;
+                            else if (pts2[j] == long.class) args[j] = 0L;
+                            else if (pts2[j] == float.class) args[j] = 0f;
+                            else if (pts2[j] == double.class) args[j] = 0d;
+                            else if (pts2[j] == boolean.class) args[j] = false;
+                            else args[j] = null;
+                        }
+                        mode120 = ctor.newInstance(args);
+                    }
                     self.getClass().getField("mMode").set(self, mode120);
                     XposedBridge.log(TAG + ": mirror VD (mirrorId=" + mirrorId
                             + ") mMode forced to 120Hz");

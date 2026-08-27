@@ -47,6 +47,8 @@ public class AcquireShizuku implements Job {
         } catch (Throwable ignored) {
         }
         State.log("UserService is not root; restarting Shizuku as root");
+        // Temporary root (KSU temp grant) expires after first use; force fresh probe instead of cached true
+        rootProbePassed = false;
         String su = findSu();
         if (su == null) {
             State.log("su binary not found; DP DeX needs Shizuku started as root");
@@ -75,7 +77,7 @@ public class AcquireShizuku implements Job {
         // Let the old shell server die before waiting for the root server.
         sleep(1000);
 
-        long deadline = System.currentTimeMillis() + 20_000;
+        long deadline = System.currentTimeMillis() + 10_000;
         while (System.currentTimeMillis() < deadline) {
             try {
                 if (Shizuku.pingBinder()) {
@@ -185,14 +187,11 @@ public class AcquireShizuku implements Job {
     }
 
     private static boolean probeRoot(String su) {
-        if (rootProbePassed) {
-            return true;
-        }
         try {
             ProcessBuilder builder = new ProcessBuilder(su, "-c", "id");
             builder.redirectErrorStream(true);
             Process process = builder.start();
-            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
                 return false;
@@ -226,7 +225,7 @@ public class AcquireShizuku implements Job {
             ProcessBuilder builder = new ProcessBuilder(su, "-c", command);
             builder.redirectErrorStream(true);
             Process process = builder.start();
-            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            boolean finished = process.waitFor(10, TimeUnit.SECONDS);
             if (!finished) {
                 process.destroyForcibly();
                 return null;

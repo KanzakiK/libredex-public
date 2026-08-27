@@ -682,37 +682,48 @@ public class UserService extends IUserService.Stub  {
     }
 
     private boolean setScreenPowerViaNewApi(int powerMode) {
-        IDisplayManager displayManager = IDisplayManager.Stub.asInterface(SystemServiceHelper.getSystemService(Context.DISPLAY_SERVICE));
-        if (powerMode == SurfaceControl.POWER_MODE_OFF) {
-            try {
-                displayManager.requestDisplayPower(Display.DEFAULT_DISPLAY, false);
-                Log.i("UserService", "requestDisplayPower by bool false");
-            } catch(Throwable e) {
-                Log.e("UserService", "failed to power off screen", e);
+        try {
+            IDisplayManager dm = IDisplayManager.Stub.asInterface(SystemServiceHelper.getSystemService(Context.DISPLAY_SERVICE));
+            // Android 16 OneUI 8.5 changed requestDisplayPower signature - try reflective
+            boolean wantOn = powerMode != SurfaceControl.POWER_MODE_OFF;
+            for (java.lang.reflect.Method m : dm.getClass().getMethods()) {
+                if (!"requestDisplayPower".equals(m.getName())) continue;
+                Class<?>[] pts = m.getParameterTypes();
                 try {
-                    displayManager.requestDisplayPower(Display.DEFAULT_DISPLAY, SurfaceControl.POWER_MODE_OFF);
-                    Log.i("UserService", "requestDisplayPower by int: " + powerMode);
-                } catch(Throwable e2) {
-                    Log.e("UserService", "failed to power off screen", e2);
-                    return false;
-                }
+                    if (pts.length == 2 && pts[0] == int.class) {
+                        if (pts[1] == boolean.class) {
+                            m.invoke(dm, Display.DEFAULT_DISPLAY, wantOn);
+                            Log.i("UserService", "requestDisplayPower bool " + wantOn + " via " + m);
+                            return true;
+                        } else if (pts[1] == int.class) {
+                            m.invoke(dm, Display.DEFAULT_DISPLAY, powerMode);
+                            Log.i("UserService", "requestDisplayPower int " + powerMode + " via " + m);
+                            return true;
+                        }
+                    } else if (pts.length == 3 && pts[0] == int.class && pts[1] == int.class) {
+                        Object arg2 = pts[2] == String.class ? "UserService" : (pts[2] == boolean.class ? wantOn : null);
+                        if (arg2 != null || pts[2] == String.class) {
+                            m.invoke(dm, Display.DEFAULT_DISPLAY, powerMode, arg2);
+                            Log.i("UserService", "requestDisplayPower 3args via " + m);
+                            return true;
+                        }
+                    }
+                } catch (Throwable ignored) { }
             }
-        } else {
-            try {
-                displayManager.requestDisplayPower(Display.DEFAULT_DISPLAY, true);
-                Log.i("UserService", "requestDisplayPower by bool true");
-            } catch (Throwable e) {
-                Log.e("UserService", "failed to power up screen", e);
-                try {
-                    displayManager.requestDisplayPower(Display.DEFAULT_DISPLAY, SurfaceControl.POWER_MODE_NORMAL);
-                    Log.i("UserService", "requestDisplayPower by int: " + powerMode);
-                } catch(Throwable e2) {
-                    Log.e("UserService", "failed to power up screen", e2);
-                    return false;
-                }
-            }
+            Log.e("UserService", "requestDisplayPower: no compatible method, fallback to shell");
+        } catch (Throwable e) {
+            Log.e("UserService", "setScreenPowerViaNewApi reflection failed", e);
         }
-        return true;
+        // Fallback: shell (avoids binder crash on Android 16)
+        try {
+            String cmd = powerMode == SurfaceControl.POWER_MODE_OFF ? "input keyevent 26" : "input keyevent 224";
+            String out = executeShellCommand(cmd);
+            Log.i("UserService", "fallback shell " + cmd + " -> " + (out == null ? "" : out.trim()));
+            return out != null && out.contains("__EXIT_CODE=0");
+        } catch (Throwable e2) {
+            Log.e("UserService", "fallback shell failed", e2);
+            return false;
+        }
     }
 
     private @Nullable IBinder getDisplayToken() {
