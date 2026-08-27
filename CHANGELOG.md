@@ -1,5 +1,27 @@
 # LibreDeX 更新记录 / Changelog
 
+## 0.2.7（2026-08-28）
+
+### English
+
+**Bug Fixes**
+
+- **Fix One UI 8.5 reading the wrong external-screen resolution**: wired DP/HDMI displays (e.g. a 1920x1080 portable panel over USB-C) were reported as the Flip 5 cover screen (748x720). The external-display picker now filters out built-in cover displays and prefers the largest physical external panel, so the correct resolution is read for DeX and mirroring.
+- **Fix DeX freezing on the second start under temporary root (One UI 8.5)**:
+  - Temporary root (KernelSU temp grant) expiry was cached, causing a stale “still rooted” check and a long hang when restarting Shizuku as root; the root probe now re-checks fresh with a shorter timeout.
+  - `IDisplayManager.requestDisplayPower(IZ)` was removed on Android 16; the power path now reflects over any available signature and falls back to shell input events instead of crashing with `NoSuchMethodError`.
+  - `Display$Mode.<init>` changed its parameter list on Android 16, flooding logcat with `NoSuchMethodException` and deadlocking `performTraversalInternal`; the refresh-rate hook now finds a compatible constructor or skips safely.
+
+### 简体中文
+
+**问题修复**
+
+- **修复 One UI 8.5 外接屏分辨率识别错误**：通过有线 DP/HDMI（如 Type-C 一线连的 1920x1080 便携屏）连接的屏幕被误识别为 Flip 5 外屏（748x720）。外接屏选择逻辑现在会排除内置外屏，并优先选取面积最大的物理外接面板，从而在 DeX 与镜像模式下读到正确分辨率。
+- **修复 One UI 8.5 临时 root 下第二次启动 DeX 卡死**：
+  - 临时 root（KernelSU 临时授权）过期后仍命中缓存，导致“仍有 root”的误判，并在以 root 重启 Shizuku 时长时间挂起；现在 root 探测会重新检测并缩短超时。
+  - Android 16 移除了 `IDisplayManager.requestDisplayPower(IZ)`，电源路径改为反射适配任意签名，失败时回退到 shell 按键事件，不再因 `NoSuchMethodError` 崩溃。
+  - Android 16 变更了 `Display$Mode.<init>` 参数列表，导致日志被 `NoSuchMethodException` 刷屏并引发 `performTraversalInternal` 死锁；刷新率钩子现在会查找兼容构造函数或安全跳过。
+
 ## 0.2.6（2026-08-21）
 
 > 从本版本起支持多语言，以下分中英两段 / Bilingual since this release.
