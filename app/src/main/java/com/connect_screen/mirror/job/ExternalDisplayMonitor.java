@@ -16,6 +16,11 @@ import java.util.List;
 /**
  * Watches physical external displays (USB-C DP/HDMI) so the wired DP flow can
  * react to plug/unplug and keep {@link State#externalDisplayId} in sync.
+ *
+ * Fix for OneUI 8.5 Flip5: DisplayManager.getDisplays() returns [inner(0), cover(1, 748x720), dp(6, 1920x1200)].
+ * Old code returned displays.get(0) which was the cover (748x720) so DP was mis-identified
+ * as flip cover resolution. Now filters cover displays using the same rule as CurrentScreen
+ * (size <= default) and sorts by area to pick the real DP/HDMI display.
  */
 public final class ExternalDisplayMonitor {
     private static final String TAG = "ExternalDisplayMonitor";
@@ -42,6 +47,7 @@ public final class ExternalDisplayMonitor {
         if (dm == null) {
             return result;
         }
+        Display defaultDisplay = dm.getDisplay(Display.DEFAULT_DISPLAY);
         int ownVirtualDisplayId = State.getMirrorVirtualDisplayId();
         for (Display display : dm.getDisplays()) {
             if (display == null) {
@@ -52,10 +58,21 @@ public final class ExternalDisplayMonitor {
                 continue;
             }
             String name = display.getName();
-            if (name != null && name.startsWith(OWN_VD_NAME_PREFIX)) {
+            if (name != null && isOwnVirtualDisplay(name)) {
+                continue;
+            }
+            // OneUI 8.5 Flip5 fix: exclude cover (748x720) which now appears in getDisplays()
+            // alongside the real DP display (e.g. 1920x1200 / 1920x1080 / 3840x2160).
+            // isCoverDisplay mirrors CurrentScreen logic: cover is strictly smaller than default.
+            if (isCoverDisplay(display, defaultDisplay)) {
                 continue;
             }
             result.add(display);
+        }
+        // If multiple externals (e.g. DP + HDMI dongle), prefer largest area so
+        // the true high-res panel wins instead of a small side display.
+        if (result.size() > 1) {
+            result.sort((a, b) -> Long.compare(displayArea(b), displayArea(a)));
         }
         return result;
     }
@@ -73,11 +90,22 @@ public final class ExternalDisplayMonitor {
             State.externalDisplayHeight = 0;
             return;
         }
-        DisplayMetrics metrics = new DisplayMetrics();
-        display.getRealMetrics(metrics);
+        // Prefer mode physical size (orientation-independent) then fallback to RealMetrics.
+        // getRealMetrics can still be correct but mode is the source of truth for DP.
+        int w = modeWidth(display);
+        int h = modeHeight(display);
+        if (w <= 0 || h <= 0) {
+            DisplayMetrics metrics = new DisplayMetrics();
+            try {
+                display.getRealMetrics(metrics);
+                w = metrics.widthPixels;
+                h = metrics.heightPixels;
+            } catch (Throwable ignored) {
+            }
+        }
         State.externalDisplayId = display.getDisplayId();
-        State.externalDisplayWidth = metrics.widthPixels;
-        State.externalDisplayHeight = metrics.heightPixels;
+        State.externalDisplayWidth = w;
+        State.externalDisplayHeight = h;
         Log.d(TAG, "external display #" + display.getDisplayId() + " " + display.getName()
                 + " " + State.externalDisplayWidth + "x" + State.externalDisplayHeight);
     }
@@ -154,5 +182,85 @@ public final class ExternalDisplayMonitor {
             return null;
         }
         return (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+    }
+
+    // --- helpers mirrored from CurrentScreen (kept local to avoid cross-class coupling) ---
+
+    private static boolean isOwnVirtualDisplay(String name) {
+        return name != null && (name.startsWith(OWN_VD_NAME_PREFIX)
+                || name.startsWith("LibreDeX")
+                || name.startsWith("Moonlight-"));
+    }
+
+    private static boolean isCoverDisplay(Display display, Display defaultDisplay) {
+        if (display == null || display.getDisplayId() == Display.DEFAULT_DISPLAY) {
+            return false;
+        }
+        if (isOwnVirtualDisplay(display.getName())) {
+            return false;
+        }
+        // STATE_ON check avoided here because DP can be reported before fully ON;
+        // size is the decisive signal on Flip5.
+        if (defaultDisplay == null) {
+            return false;
+        }
+        int defaultWidth = modeWidth(defaultDisplay);
+        int defaultHeight = modeHeight(defaultDisplay);
+        int width = modeWidth(display);
+        int height = modeHeight(display);
+        if (defaultWidth <= 0 || defaultHeight <= 0 || width <= 0 || height <= 0) {
+            return false;
+        }
+        // Cover is strictly smaller than inner on both axes (or at least one axis with tie on other).
+        // DP panels (1920x1200, 1920x1080, 3840x2160) are NOT covered because 1920 > 1080 (default width).
+        return width <= defaultWidth && height <= defaultHeight
+                && (width < defaultWidth || height < defaultHeight);
+    }
+
+    private static long displayArea(Display display) {
+        int w = modeWidth(display);
+        int h = modeHeight(display);
+        if (w <= 0 || h <= 0) {
+            DisplayMetrics m = realMetrics(display);
+            if (m != null) {
+                w = m.widthPixels;
+                h = m.heightPixels;
+            }
+        }
+        return (long) Math.max(0, w) * Math.max(0, h);
+    }
+
+    private static DisplayMetrics realMetrics(Display display) {
+        try {
+            DisplayMetrics metrics = new DisplayMetrics();
+            display.getRealMetrics(metrics);
+            return metrics;
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static int modeWidth(Display display) {
+        try {
+            Display.Mode mode = display.getMode();
+            if (mode != null && mode.getPhysicalWidth() > 0) {
+                return mode.getPhysicalWidth();
+            }
+        } catch (Throwable ignored) {
+        }
+        DisplayMetrics m = realMetrics(display);
+        return m == null ? 0 : m.widthPixels;
+    }
+
+    private static int modeHeight(Display display) {
+        try {
+            Display.Mode mode = display.getMode();
+            if (mode != null && mode.getPhysicalHeight() > 0) {
+                return mode.getPhysicalHeight();
+            }
+        } catch (Throwable ignored) {
+        }
+        DisplayMetrics m = realMetrics(display);
+        return m == null ? 0 : m.heightPixels;
     }
 }
