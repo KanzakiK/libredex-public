@@ -26,12 +26,47 @@ public final class ScreenKeepalive {
     private static final Map<Object, Runnable> AUTO_SCREEN_OFF =
             new ConcurrentHashMap<>();
     private static int savedScreenOffTimeout = -1;
+    private static boolean keepScreenOnRequested = false;
+
+    /**
+     * Keep the app window on only while a projection session is active, instead
+     * of unconditionally in onCreate. Scoped so that with no session the OS
+     * screen-off timeout can put the display to sleep again.
+     */
+    public static void setKeepScreenOn(boolean enabled) {
+        keepScreenOnRequested = enabled;
+        applyKeepScreenOn();
+    }
+
+    /** Re-apply the current session keep-screen-on state (e.g. after recreate). */
+    public static void applyCurrentKeepScreenOn() {
+        applyKeepScreenOn();
+    }
+
+    private static void applyKeepScreenOn() {
+        try {
+            android.app.Activity activity = State.getCurrentActivity();
+            if (activity == null) {
+                return;
+            }
+            if (keepScreenOnRequested) {
+                activity.getWindow().addFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            } else {
+                activity.getWindow().clearFlags(
+                        android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        } catch (Throwable t) {
+            State.log("[ScreenKeepalive] apply keep-screen-on failed: " + t.getMessage());
+        }
+    }
 
     private ScreenKeepalive() {
     }
 
     public static void applyPreventAutoLock(Context context) {
-        if (context == null || !ShizukuUtils.hasPermission() || Pref.getFakeScreen()) {
+        if (context == null || !ShizukuUtils.hasPermission() || Pref.getFakeScreen()
+                || !Pref.getPreventAutoLock()) {
             return;
         }
         try {

@@ -93,6 +93,12 @@ public class ExitAll {
                 SunshineService.markStopped();
             }
             ScreenSession.setActive(false);
+            if (context != null) {
+                // Catch-all: guarantee the screen-off timeout is restored to the
+                // user's setting even if an individual stop path skipped
+                // SessionLifecycle.stop (idempotent when nothing was changed).
+                ScreenKeepalive.restorePreventAutoLock(context);
+            }
         } finally {
             State.stoppingAllSessions = false;
         }

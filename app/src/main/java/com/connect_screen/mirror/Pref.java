@@ -117,7 +117,7 @@ public class Pref {
     }
 
     public static boolean getFakeScreen() {
-        return getBoolean(KEY_FAKE_SCREEN, false);
+        return getBoolean(KEY_FAKE_SCREEN, true);
     }
 
     public static void setFakeScreen(boolean enabled) {

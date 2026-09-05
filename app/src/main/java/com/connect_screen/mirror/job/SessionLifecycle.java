@@ -16,12 +16,14 @@ public final class SessionLifecycle {
         ScreenKeepalive.applyPreventAutoLock(context);
         ScreenKeepalive.scheduleAutoScreenOff(context, token);
         ScreenSession.setActive(true);
+        ScreenKeepalive.setKeepScreenOn(true);
     }
 
     public static void stop(Context context, Object token) {
         ScreenKeepalive.cancelAutoScreenOff(token);
         ScreenKeepalive.restorePreventAutoLock(context);
         ScreenSession.setActive(false);
+        ScreenKeepalive.setKeepScreenOn(false);
         CreateVirtualDisplay.restoreAspectRatio();
     }
 }

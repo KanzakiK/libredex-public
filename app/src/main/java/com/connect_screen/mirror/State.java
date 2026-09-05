@@ -116,6 +116,15 @@ public class State {
                         || TransportRegistry.isOptionalActive();
                 ScreenSession.setActive(activeSession);
             }
+            // Keep the fake-screen prop in sync with the (now-default-on) pref so
+            // a fresh install actually activates the fake-screen hook without
+            // waiting for the user to toggle the switch once.
+            try {
+                State.userService.executeShellCommand(
+                        "setprop persist.dex.lspmirror.fake_screen "
+                                + (Pref.getFakeScreen() ? 1 : 0));
+            } catch (Throwable ignored) {
+            }
             if (!ProjectViaDp.isActive() && Pref.getDpSessionStarted()) {
                 Pref.setDpSessionStarted(false);
                 try {

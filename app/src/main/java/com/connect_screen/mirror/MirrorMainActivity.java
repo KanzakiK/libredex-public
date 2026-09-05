@@ -116,7 +116,9 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         }
         super.onCreate(savedInstanceState);
         State.setCurrentActivity(this);
-        getWindow().addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        // NOTE: FLAG_KEEP_SCREEN_ON is now scoped to active projection sessions
+        // (see ScreenKeepalive.setKeepScreenOn, wired via SessionLifecycle), so
+        // idling on this screen lets the OS screen-off timeout apply again.
         registerCurrentScreenListener();
         refreshCurrentScreenCache();
 
@@ -186,6 +188,9 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
         super.onResume();
         State.setCurrentActivity(this);
         refreshCurrentScreenCache();
+        // Re-apply the session-scoped keep-screen-on (a session may already be
+        // active after a recreate, e.g. theme toggle).
+        com.connect_screen.mirror.job.ScreenKeepalive.applyCurrentKeepScreenOn();
         forceRefreshUi();
         if (InitializationGuideDialog.needsSetup(this)) {
             new android.os.Handler(android.os.Looper.getMainLooper())

@@ -1,4 +1,4 @@
-﻿# LibreDeX Development & Release Maintenance
+# LibreDeX Development & Release Maintenance
 
 ## Repository layout
 
