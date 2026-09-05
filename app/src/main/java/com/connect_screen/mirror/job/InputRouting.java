@@ -21,6 +21,7 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import com.connect_screen.mirror.R;
 
 public class InputRouting {
@@ -51,7 +52,7 @@ public class InputRouting {
     }
 
     public static void bindInputToDisplay(DisplayInfo displayInfo, InputDevice inputDevice, IInputManager inputManager, Map<String, String> inputDeviceDescriptorToPortMap) {
-        if (!inputDevice.isExternal()) {
+        if (displayInfo == null || inputDevice == null || inputManager == null || !inputDevice.isExternal()) {
             return;
         }
         State.log("Trying to bind device " + inputDevice.getId());
@@ -109,6 +110,109 @@ public class InputRouting {
             InputRouting.bindInputToDisplay(displayInfo, inputDevice, inputManager, inputDeviceDescriptorToPortMap);
         }
     }
+
+    /**
+     * Reset every external input device's routing back to the default display.
+     *
+     * The legacy (deX) output path associates external inputs to the external
+     * display's uniqueId via {@link #bindInputToDisplay}. That association is
+     * left behind after the session stops/unplugs, so a mouse stays routed to a
+     * display that no longer exists and its pointer keeps getting canceled
+     * (cursor invisible / input dead). Call this on session teardown.
+     */
+    public static void unbindAllExternalInputToDefaultDisplay() {
+        if (!shouldBind()) {
+            return;
+        }
+        IInputManager inputManager = ServiceUtils.getInputManager();
+        if (inputManager == null) {
+            return;
+        }
+        for (int deviceId : inputManager.getInputDeviceIds()) {
+            InputDevice inputDevice = inputManager.getInputDevice(deviceId);
+            if (inputDevice == null || !inputDevice.isExternal()) {
+                continue;
+            }
+            try {
+                inputManager.removeUniqueIdAssociationByDescriptor(inputDevice.getDescriptor());
+                State.log("Reset external input routing to default: " + inputDevice.getName());
+            } catch (Throwable e) {
+                State.log("Failed to reset routing for " + inputDevice.getName() + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private static final AtomicBoolean sListenerAttached = new AtomicBoolean(false);
+    private static volatile Integer sListenerDisplayId;
+
+    /**
+     * Re-bind external inputs to the given display whenever an external input
+     * device is added while the session is live. {@link #bindAllExternalInputToDisplay}
+     * only covers devices already enumerated at start; a mouse that appears on
+     * (re)plug just after that would otherwise keep the default routing.
+     */
+    public static void attachInputDeviceListener(Context context, int displayId) {
+        if (!shouldBind() || context == null) {
+            return;
+        }
+        InputManager inputManager = (InputManager) context.getSystemService(Context.INPUT_SERVICE);
+        if (inputManager == null) {
+            return;
+        }
+        detachInputDeviceListener();
+        sListenerDisplayId = displayId;
+        sListener = new InputManager.InputDeviceListener() {
+            @Override
+            public void onInputDeviceAdded(int deviceId) {
+                Integer target = sListenerDisplayId;
+                if (target == null) {
+                    return;
+                }
+                try {
+                    IInputManager manager = ServiceUtils.getInputManager();
+                    if (manager == null) {
+                        return;
+                    }
+                    InputDevice device = manager.getInputDevice(deviceId);
+                    if (device != null && device.isExternal()) {
+                        bindInputToDisplay(
+                                ServiceUtils.getDisplayManager().getDisplayInfo(target),
+                                device, manager, getInputDeviceDescriptorToPortMap());
+                    }
+                } catch (Throwable e) {
+                    State.log("External input hot-plug re-binding failed: " + e.getMessage());
+                }
+            }
+
+            @Override
+            public void onInputDeviceRemoved(int deviceId) {
+            }
+
+            @Override
+            public void onInputDeviceChanged(int deviceId) {
+            }
+        };
+        if (sListenerAttached.compareAndSet(false, true)) {
+            inputManager.registerInputDeviceListener(sListener, null);
+            State.log("Attached external input hot-plug re-binding to display: " + displayId);
+        }
+    }
+
+    public static void detachInputDeviceListener() {
+        Context context = State.getContext();
+        InputManager inputManager = context != null
+                ? (InputManager) context.getSystemService(Context.INPUT_SERVICE)
+                : null;
+        if (inputManager != null && sListener != null
+                && sListenerAttached.compareAndSet(true, false)) {
+            inputManager.unregisterInputDeviceListener(sListener);
+            State.log("Detached external input hot-plug re-binding");
+        }
+        sListener = null;
+        sListenerDisplayId = null;
+    }
+
+    private static InputManager.InputDeviceListener sListener;
 
     public static void setFocus(IInputManager inputManager, int displayId) {
         if (inputManager == null) {

@@ -59,6 +59,12 @@ public class ProjectViaDp implements Job {
         activeMirror = false;
         activeDisplayId = -1;
         clearConfiguredDisplayId();
+        // Unplug/session teardown: release the external-input hot-plug listener
+        // and reset any external input routing back to the default display, so a
+        // mouse isn't left pointed at a now-gone display (cursor keeps getting
+        // canceled / invisible until the next session).
+        InputRouting.detachInputDeviceListener();
+        InputRouting.unbindAllExternalInputToDefaultDisplay();
         if (State.externalDisplayId > 0) {
             // The live GL mirror stays on the external screen. Do not re-project
             // the phone display underneath it or force-stop the launcher here:
@@ -255,6 +261,7 @@ public class ProjectViaDp implements Job {
                 forceDisplayInfoQuery(displayId);
                 State.userService.startSecondaryLauncher(displayId, width, height);
                 InputRouting.bindAllExternalInputToDisplay(displayId);
+                InputRouting.attachInputDeviceListener(State.getContext(), displayId);
             } else {
                 clearConfiguredDisplayId();
                 forceDisplayInfoQuery(displayId);
