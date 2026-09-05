@@ -2,6 +2,8 @@ package com.connect_screen.mirror.job;
 
 import android.content.Context;
 import android.graphics.Rect;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.view.Display;
 
@@ -260,8 +262,15 @@ public class ProjectViaDp implements Job {
                 runShell("getprop " + DP_DISPLAY_PROP);
                 forceDisplayInfoQuery(displayId);
                 State.userService.startSecondaryLauncher(displayId, width, height);
-                InputRouting.bindAllExternalInputToDisplay(displayId);
-                InputRouting.attachInputDeviceListener(State.getContext(), displayId);
+                // Input binding / hotplug listener must run on a Looper thread:
+                // startInternal runs on a bare background thread (no Looper) and
+                // InputManager listener registration constructs a Handler that
+                // needs a Looper.
+                final int inputDisplayId = displayId;
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    InputRouting.bindAllExternalInputToDisplay(inputDisplayId);
+                    InputRouting.attachInputDeviceListener(State.getContext(), inputDisplayId);
+                });
             } else {
                 clearConfiguredDisplayId();
                 forceDisplayInfoQuery(displayId);

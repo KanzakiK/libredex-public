@@ -6,6 +6,8 @@ import android.app.ActivityTaskManager;
 import android.hardware.input.IInputManager;
 import android.hardware.input.InputManager;
 import android.hardware.usb.UsbDevice;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
 import android.view.DisplayAddress;
 import android.view.DisplayInfo;
@@ -155,46 +157,54 @@ public class InputRouting {
         if (!shouldBind() || context == null) {
             return;
         }
-        InputManager inputManager = (InputManager) context.getSystemService(Context.INPUT_SERVICE);
-        if (inputManager == null) {
-            return;
-        }
-        detachInputDeviceListener();
-        sListenerDisplayId = displayId;
-        sListener = new InputManager.InputDeviceListener() {
-            @Override
-            public void onInputDeviceAdded(int deviceId) {
-                Integer target = sListenerDisplayId;
-                if (target == null) {
-                    return;
-                }
-                try {
-                    IInputManager manager = ServiceUtils.getInputManager();
-                    if (manager == null) {
+        try {
+            InputManager inputManager = (InputManager) context.getSystemService(Context.INPUT_SERVICE);
+            if (inputManager == null) {
+                return;
+            }
+            detachInputDeviceListener();
+            sListenerDisplayId = displayId;
+            sListener = new InputManager.InputDeviceListener() {
+                @Override
+                public void onInputDeviceAdded(int deviceId) {
+                    Integer target = sListenerDisplayId;
+                    if (target == null) {
                         return;
                     }
-                    InputDevice device = manager.getInputDevice(deviceId);
-                    if (device != null && device.isExternal()) {
-                        bindInputToDisplay(
-                                ServiceUtils.getDisplayManager().getDisplayInfo(target),
-                                device, manager, getInputDeviceDescriptorToPortMap());
+                    try {
+                        IInputManager manager = ServiceUtils.getInputManager();
+                        if (manager == null) {
+                            return;
+                        }
+                        InputDevice device = manager.getInputDevice(deviceId);
+                        if (device != null && device.isExternal()) {
+                            bindInputToDisplay(
+                                    ServiceUtils.getDisplayManager().getDisplayInfo(target),
+                                    device, manager, getInputDeviceDescriptorToPortMap());
+                        }
+                    } catch (Throwable e) {
+                        State.log("External input hot-plug re-binding failed: " + e.getMessage());
                     }
-                } catch (Throwable e) {
-                    State.log("External input hot-plug re-binding failed: " + e.getMessage());
                 }
-            }
 
-            @Override
-            public void onInputDeviceRemoved(int deviceId) {
-            }
+                @Override
+                public void onInputDeviceRemoved(int deviceId) {
+                }
 
-            @Override
-            public void onInputDeviceChanged(int deviceId) {
+                @Override
+                public void onInputDeviceChanged(int deviceId) {
+                }
+            };
+            if (sListenerAttached.compareAndSet(false, true)) {
+                // Touch a real main-thread Handler so the registration never
+                // builds a Handler on a non-Looper thread (this can run on the
+                // background DeX startup thread).
+                inputManager.registerInputDeviceListener(sListener,
+                        new Handler(Looper.getMainLooper()));
+                State.log("Attached external input hot-plug re-binding to display: " + displayId);
             }
-        };
-        if (sListenerAttached.compareAndSet(false, true)) {
-            inputManager.registerInputDeviceListener(sListener, null);
-            State.log("Attached external input hot-plug re-binding to display: " + displayId);
+        } catch (Throwable e) {
+            State.log("Attach external input hot-plug listener failed: " + e.getMessage());
         }
     }
 

@@ -90,6 +90,8 @@
     <string name="connection_dex_external_note">External display direct DeX — coming in a later version</string>
     <string name="connection_not_connected">Not connected</string>
     <string name="connection_start_dp">Start DP output</string>
+    <string name="connection_auto_dex_title">Auto-start DeX on plug</string>
+    <string name="connection_auto_dex_desc">Automatically start DeX when the USB-C to HDMI cable is plugged in, and exit when it is unplugged</string>
     <string name="connection_external_resolution">External display resolution</string>
     <string name="connection_read_external_modes">Read external display mode list</string>
     <string name="connection_custom_mode">Custom mode</string>

@@ -122,6 +122,7 @@ public class ConnectionFragment extends Fragment {
     private LinearLayout mirrorContent;
     private LinearLayout firstUseCard;
     private SwitchCompat autoConnectSwitch;
+    private SwitchCompat autoDexSwitch;
     private Spinner clientSpinner;
     private FrameLayout subPageContainer;
     private View transportTabsLayout;
@@ -193,6 +194,7 @@ public class ConnectionFragment extends Fragment {
         firstUseCard = view.findViewById(R.id.firstUseCard);
         hideFirstUse = Pref.isFirstUseHidden();
         autoConnectSwitch = view.findViewById(R.id.autoConnectSwitch);
+        autoDexSwitch = view.findViewById(R.id.autoDexSwitch);
         clientSpinner = view.findViewById(R.id.clientSpinner);
         subPageContainer = view.findViewById(R.id.subPageContainer);
         transportTabsLayout = view.findViewById(R.id.transportTabs);
@@ -238,6 +240,10 @@ public class ConnectionFragment extends Fragment {
         autoConnectSwitch.setChecked(Pref.getAutoConnectClient());
         autoConnectSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
                 Pref.getPreferences().edit().putBoolean(Pref.KEY_AUTO_CONNECT_CLIENT, isChecked).apply());
+
+        autoDexSwitch.setChecked(Pref.getAutoDexOnHotplug());
+        autoDexSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
+                Pref.setAutoDexOnHotplug(isChecked));
         clientSpinner.setAdapter(new ArrayAdapter<>(
                 requireContext(),
                 android.R.layout.simple_spinner_dropdown_item,
@@ -478,7 +484,7 @@ public class ConnectionFragment extends Fragment {
         boolean moonlight = "moonlight".equals(currentTransport);
         moonlightContent.setVisibility(moonlight ? View.VISIBLE : View.GONE);
         // Shared cards (client / transport / logs / telemetry) only make
-        // sense for the Moonlight transport; hide them for DP / AirPlay.
+        // sense for the Moonlight transport; hide them for other transports.
         if (sharedCardsContainer != null) {
             sharedCardsContainer.setVisibility(moonlight ? View.VISIBLE : View.GONE);
         }

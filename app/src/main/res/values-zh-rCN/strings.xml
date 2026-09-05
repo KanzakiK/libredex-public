@@ -90,6 +90,8 @@
     <string name="connection_dex_external_note">外接屏直连 DeX，后续版本支持</string>
     <string name="connection_not_connected">尚未连接</string>
     <string name="connection_start_dp">开始 DP 输出</string>
+    <string name="connection_auto_dex_title">插线自动启动 DeX</string>
+    <string name="connection_auto_dex_desc">插上 USB-C 转 HDMI 线时自动开启 DeX，拔线时自动退出 DeX</string>
     <string name="connection_external_resolution">外接屏分辨率</string>
     <string name="connection_read_external_modes">读取外接屏分辨率列表</string>
     <string name="connection_custom_mode">自定义模式</string>

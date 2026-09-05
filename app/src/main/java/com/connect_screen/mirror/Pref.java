@@ -49,6 +49,7 @@ public class Pref {
     public static final String KEY_LAST_RUN_COMMIT = "last_run_commit";
     public static final String KEY_DP_SESSION_STARTED = "dp_session_started";
     public static final String KEY_DP_OUTPUT_MODE = "dp_output_mode";
+    public static final String KEY_AUTO_DEX_ON_HOTPLUG = "auto_dex_on_hotplug";
     public static final int ENCODER_CODEC_H264 = 0;
     public static final int ENCODER_CODEC_H265 = 1;
     public static boolean doNotAutoStartMoonlight;
@@ -89,6 +90,14 @@ public class Pref {
 
     public static boolean getAutoConnectClient() {
         return getBoolean(KEY_AUTO_CONNECT_CLIENT, false);
+    }
+
+    public static boolean getAutoDexOnHotplug() {
+        return getBoolean(KEY_AUTO_DEX_ON_HOTPLUG, false);
+    }
+
+    public static void setAutoDexOnHotplug(boolean enabled) {
+        getPreferences().edit().putBoolean(KEY_AUTO_DEX_ON_HOTPLUG, enabled).apply();
     }
 
     public static String getSelectedAppPackage() {

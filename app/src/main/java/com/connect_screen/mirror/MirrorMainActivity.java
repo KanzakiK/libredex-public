@@ -201,6 +201,14 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
             // 主线程 Shizuku 授权兜底（UserService 由 Shizuku 托管，需授权后才能绑定）。
             State.startNewJob(new AcquireShizuku());
         }
+        // Wired-DP auto-switch: only while the app is foreground.
+        DpAutoSwitch.attach(this);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        DpAutoSwitch.detach();
     }
 
     @Override
