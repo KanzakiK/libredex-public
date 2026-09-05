@@ -1,11 +1,11 @@
-# LibreDeX Development & Release Maintenance
+﻿# LibreDeX Development & Release Maintenance
 
 ## Repository layout
 
 - Public main repository: `KanzakiK/libredex-public`
 - Local workspace: `D:\dex_work`, remote `origin` points to the public repo
 - Private optional transport overlay: kept outside the public tree; see the
-  private maintenance checklist under `docs\repo-maintenance.md` for the exact
+  private maintenance checklist under `docs\release\repo-maintenance.md` for the exact
   path and provider class
 - Public mirror worktree: `D:\dex_work\public`
 - Backups: `D:\dex_work\.backup`
@@ -32,7 +32,7 @@ snapshot history plus appended release commits.
 ## Public release packaging
 
 1. Confirm the version was bumped.
-2. Load the local signing environment (see `docs\repo-maintenance.md`).
+2. Load the local signing environment (see `docs\release\repo-maintenance.md`).
 3. Build the signed release:
 
 ```powershell
@@ -47,7 +47,7 @@ snapshot history plus appended release commits.
 
 Exact module path and provider class are intentionally kept in the private
 maintenance checklist. In this workspace, read
-`docs\repo-maintenance.md` before building the full variant.
+`docs\release\repo-maintenance.md` before building the full variant.
 
 ## i18n maintenance rules
 
@@ -77,5 +77,5 @@ maintenance checklist. In this workspace, read
 ## Rollback
 
 Local backups and the archived old git metadata are described in
-`docs\repo-maintenance.md`. Always verify bundles with
+`docs\release\repo-maintenance.md`. Always verify bundles with
 `git bundle verify` before restoring.

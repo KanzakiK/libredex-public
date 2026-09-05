@@ -31,6 +31,7 @@ DEXANYWHERE_*.txt
 /reference/
 /prototype/
 /scripts/export-public.ps1
+/scripts/build-*.ps1
 /tools/
 
 # Build and release artifacts
@@ -101,5 +102,6 @@ archive/DexHook/_original_check/
 # Local-only working dirs (agent memory, runtime logs, build output)
 .workbuddy/
 libredex_logs/
+logs/
 xposed-stubs/bin/
 __pycache__/
