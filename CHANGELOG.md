@@ -1,5 +1,113 @@
 # LibreDeX 更新记录 / Changelog
 
+## 0.2.13（2026-09-06）
+
+### English
+
+**New Features**
+
+- **Self-drawn virtual touchpad upgrade**:
+  - Crosshair frame: draws the touchpad's own screen (inner / cover) as a frame with an accent center crosshair, and re-renders automatically on screen rotation.
+  - Two-finger vertical swipe now injects mouse-wheel scroll events (ACTION_SCROLL) for smooth page scrolling.
+  - Three buttons stacked at the top-right: close the touchpad / send BACK to the external display / force-stop the foreground app on the external display.
+  - New cursor: classic pointer icon (black outline + white core), rendered at 60% size with the injection hotspot aligned to the arrow tip.
+- **Touchpad target display covers every output path**: wired DP/HDMI, Moonlight (fake DeX virtual display), and AirPlay (optional transport). Under Moonlight/AirPlay the cursor no longer lands on the phone's own screen.
+- **Page output mode syncs on hot-plug**: if the cable is plugged while the connection page is open, the page switches to the DP layout immediately instead of staying on a stale Moonlight layout.
+
+**Bug Fixes**
+
+- Two-finger scroll no longer makes the cursor jump when the first finger lifts before the second (or when touch tracking jitters).
+- The custom external-screen resolution / refresh-rate fields are disabled while DeX output is active (DeX steals the phone's input focus); they stay editable in mirror or idle states.
+
+### 简体中文
+
+**新功能**
+
+- **自绘虚拟触控板升级**：
+  - 十字框线：跟随触控板所在屏（内屏/盖屏）绘制外框与中心强调色十字准星，并随屏幕旋转自动重绘。
+  - 双指上下滑动改为注入鼠标滚轮事件（ACTION_SCROLL），页面滚动更平滑。
+  - 右上角竖排三个按钮：关闭触控板 / 向外屏注入返回键 / 强杀外屏当前前台应用。
+  - 光标更换为经典指针图标（黑描边白芯），以 60% 尺寸渲染，注入热点精确对准箭头尖。
+- **触控板目标屏覆盖全部输出链路**：有线 DP/HDMI、Moonlight（fake DeX 虚拟屏）、AirPlay（可选传输）——Moonlight/AirPlay 下光标不再落回手机本机屏。
+- **插线时页面输出模式即时同步**：正停留在连接页时插线自动启动 DeX，页面立即切到 DP 布局，不再停留在旧的 Moonlight 布局。
+
+**问题修复**
+
+- 修复双指滚动时第一根手指先抬起（或触控抖动）导致光标跳跃的问题。
+- DeX 输出激活期间禁用外接屏自定义分辨率/刷新率输入框（DeX 会抢占手机输入焦点）；镜像或无输出时保持可编辑。
+
+## 0.2.12（2026-09-06）
+
+### English
+
+**Bug Fixes**
+
+- **Shizuku/UserService self-healing when offline**: the server is now health-checked via `pingBinder` instead of a service-name lookup; when unhealthy, Shizuku is restarted as root and the UserService re-bound automatically, so plug-in auto-launch of DeX no longer fails because the service dropped out.
+
+### 简体中文
+
+**问题修复**
+
+- **Shizuku/UserService 掉线自愈**：改用 `pingBinder` 检测 Shizuku server 是否真正在线（不再依赖 `cmd shizuku status` 等服务名探测）；检测到异常时自动以 root 拉起 Shizuku 并重绑 UserService（覆盖 server 与 UserService 完整重绑），插线自动启动 DeX 不再因服务掉线而失败。
+
+## 0.2.11（2026-09-06）
+
+### English
+
+**New Features**
+
+- **Wired DP auto-switch**: plugging the cable auto-starts DeX and unplugging auto-exits it, configurable from the connection page.
+
+### 简体中文
+
+**新功能**
+
+- **有线 DP 自动开关**：插线自动启动 DeX、拔线自动退出，可在连接页配置。
+
+## 0.2.10（2026-09-06）
+
+### English
+
+**Bug Fixes**
+
+- Fix self-drawn touchpad clicks missing after a DeX session restart: the target display's input focus is re-asserted periodically (at most once per second per gesture) instead of being set once, so the first gesture after a session rebuild works again.
+
+### 简体中文
+
+**问题修复**
+
+- 修复自绘触控板在 DeX 会话重启后点击落空的问题：目标屏输入焦点改为按周期重设（每个手势最多 1 秒一次），不再只设置一次，会话重建后首个手势即可正常点击。
+
+## 0.2.9（2026-09-06）
+
+### English
+
+**New Features**
+
+- **Self-drawn virtual touchpad** (replaces Samsung's SystemUI touchpad): touch gestures are translated into mouse events injected into the active DeX display with a visible cursor overlay, adapting to both the inner and cover screens.
+
+### 简体中文
+
+**新功能**
+
+- **自绘虚拟触控板**（替代三星系统触控板）：触控板手势转换为鼠标事件注入到活动 DeX 屏，并叠加可见光标层；适配内屏与盖屏两种形态。
+
+## 0.2.8（2026-09-05）
+
+### English
+
+**Bug Fixes**
+
+- **Input routing robustness on disconnect/reconnect**: when a session ends, external input devices are un-routed back to the default display, and hot-plugged devices are re-bound to the session display; a mouse is no longer left pointed at a gone display (invisible / dead cursor).
+- **Screen-off / fake screen-off defaults and recovery**: keep-screen-on is re-applied after session and UserService changes, and the fake-screen state recovers more reliably.
+
+### 简体中文
+
+**问题修复**
+
+- **断开/重连输入路由健壮性**：会话结束时清理外设与目标屏的关联并复位到默认屏，热插拔设备重新绑定到会话屏；鼠标不再停留在已消失的屏上（光标不可见/输入失效）。
+- **熄屏/假熄屏默认与恢复健壮性**：会话或 UserService 变化后重新应用保持亮屏，假熄屏状态恢复更可靠。
+
 ## 0.2.7（2026-08-28）
 
 ### English
