@@ -575,6 +575,37 @@ Java_dev_lizardbyte_sunshine_android_SunshineHost_nativeClearNativeAudioSource(J
   arctrl::sandbox_audio::set_sunshine_sandbox_source_enabled(env, false);
 }
 
+// LibreDeX 扩展（m7）：编码参数配置通道（实现在 android_video.cpp）
+extern void set_libredex_encoder_settings(
+    int bitrate_percent, int bitrate_mode, int complexity,
+    int i_frame_interval, int max_fps,
+    bool low_latency, bool disable_b_frames, bool realtime_priority);
+
+extern "C" JNIEXPORT void JNICALL
+Java_dev_lizardbyte_sunshine_android_SunshineHost_nativeSetLibreDeXEncoderSettings(
+  JNIEnv *,
+  jclass,
+  jint bitrate_percent,
+  jint bitrate_mode,
+  jint complexity,
+  jint i_frame_interval,
+  jint max_fps,
+  jboolean low_latency,
+  jboolean disable_b_frames,
+  jboolean realtime_priority
+) {
+  set_libredex_encoder_settings(
+    static_cast<int>(bitrate_percent),
+    static_cast<int>(bitrate_mode),
+    static_cast<int>(complexity),
+    static_cast<int>(i_frame_interval),
+    static_cast<int>(max_fps),
+    low_latency == JNI_TRUE,
+    disable_b_frames == JNI_TRUE,
+    realtime_priority == JNI_TRUE
+  );
+}
+
 extern "C" JNIEXPORT jlongArray JNICALL
 Java_dev_lizardbyte_sunshine_android_SunshineHost_nativeGetStats(JNIEnv *env, jclass) {
   auto snapshot = sunshine_android::stats_snapshot();

@@ -99,6 +99,8 @@ public final class SunshineHostAdapter {
                 newHost.start();
                 host = newHost;
                 videoSource = newVideoSource;
+                applyEncoderSettings(newHost);
+                attachPlaybackAudioRecord(context);
                 State.log("[SunshineHostAdapter] started");
             } catch (Throwable t) {
                 State.log("[SunshineHostAdapter] start failed: " + t.getMessage());
@@ -134,6 +136,25 @@ public final class SunshineHostAdapter {
             if (currentVideoSource != null) {
                 currentVideoSource.close();
             }
+        }
+    }
+
+    /**
+     * LibreDeX 编码设置界面 → 官方编码器（m7）：从 Pref 读参数注入。
+     */
+    private void applyEncoderSettings(SunshineHost sunshineHost) {
+        try {
+            sunshineHost.setLibreDeXEncoderSettings(
+                    Pref.getEncoderBitratePercent(),
+                    Pref.getEncoderBitrateMode(),
+                    Pref.getEncoderComplexity(),
+                    Pref.getEncoderIFrameInterval(),
+                    Pref.getEncoderMaxFps(),
+                    Pref.getEncoderLowLatency(),
+                    Pref.getEncoderDisableBFrames(),
+                    Pref.getEncoderRealtimePriority());
+        } catch (Throwable t) {
+            State.log("[SunshineHostAdapter] applyEncoderSettings failed: " + t.getMessage());
         }
     }
 

@@ -122,6 +122,20 @@ public final class SunshineHost implements AutoCloseable {
         nativeClearNativeAudioSource();
     }
 
+    /**
+     * LibreDeX 扩展（m7）：编码参数配置通道。
+     * 官方 Config 无编码参数入口，此方法让 LibreDeX 编码设置界面驱动官方编码器。
+     */
+    public void setLibreDeXEncoderSettings(
+            int bitratePercent, int bitrateMode, int complexity,
+            int iFrameInterval, int maxFps,
+            boolean lowLatency, boolean disableBFrames, boolean realtimePriority) {
+        nativeSetLibreDeXEncoderSettings(
+                bitratePercent, bitrateMode, complexity,
+                iFrameInterval, maxFps,
+                lowLatency, disableBFrames, realtimePriority);
+    }
+
     public SunshineSessionState getSessionState() {
         return state;
     }
@@ -632,6 +646,10 @@ public final class SunshineHost implements AutoCloseable {
     private static native void nativeSetSandboxAudioSourceEnabled(boolean enabled);
     private static native void nativeSetPlaybackAudioRecord(AudioRecord audioRecord, int sampleRate, int channelCount);
     private static native void nativeClearNativeAudioSource();
+    private static native void nativeSetLibreDeXEncoderSettings(
+            int bitratePercent, int bitrateMode, int complexity,
+            int iFrameInterval, int maxFps,
+            boolean lowLatency, boolean disableBFrames, boolean realtimePriority);
     private static native void nativeRelease();
     private static native long[] nativeGetStats();
 }

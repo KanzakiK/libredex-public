@@ -20,6 +20,35 @@
 
 using namespace std::literals;
 
+// LibreDeX 扩展（m7）：官方编码参数配置通道。
+// 官方 SunshineHostConfig 无编码参数入口（Android 编码参数由客户端协商 + 此处默认），
+// 此全局设置让 Java 侧 setLibreDeXEncoderSettings 驱动 AMediaCodec 编码参数。
+struct libredex_encoder_settings_t {
+  int bitrate_percent = 100;
+  int bitrate_mode = 2;  // MediaCodec BITRATE_MODE_CBR
+  int complexity = 10;
+  int i_frame_interval = 1;
+  int max_fps = 0;  // 0 = 跟随客户端
+  bool low_latency = true;
+  bool disable_b_frames = true;
+  bool realtime_priority = true;
+};
+libredex_encoder_settings_t g_libredex_encoder;
+
+void set_libredex_encoder_settings(
+    int bitrate_percent, int bitrate_mode, int complexity,
+    int i_frame_interval, int max_fps,
+    bool low_latency, bool disable_b_frames, bool realtime_priority) {
+  g_libredex_encoder.bitrate_percent = bitrate_percent;
+  g_libredex_encoder.bitrate_mode = bitrate_mode;
+  g_libredex_encoder.complexity = complexity;
+  g_libredex_encoder.i_frame_interval = std::max(1, i_frame_interval);
+  g_libredex_encoder.max_fps = max_fps;
+  g_libredex_encoder.low_latency = low_latency;
+  g_libredex_encoder.disable_b_frames = disable_b_frames;
+  g_libredex_encoder.realtime_priority = realtime_priority;
+}
+
 namespace {
   constexpr int COLOR_FormatSurface = 0x7F000789;
   constexpr int AVCProfileHigh = 0x08;
@@ -58,20 +87,29 @@ namespace {
 
   void set_common_encoder_format(AMediaFormat *format, const video::config_t &config, int width, int height, int frame_rate, int bitrate) {
     const int encode_frame_rate = frame_rate;
-
+    // LibreDeX 扩展（m7）：应用编码设置（码率百分比 / 码率模式 / 帧率上限 / I 帧间隔 / 低延迟 / B 帧 / 复杂度）
+    int effective_bitrate = bitrate;
+    if (g_libredex_encoder.bitrate_percent != 100) {
+      effective_bitrate = static_cast<int>((static_cast<int64_t>(bitrate) * g_libredex_encoder.bitrate_percent) / 100);
+    }
+    int eff_frame_rate = encode_frame_rate;
+    if (g_libredex_encoder.max_fps > 0 && g_libredex_encoder.max_fps < eff_frame_rate) {
+      eff_frame_rate = g_libredex_encoder.max_fps;
+    }
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_WIDTH, width);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_HEIGHT, height);
-    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, bitrate);
-    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_FRAME_RATE, encode_frame_rate);
-    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, 1);
+    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_BIT_RATE, effective_bitrate);
+    AMediaFormat_setInt32(format, "bitrate-mode", g_libredex_encoder.bitrate_mode);
+    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_FRAME_RATE, eff_frame_rate);
+    AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_I_FRAME_INTERVAL, g_libredex_encoder.i_frame_interval);
     AMediaFormat_setInt32(format, AMEDIAFORMAT_KEY_COLOR_FORMAT, COLOR_FormatSurface);
 
-    AMediaFormat_setInt32(format, "operating-rate", encode_frame_rate);
-    AMediaFormat_setInt32(format, "capture-rate", encode_frame_rate);
-    AMediaFormat_setFloat(format, "max-fps-to-encoder", static_cast<float>(encode_frame_rate));
-    AMediaFormat_setInt32(format, "latency", 0);
-    AMediaFormat_setInt32(format, "complexity", 10);
-    AMediaFormat_setInt32(format, "max-bframes", 0);
+    AMediaFormat_setInt32(format, "operating-rate", eff_frame_rate);
+    AMediaFormat_setInt32(format, "capture-rate", eff_frame_rate);
+    AMediaFormat_setFloat(format, "max-fps-to-encoder", static_cast<float>(eff_frame_rate));
+    AMediaFormat_setInt32(format, "latency", g_libredex_encoder.low_latency ? 0 : 1);
+    AMediaFormat_setInt32(format, "complexity", g_libredex_encoder.complexity);
+    AMediaFormat_setInt32(format, "max-bframes", g_libredex_encoder.disable_b_frames ? 0 : 1);
 
     AMediaFormat_setInt32(format, "color-standard", color_standard_for_config(config));
     AMediaFormat_setInt32(format, "color-range", (config.encoderCscMode & 0x1) ? ANDROID_COLOR_RANGE_FULL : ANDROID_COLOR_RANGE_LIMITED);
