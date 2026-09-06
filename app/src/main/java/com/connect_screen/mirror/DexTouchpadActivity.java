@@ -293,7 +293,8 @@ public final class DexTouchpadActivity extends Activity {
         if (SunshineServer.isMoonlightSessionActive() && SunshineServer.activeDexDisplayId >= 0) {
             return SunshineServer.activeDexDisplayId;
         }
-        // Optional transport (e.g. AirPlay) exposes the display it streams.
+        // Optional transport (private source overlay) exposes the display it
+        // streams.
         if (TransportRegistry.isOptionalActive() && TransportRegistry.activeDisplayId() >= 0) {
             return TransportRegistry.activeDisplayId();
         }
