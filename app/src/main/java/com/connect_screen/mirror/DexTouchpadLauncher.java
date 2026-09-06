@@ -1,7 +1,6 @@
 package com.connect_screen.mirror;
 
 import android.app.ActivityOptions;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Point;
@@ -11,8 +10,6 @@ import android.view.Display;
 import android.widget.Toast;
 
 public final class DexTouchpadLauncher {
-    private static final String COMPONENT = "com.android.systemui/.dextouchpad.activity.TouchpadActivity";
-
     private DexTouchpadLauncher() {
     }
 
@@ -20,9 +17,11 @@ public final class DexTouchpadLauncher {
         int displayId = pickCoverDisplay(context);
         String displayArg = displayId >= 0 ? " --display " + displayId : "";
         State.log("DeX touchpad launch displayId=" + displayId);
+        // The activity host is the installed applicationId (com.libredex), but the
+        // class package is com.connect_screen.mirror. Build the intent from the class
+        // so the host is resolved from the app, not hard-coded.
         try {
-            Intent intent = new Intent();
-            intent.setComponent(ComponentName.unflattenFromString(COMPONENT));
+            Intent intent = new Intent(context, DexTouchpadActivity.class);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && displayId >= 0) {
                 ActivityOptions options = ActivityOptions.makeBasic();
@@ -35,16 +34,17 @@ public final class DexTouchpadLauncher {
         } catch (Exception directFailure) {
             State.log("DeX touchpad direct launch failed: " + directFailure.getMessage());
         }
+        String component = context.getPackageName() + "/" + DexTouchpadActivity.class.getName();
         if (State.isUserServiceAlive()) {
             try {
-                State.userService.executeCommand("am start" + displayArg + " -n " + COMPONENT);
+                State.userService.executeCommand("am start" + displayArg + " -n " + component);
                 return;
             } catch (Exception shellFailure) {
                 State.log("DeX touchpad shell launch failed: " + shellFailure.getMessage());
             }
             try {
                 State.userService.executeCommand(
-                        "su -c 'am start" + displayArg + " -n " + COMPONENT + "'");
+                        "su -c 'am start" + displayArg + " -n " + component + "'");
                 return;
             } catch (Exception rootFailure) {
                 State.log("DeX touchpad root launch failed: " + rootFailure.getMessage());

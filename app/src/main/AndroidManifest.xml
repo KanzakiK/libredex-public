@@ -78,6 +78,15 @@
             android:exported="false"
             android:theme="@style/AppTheme" />
 
+        <activity
+            android:name=".DexTouchpadActivity"
+            android:launchMode="singleTask"
+            android:exported="true"
+            android:resizeableActivity="true"
+            android:noHistory="false"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|density|uiMode|keyboardHidden|navigation"
+            android:theme="@style/AppTheme" />
+
         <service
             android:name=".BlackScreenOverlayService"
             android:enabled="true"
