@@ -135,13 +135,19 @@ public class AcquireShizuku implements Job {
                 }
                 // 直接 su 探活，不经过 Shizuku/root 重启。
                 String su = findSu();
-                if (su != null && probeRoot(su)) {
-                    State.log("Auto root acquisition: root available (su=" + su + "), ensuring UserService is bound");
-                    // 仅当 Shizuku 已授权且未绑定时才绑定；绝不主动改 Shizuku 状态。
-                    State.ensureUserServiceBound();
-                } else {
+                if (su == null || !probeRoot(su)) {
                     State.log("Auto root acquisition: no root/su, falling back to main-thread Shizuku grant flow");
+                    return;
                 }
+                // 根自愈：server 掉线时 hasPermission()==false（checkSelfPermission 依赖
+                // 活的 server binder），这里不再当“没授权”直接放弃，而是用 root 拉起。
+                if (!ShizukuUtils.isShizukuServerHealthy()) {
+                    State.log("Auto root acquisition: Shizuku server unhealthy, auto-restarting as root");
+                    fixRootShizuku();
+                    return;
+                }
+                State.log("Auto root acquisition: root available (su=" + su + "), ensuring UserService is bound");
+                State.ensureUserServiceBound();
             } catch (Throwable t) {
                 State.log("Auto root acquisition failed: " + t.getMessage());
             }

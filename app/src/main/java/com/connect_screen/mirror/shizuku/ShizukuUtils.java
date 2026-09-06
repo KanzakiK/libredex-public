@@ -20,4 +20,13 @@ public class ShizukuUtils {
             return false;
         }
     }
+
+    /** server binder 真正可 ping（进程存在 ≠ 可用，授权持久化 ≠ 在线）。 */
+    public static boolean isShizukuServerHealthy() {
+        try {
+            return Shizuku.pingBinder();
+        } catch (Throwable t) {
+            return false;
+        }
+    }
 }

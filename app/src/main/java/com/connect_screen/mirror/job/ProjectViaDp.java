@@ -169,8 +169,13 @@ public class ProjectViaDp implements Job {
             return;
         }
         if (!ShizukuUtils.hasPermission()) {
-            State.showErrorStatus(State.getContext().getString(R.string.dp_need_shizuku));
-            return;
+            // server 掉线时 checkSelfPermission()==false（依赖活的 server binder），
+            // 先尝试 root 自愈（fixRootShizuku 不检查权限、直接拉起 server 并重绑），
+            // 拉起后仍无权限才报错。
+            if (!AcquireShizuku.fixRootShizuku() && !ShizukuUtils.hasPermission()) {
+                State.showErrorStatus(State.getContext().getString(R.string.dp_need_shizuku));
+                return;
+            }
         }
         ExternalDisplayMonitor.refreshState(context);
         final int displayId = State.externalDisplayId;
