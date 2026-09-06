@@ -20,6 +20,7 @@ public class Pref {
     public static final String KEY_AUTO_CONNECT_CLIENT = "auto_connect_client";
     public static final String KEY_USE_BLACK_IMAGE = "use_black_image";
     public static final String KEY_PREVENT_AUTO_LOCK = "prevent_auto_lock";
+    public static final String KEY_USE_OFFICIAL_SUNSHINE_ENGINE = "use_official_sunshine_engine";
     public static final String KEY_FAKE_SCREEN = "fake_screen";
     public static final String KEY_PREVENT_SLEEP = "prevent_sleep";
     public static final String KEY_USE_ANDROID_CURSOR_OVERLAY = "use_android_cursor_overlay";
@@ -114,6 +115,14 @@ public class Pref {
 
     public static boolean getPreventAutoLock() {
         return getBoolean(KEY_PREVENT_AUTO_LOCK, false);
+    }
+
+    public static boolean getUseOfficialSunshineEngine() {
+        return getBoolean(KEY_USE_OFFICIAL_SUNSHINE_ENGINE, false);
+    }
+
+    public static void setUseOfficialSunshineEngine(boolean enabled) {
+        getPreferences().edit().putBoolean(KEY_USE_OFFICIAL_SUNSHINE_ENGINE, enabled).apply();
     }
 
     public static boolean getFakeScreen() {

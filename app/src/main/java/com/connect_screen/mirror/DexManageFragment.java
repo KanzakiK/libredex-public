@@ -67,6 +67,7 @@ public class DexManageFragment extends Fragment {
     private SwitchCompat dexAutoScreenOffSwitch;
     private SwitchCompat dexBlackImageSwitch;
     private SwitchCompat dexPreventLockSwitch;
+    private SwitchCompat dexUseOfficialEngineSwitch;
     private SwitchCompat dexFakeScreenSwitch;
     private SwitchCompat dexPreventSleepSwitch;
     private ImageView wallpaperPreview;
@@ -97,6 +98,7 @@ public class DexManageFragment extends Fragment {
         dexAutoScreenOffSwitch = view.findViewById(R.id.dexAutoScreenOffSwitch);
         dexBlackImageSwitch = view.findViewById(R.id.dexBlackImageSwitch);
         dexPreventLockSwitch = view.findViewById(R.id.dexPreventLockSwitch);
+        dexUseOfficialEngineSwitch = view.findViewById(R.id.dexUseOfficialEngineSwitch);
         dexFakeScreenSwitch = view.findViewById(R.id.dexFakeScreenSwitch);
         dexPreventSleepSwitch = view.findViewById(R.id.dexPreventSleepSwitch);
         wallpaperPreview = view.findViewById(R.id.wallpaperPreview);
@@ -128,6 +130,9 @@ public class DexManageFragment extends Fragment {
         dexPreventLockSwitch.setChecked(Pref.getPreventAutoLock());
         dexPreventLockSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
                 Pref.getPreferences().edit().putBoolean(Pref.KEY_PREVENT_AUTO_LOCK, isChecked).apply());
+        dexUseOfficialEngineSwitch.setChecked(Pref.getUseOfficialSunshineEngine());
+        dexUseOfficialEngineSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
+                Pref.setUseOfficialSunshineEngine(isChecked));
         dexFakeScreenSwitch.setChecked(Pref.getFakeScreen());
         dexFakeScreenSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             Pref.setFakeScreen(isChecked);

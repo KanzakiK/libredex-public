@@ -25,6 +25,7 @@ import android.util.Log;
 import androidx.core.app.NotificationCompat;
 
 import com.connect_screen.mirror.BuildConfig;
+import com.connect_screen.mirror.job.SunshineHostAdapter;
 import com.connect_screen.mirror.job.SunshineServer;
 import com.connect_screen.mirror.shizuku.PermissionManager;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
@@ -88,6 +89,7 @@ public class SunshineService extends Service {
     private static final String CERT_FILE_NAME = "cacert.pem";
     private static final String KEY_FILE_NAME = "cakey.pem";
     private Thread nativeThread;
+    private SunshineHostAdapter officialHostAdapter;
     private int instanceGeneration;
 
     private int currentTimeout;
@@ -263,10 +265,30 @@ public class SunshineService extends Service {
                             return;
                         }
                         setLifecycleState(LifecycleState.RUNNING);
-                        SunshineServer.start();
+                        if (Pref.getUseOfficialSunshineEngine()) {
+                            officialHostAdapter = new SunshineHostAdapter();
+                            officialHostAdapter.start(SunshineService.this);
+                            // 官方 SunshineHost.start() 不阻塞，此处保持线程存活直到停止请求
+                            while (!stopRequested && generation == serviceGeneration.get()) {
+                                try {
+                                    Thread.sleep(500);
+                                } catch (InterruptedException e) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            SunshineServer.start();
+                        }
                     } catch (Throwable e) {
                         Log.e("SunshineService", "thread quit", e);
                     } finally {
+                        if (officialHostAdapter != null) {
+                            try {
+                                officialHostAdapter.stop();
+                            } catch (Throwable ignored) {
+                            }
+                            officialHostAdapter = null;
+                        }
                         for (JmDNS server : dnsServers) {
                             try {
                                 server.close();
