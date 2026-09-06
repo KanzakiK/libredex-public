@@ -1,6 +1,14 @@
 package com.connect_screen.mirror.job;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
+import android.media.AudioFormat;
+import android.media.AudioPlaybackCaptureConfiguration;
+import android.media.AudioRecord;
+import android.media.projection.MediaProjection;
+import android.os.Build;
 
 import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
@@ -24,6 +32,7 @@ public final class SunshineHostAdapter {
     private final Object lock = new Object();
     private SunshineHost host;
     private DexMirrorVideoSource videoSource;
+    private AudioRecord playbackAudioRecord;
 
     public void start(Context context) {
         if (context == null) {
@@ -104,18 +113,74 @@ public final class SunshineHostAdapter {
             host = null;
             DexMirrorVideoSource currentVideoSource = videoSource;
             videoSource = null;
+            AudioRecord currentAudioRecord = playbackAudioRecord;
+            playbackAudioRecord = null;
             if (current != null) {
                 try {
                     current.stop();
+                    current.clearNativeAudioSource();
                     current.close();
                 } catch (Throwable t) {
                     State.log("[SunshineHostAdapter] stop failed: " + t.getMessage());
                 }
                 State.log("[SunshineHostAdapter] stopped");
             }
+            if (currentAudioRecord != null) {
+                try {
+                    currentAudioRecord.release();
+                } catch (Throwable ignored) {
+                }
+            }
             if (currentVideoSource != null) {
                 currentVideoSource.close();
             }
+        }
+    }
+
+    /**
+     * 官方 native 直接读取 AudioRecord（m6）：替代私有路径的跨 Binder readAudio。
+     * 使用 MediaProjection AudioPlaybackCapture（普通权限可建，免 UserService 特权）。
+     */
+    private void attachPlaybackAudioRecord(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return;
+        }
+        if (context.checkSelfPermission(Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            State.log("[SunshineHostAdapter] RECORD_AUDIO not granted, skip audio");
+            return;
+        }
+        MediaProjection mediaProjection = State.getMediaProjection();
+        if (mediaProjection == null) {
+            State.log("[SunshineHostAdapter] no MediaProjection, skip audio");
+            return;
+        }
+        try {
+            int sampleRate = 48000;
+            int channelCount = 2;
+            int channelConfig = AudioFormat.CHANNEL_IN_STEREO;
+            int audioEncoding = AudioFormat.ENCODING_PCM_16BIT;
+            int bufferSize = AudioRecord.getMinBufferSize(sampleRate, channelConfig, audioEncoding) * 2;
+            AudioFormat audioFormat = new AudioFormat.Builder()
+                    .setEncoding(audioEncoding)
+                    .setSampleRate(sampleRate)
+                    .setChannelMask(channelConfig)
+                    .build();
+            AudioPlaybackCaptureConfiguration config = new AudioPlaybackCaptureConfiguration
+                    .Builder(mediaProjection)
+                    .excludeUsage(AudioAttributes.USAGE_ALARM)
+                    .build();
+            AudioRecord record = new AudioRecord.Builder()
+                    .setAudioPlaybackCaptureConfig(config)
+                    .setAudioFormat(audioFormat)
+                    .setBufferSizeInBytes(bufferSize)
+                    .build();
+            record.startRecording();
+            host.setPlaybackAudioRecord(record, sampleRate, channelCount);
+            playbackAudioRecord = record;
+            State.log("[SunshineHostAdapter] official playback audio attached " + sampleRate + "Hz/" + channelCount + "ch");
+        } catch (Throwable t) {
+            State.log("[SunshineHostAdapter] audio attach failed: " + t.getMessage());
         }
     }
 
