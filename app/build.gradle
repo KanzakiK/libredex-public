@@ -82,6 +82,12 @@ android {
             ndkVersion "28.0.13004108"
            abiFilters "arm64-v8a"
         }
+
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_STL=c++_shared"
+            }
+        }
     }
 
     signingConfigs {
@@ -117,6 +123,14 @@ android {
     buildFeatures {
         aidl true
         buildConfig true
+        prefab true
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('src/main/cpp/CMakeLists.txt')
+            version "3.22.1"
+        }
     }
 
     compileOptions {
@@ -167,4 +181,8 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.6.2"
     implementation 'org.bouncycastle:bcpkix-jdk15on:1.68'
     compileOnly project(':xposed-stubs')
+
+    // 官方 sunshine-android SDK 构建依赖（prefab，编译 libsunshine_android.so）
+    implementation "com.fpliu.ndk.pkg.prefab.android.21:openssl:1.1.1n"
+    implementation "com.fpliu.ndk.pkg.prefab.android.21:opus:1.3.1"
 }
