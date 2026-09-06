@@ -9,7 +9,7 @@
 - **Self-drawn virtual touchpad upgrade**:
   - Crosshair frame: draws the touchpad's own screen (inner / cover) as a frame with an accent center crosshair, and re-renders automatically on screen rotation.
   - Two-finger vertical swipe now injects mouse-wheel scroll events for smooth page scrolling.
-  - Three buttons stacked at the top-right: close the touchpad / send BACK to the external display / force-stop the foreground app on the external display.
+  - Three buttons stacked at the top-right: close the touchpad / send BACK to the DeX display / force-stop the foreground app on the DeX display.
   - New cursor: classic pointer icon (black outline + white core).
 - **Touchpad target display covers every output path**: wired DP/HDMI, Moonlight (fake DeX virtual display), and optional transports.
 - **Page output mode syncs on hot-plug**: if the cable is plugged while the connection page is open, the page switches to the DP layout immediately instead of staying on a stale Moonlight layout.
@@ -26,7 +26,7 @@
 - **自绘虚拟触控板升级**：
   - 十字框线：跟随触控板所在屏（内屏/盖屏）绘制外框与中心强调色十字准星，并随屏幕旋转自动重绘。
   - 双指上下滑动改为注入鼠标滚轮事件，页面滚动更平滑。
-  - 右上角竖排三个按钮：关闭触控板 / 向外屏注入返回键 / 强杀外屏当前前台应用。
+  - 右上角竖排三个按钮：关闭触控板 / 向 DeX 屏幕注入返回键 / 强杀 DeX 屏幕当前前台应用。
   - 光标更换为经典指针图标（黑描边白芯）。
 - **触控板目标屏覆盖全部输出链路**：有线 DP/HDMI、Moonlight（fake DeX 虚拟屏）、可选传输。
 - **插线时页面输出模式即时同步**：正停留在连接页时插线自动启动 DeX，页面立即切到 DP 布局，不再停留在旧的 Moonlight 布局。
