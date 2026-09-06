@@ -23,6 +23,7 @@ public final class SunshineHostAdapter {
 
     private final Object lock = new Object();
     private SunshineHost host;
+    private DexMirrorVideoSource videoSource;
 
     public void start(Context context) {
         if (context == null) {
@@ -41,6 +42,8 @@ public final class SunshineHostAdapter {
                         .setEnableAudio(true)
                         .build();
                 SunshineHost newHost = new SunshineHost(config);
+                DexMirrorVideoSource newVideoSource = new DexMirrorVideoSource();
+                newHost.setVideoSource(newVideoSource);
                 newHost.setListener(new SunshineHostListener() {
                     @Override
                     public void onPinRequested() {
@@ -85,6 +88,7 @@ public final class SunshineHostAdapter {
                 });
                 newHost.start();
                 host = newHost;
+                videoSource = newVideoSource;
                 State.log("[SunshineHostAdapter] started");
             } catch (Throwable t) {
                 State.log("[SunshineHostAdapter] start failed: " + t.getMessage());
@@ -97,6 +101,8 @@ public final class SunshineHostAdapter {
         synchronized (lock) {
             SunshineHost current = host;
             host = null;
+            DexMirrorVideoSource currentVideoSource = videoSource;
+            videoSource = null;
             if (current != null) {
                 try {
                     current.stop();
@@ -105,6 +111,9 @@ public final class SunshineHostAdapter {
                     State.log("[SunshineHostAdapter] stop failed: " + t.getMessage());
                 }
                 State.log("[SunshineHostAdapter] stopped");
+            }
+            if (currentVideoSource != null) {
+                currentVideoSource.close();
             }
         }
     }
