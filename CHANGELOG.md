@@ -1,5 +1,19 @@
 # LibreDeX 更新记录 / Changelog
 
+## 0.2.14（2026-09-06）
+
+### English
+
+**New Features**
+
+- **Chinese input over the Moonlight link**: LibreDeX now creates a kernel-level uinput virtual keyboard while a Moonlight session is active. The system treats it as a real external keyboard, so the Samsung IME enables pinyin composition, candidate selection, input-method switching, and hotkeys (e.g. Ctrl+C / Ctrl+V) all work over Moonlight — mirroring the wired DP + keyboard experience. Falls back to the previous inject method automatically if the virtual keyboard is unavailable.
+
+### 简体中文
+
+**新功能**
+
+- **Moonlight 链路中文输入法**：Moonlight 会话期间，LibreDeX 会创建一个内核级 uinput 虚拟键盘，系统将其视为真实外接键盘，三星输入法因此可组合拼音、选择候选字、切换输入法，快捷键（如 Ctrl+C / Ctrl+V）在 Moonlight 下也全部可用——复刻有线 DP 直连键盘的体验。若虚拟键盘不可用，自动回退到原有注入方式。
+
 ## 0.2.13（2026-09-06）
 
 ### English
