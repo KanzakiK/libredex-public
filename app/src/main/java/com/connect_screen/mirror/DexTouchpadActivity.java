@@ -32,7 +32,9 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.connect_screen.mirror.job.InputRouting;
+import com.connect_screen.mirror.job.SunshineServer;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
+import com.connect_screen.mirror.transport.TransportRegistry;
 
 import dev.rikka.tools.refine.Refine;
 
@@ -285,6 +287,16 @@ public final class DexTouchpadActivity extends Activity {
     // ------------------------------------------------------------------
 
     private int resolveTargetDisplayId() {
+        // Moonlight streams a fake DeX virtual display (createDexMirror). The
+        // touchpad must drive that display, not the phone's own screen, so it
+        // takes priority over the DP/external-display path.
+        if (SunshineServer.isMoonlightSessionActive() && SunshineServer.activeDexDisplayId >= 0) {
+            return SunshineServer.activeDexDisplayId;
+        }
+        // Optional transport (e.g. AirPlay) exposes the display it streams.
+        if (TransportRegistry.isOptionalActive() && TransportRegistry.activeDisplayId() >= 0) {
+            return TransportRegistry.activeDisplayId();
+        }
         if (State.externalDisplayId > 0) {
             return State.externalDisplayId;
         }

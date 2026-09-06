@@ -581,11 +581,19 @@ public class ConnectionFragment extends Fragment {
     }
 
     private void refreshExternalDisplayState() {
-        if (getContext() == null) {
+        if (getContext() == null || !isAdded()) {
             return;
         }
         ExternalDisplayMonitor.refreshState(getContext());
-        new Handler(Looper.getMainLooper()).post(this::refreshPlaceholderState);
+        new Handler(Looper.getMainLooper()).post(() -> {
+            // The active output may have changed while this page is displayed
+            // (e.g. DP plugged in auto-starts DeX while the fragment still
+            // thinks it is on Moonlight). Re-sync the transport tab and layout
+            // to the actually-active output before refreshing the placeholder
+            // card contents.
+            syncTransportWithActiveSession();
+            refreshPlaceholderState();
+        });
     }
 
     private void onPlaceholderActionClicked() {
@@ -717,6 +725,11 @@ public class ConnectionFragment extends Fragment {
         if (!dp) {
             return;
         }
+        // DeX output steals the phone's input focus, so the custom resolution /
+        // refresh-rate fields are unusable while it runs. Keep them editable in
+        // mirror output and idle states.
+        boolean dexOutputActive = ProjectViaDp.isActive() && !OutputSource.isMirrorActive();
+        setCustomModeInputsEnabled(!dexOutputActive);
         ExternalDisplayMonitor.refreshState(requireContext());
         boolean hasExternal = State.externalDisplayId > 0;
         if (placeholderModeButton != null) {
@@ -759,6 +772,17 @@ public class ConnectionFragment extends Fragment {
             placeholderStatusText.setText(getString(R.string.connection_no_external));
             setButton(placeholderActionButton, getString(R.string.connection_start_dp), R.color.ui_accent,
                     R.color.ui_on_accent, true);
+        }
+    }
+
+    private void setCustomModeInputsEnabled(boolean enabled) {
+        if (placeholderModeWidthInput != null) {
+            placeholderModeWidthInput.setEnabled(enabled);
+            placeholderModeHeightInput.setEnabled(enabled);
+            placeholderModeRefreshInput.setEnabled(enabled);
+        }
+        if (placeholderCustomModeButton != null) {
+            placeholderCustomModeButton.setEnabled(enabled);
         }
     }
 
