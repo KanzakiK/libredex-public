@@ -44,6 +44,7 @@ public final class SunshineHostAdapter {
                 SunshineHost newHost = new SunshineHost(config);
                 DexMirrorVideoSource newVideoSource = new DexMirrorVideoSource();
                 newHost.setVideoSource(newVideoSource);
+                newHost.setInputSink(new SunshineInputSinkAdapter());
                 newHost.setListener(new SunshineHostListener() {
                     @Override
                     public void onPinRequested() {
