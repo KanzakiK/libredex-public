@@ -1,16 +1,25 @@
 package com.connect_screen.mirror;
 
 import android.app.Activity;
+import android.content.Context;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
+import android.graphics.RectF;
+import android.graphics.drawable.GradientDrawable;
 import android.hardware.display.DisplayManager;
 import android.hardware.input.IInputManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.view.Display;
 import android.view.Gravity;
 import android.view.InputDevice;
+import android.view.KeyCharacterMap;
+import android.view.KeyEvent;
+import android.view.KeyEventHidden;
 import android.view.MotionEvent;
 import android.view.MotionEventHidden;
 import android.view.View;
@@ -18,8 +27,9 @@ import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.LinearLayout;
 
 import com.connect_screen.mirror.job.InputRouting;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
@@ -27,6 +37,8 @@ import com.connect_screen.mirror.shizuku.ServiceUtils;
 import dev.rikka.tools.refine.Refine;
 
 import java.lang.reflect.Method;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * LibreDeX virtual touchpad.
@@ -42,6 +54,17 @@ public final class DexTouchpadActivity extends Activity {
     private static final float TAP_MOVEMENT_TOLERANCE_DP = 24f;
     private static final long TAP_TIMEOUT_MS = 400L;
     private static final long TWO_FINGER_TAP_TIMEOUT_MS = 500L;
+
+    // Two-finger scroll: AXIS_VSCROLL units per dp of finger movement, and the
+    // direction sign. SCROLL_SIGN is -1 per the plan ("手指上滑 -> 内容向下滚");
+    // flip it on device if the scroll direction feels inverted.
+    private static final float SCROLL_STEP_DP = 3f;
+    private static final int SCROLL_SIGN = -1;
+
+    private static final int BUTTON_SIZE_DP = 32;
+    private static final int BUTTON_SPACING_DP = 8;
+    // Keep the bar clear of the crosshair frame line + its rounded corner.
+    private static final int BUTTON_MARGIN_DP = 24;
 
     private IInputManager inputManager;
     private int targetDisplayId = Display.DEFAULT_DISPLAY;
@@ -59,6 +82,9 @@ public final class DexTouchpadActivity extends Activity {
     private long secondFingerDownTime;
     private float secondDownX, secondDownY;
     private boolean secondFingerMoved;
+    private float lastScrollY;
+
+    private CrosshairView crosshairView;
 
     private long lastFocusAttemptMs;
 
@@ -113,17 +139,64 @@ public final class DexTouchpadActivity extends Activity {
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.argb(230, 28, 28, 32));
 
-        TextView hint = new TextView(this);
-        hint.setText("LibreDeX Touchpad");
-        hint.setTextColor(Color.argb(160, 255, 255, 255));
-        hint.setTextSize(14);
-        hint.setGravity(Gravity.CENTER);
-        root.addView(hint, new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.CENTER));
+        // Decorative crosshair: a frame matching the touchpad's own screen
+        // ratio (内屏/盖屏), purely visual, never clickable, does not intercept
+        // touches.
+        crosshairView = new CrosshairView(this);
+        root.addView(crosshairView, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Vertical button bar pinned to the pad's top-right corner. Buttons are
+        // clickable so they consume their own touches and never fall through to
+        // handleTouch(); the pad underneath keeps its full touch-to-cursor map.
+        root.addView(buildButtonBar());
 
         root.setOnTouchListener((v, event) -> handleTouch(event));
         return root;
+    }
+
+    // ------------------------------------------------------------------
+    // Top-right button bar
+    // ------------------------------------------------------------------
+
+    private View buildButtonBar() {
+        int accent = getColor(R.color.ui_accent);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.OVAL);
+        bg.setColor(Color.argb(0x66, 0x22, 0x2A, 0x4A)); // #66222A4A
+        bg.setStroke(Math.round(dp(1.2f)), accent);
+
+        LinearLayout bar = new LinearLayout(this);
+        bar.setOrientation(LinearLayout.VERTICAL);
+        int size = Math.round(dp(BUTTON_SIZE_DP));
+        bar.addView(makeButton(R.drawable.ic_touchpad_close, size, bg, v -> finish()));
+        bar.addView(makeButton(R.drawable.ic_touchpad_back, size, bg, v -> injectBackKey()));
+        bar.addView(makeButton(R.drawable.ic_touchpad_kill, size, bg, v -> killForegroundApp()));
+        // Parent is the root FrameLayout, so gravity goes on a FrameLayout
+        // LayoutParams (LinearLayout.LayoutParams' 3-arg ctor takes weight, not
+        // gravity — using it left the bar pinned to the top-left corner).
+        FrameLayout.LayoutParams barLp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.END | Gravity.TOP);
+        barLp.setMargins(0, Math.round(dp(BUTTON_MARGIN_DP)),
+                Math.round(dp(BUTTON_MARGIN_DP)), 0);
+        bar.setLayoutParams(barLp);
+        return bar;
+    }
+
+    private ImageButton makeButton(int iconRes, int size, GradientDrawable bg,
+                                   View.OnClickListener listener) {
+        ImageButton button = new ImageButton(this);
+        button.setImageResource(iconRes);
+        button.setBackground(bg);
+        button.setClickable(true);
+        button.setFocusable(false);
+        button.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        button.setOnClickListener(listener);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(size, size);
+        lp.bottomMargin = Math.round(dp(BUTTON_SPACING_DP));
+        button.setLayoutParams(lp);
+        return button;
     }
 
     // ------------------------------------------------------------------
@@ -146,9 +219,13 @@ public final class DexTouchpadActivity extends Activity {
             if (cursorWindowManager == null) {
                 return;
             }
-            int cursorSize = (int) (32 * displayContext.getResources().getDisplayMetrics().density);
-            cursorHotspotX = 0;
-            cursorHotspotY = 0;
+            // Imported 48x48 PNG at 60% size (36dp * 0.6 ~= 22dp @1x density).
+            int cursorSize = (int) (22 * displayContext.getResources().getDisplayMetrics().density);
+            // mouse_cursor.png is a 48x48 classic pointer whose tip sits about
+            // (4.5,2) inside the bitmap. FIT_START maps it 1:1 onto the square
+            // view, so scale the tip offset by cursorSize/48 for exact clicks.
+            cursorHotspotX = Math.round(cursorSize * 4.5f / 48f);
+            cursorHotspotY = Math.round(cursorSize * 2f / 48f);
             cursorView = new ImageView(displayContext);
             cursorView.setImageResource(R.drawable.mouse_cursor);
             cursorView.setScaleType(ImageView.ScaleType.FIT_START);
@@ -288,6 +365,7 @@ public final class DexTouchpadActivity extends Activity {
                     secondDownX = event.getX(1);
                     secondDownY = event.getY(1);
                     secondFingerMoved = false;
+                    lastScrollY = event.getY(1);
                     return true;
                 }
                 case MotionEvent.ACTION_MOVE: {
@@ -299,18 +377,57 @@ public final class DexTouchpadActivity extends Activity {
                         if (Math.hypot(dx, dy) > dp(12)) {
                             secondFingerMoved = true;
                         }
+                        // Two-finger vertical swipe -> mouse wheel scroll. Use
+                        // incremental delta per MOVE so scrolling stays smooth.
+                        // Sign needs real-device tuning (see SCROLL_SIGN).
+                        float yIncrement = y2 - lastScrollY;
+                        lastScrollY = y2;
+                        if (Math.abs(yIncrement) >= 1f) {
+                            scroll(SCROLL_SIGN * yIncrement * dp(SCROLL_STEP_DP));
+                        }
+                        // Keep the first finger's position in sync while
+                        // scrolling, so leaving scroll mode has no jump.
+                        lastTouchX = event.getX(0);
+                        lastTouchY = event.getY(0);
+                        if (secondFingerMoved) {
+                            fingerMoved = true;
+                        }
+                        return true;
+                    }
+                    if (secondFingerDown) {
+                        // Pointer count dropped below 2 without a clean
+                        // POINTER_UP (touch jitter). Leave scroll mode and
+                        // resync the baseline so the next single-finger move
+                        // does not jump.
+                        secondFingerDown = false;
+                        lastTouchX = event.getX(0);
+                        lastTouchY = event.getY(0);
                         return true;
                     }
                     handleMove(event.getX(), event.getY(), event.getEventTime());
                     return true;
                 }
                 case MotionEvent.ACTION_POINTER_UP: {
-                    if (secondFingerDown && event.getPointerId(event.getActionIndex()) != 0) {
-                        secondFingerDown = false;
-                        long dt = event.getEventTime() - secondFingerDownTime;
-                        if (!secondFingerMoved && dt <= TWO_FINGER_TAP_TIMEOUT_MS) {
-                            rightClick();
-                        }
+                    if (!secondFingerDown) {
+                        return true;
+                    }
+                    int actionIndex = event.getActionIndex();
+                    boolean secondLifted = event.getPointerId(actionIndex) != 0;
+                    // Whichever finger lifts, the remaining one becomes pointer
+                    // 0 on later events. Resync the delta baseline to it so
+                    // continuing to drag never jumps from the other finger's
+                    // stale position (the old code only handled the second
+                    // finger lifting, which left a jump when the first finger
+                    // went up first).
+                    float remainX = actionIndex == 0 ? event.getX(1) : event.getX(0);
+                    float remainY = actionIndex == 0 ? event.getY(1) : event.getY(0);
+                    lastTouchX = remainX;
+                    lastTouchY = remainY;
+                    long dt = event.getEventTime() - secondFingerDownTime;
+                    boolean tap = !secondFingerMoved && dt <= TWO_FINGER_TAP_TIMEOUT_MS;
+                    secondFingerDown = false;
+                    if (secondLifted && tap) {
+                        rightClick();
                     }
                     return true;
                 }
@@ -400,6 +517,127 @@ public final class DexTouchpadActivity extends Activity {
         injectMouseEvent(MotionEvent.ACTION_HOVER_MOVE, x, y, 0, 0);
     }
 
+    // Two-finger swipe -> mouse wheel. Injects an ACTION_SCROLL SOURCE_MOUSE
+    // event pinned to the target display with the vertical scroll delta set on
+    // AXIS_VSCROLL (same setEventDisplayId + tryInject pipeline as clicks).
+    private void scroll(float delta) {
+        if (inputManager == null) {
+            return;
+        }
+        try {
+            ensureMouseProps();
+            long now = SystemClock.uptimeMillis();
+            long downTime = mouseDownTime != 0 ? mouseDownTime : now;
+            mouseCoords[0].x = cursorX;
+            mouseCoords[0].y = cursorY;
+            mouseCoords[0].pressure = 0f;
+            mouseCoords[0].setAxisValue(MotionEvent.AXIS_VSCROLL, delta);
+            MotionEvent event = MotionEvent.obtain(
+                    downTime, now, MotionEvent.ACTION_SCROLL, 1, mouseProps, mouseCoords,
+                    0, 0, 1f, 1f, 0, 0, InputDevice.SOURCE_MOUSE, 0);
+            setEventDisplayId(event, targetDisplayId);
+            tryInject(event);
+        } catch (Throwable t) {
+            State.log("touchpad: scroll inject failed: " + t.getMessage());
+        }
+    }
+
+    // Back button -> inject KEYCODE_BACK onto the target (external) display.
+    // `input keyevent` from the shell would land on the default display, so the
+    // KeyEvent is pinned to targetDisplayId via KeyEventHidden (same Refine
+    // approach the keyboard uses) and injected through the root input manager.
+    private void injectBackKey() {
+        if (inputManager == null) {
+            return;
+        }
+        try {
+            if (targetDisplayId != Display.DEFAULT_DISPLAY) {
+                InputRouting.setFocus(inputManager, targetDisplayId);
+            }
+            long now = SystemClock.uptimeMillis();
+            KeyEvent down = new KeyEvent(now, now, KeyEvent.ACTION_DOWN,
+                    KeyEvent.KEYCODE_BACK, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD,
+                    0, 0, InputDevice.SOURCE_KEYBOARD);
+            KeyEvent up = new KeyEvent(now, now + 5L, KeyEvent.ACTION_UP,
+                    KeyEvent.KEYCODE_BACK, 0, 0, KeyCharacterMap.VIRTUAL_KEYBOARD,
+                    0, 0, InputDevice.SOURCE_KEYBOARD);
+            if (targetDisplayId != Display.DEFAULT_DISPLAY) {
+                KeyEventHidden downHidden = Refine.unsafeCast(down);
+                downHidden.setDisplayId(targetDisplayId);
+                KeyEventHidden upHidden = Refine.unsafeCast(up);
+                upHidden.setDisplayId(targetDisplayId);
+            }
+            inputManager.injectInputEvent(down, 0);
+            inputManager.injectInputEvent(up, 0);
+            State.log("touchpad: injected BACK to display=" + targetDisplayId);
+        } catch (Throwable t) {
+            State.log("touchpad: BACK inject failed: " + t.getMessage());
+        }
+    }
+
+    // Kill button -> force-stop the foreground app on the target (external)
+    // display. The top package is resolved from `dumpsys activity activities`
+    // restricted to the target display section, so the inner-screen foreground
+    // app is never touched. Runs off the main thread (remote shell calls).
+    private void killForegroundApp() {
+        new Thread(() -> {
+            try {
+                String pkg = resolveTopPackageOnDisplay(targetDisplayId);
+                if (pkg == null || pkg.isEmpty()) {
+                    State.log("touchpad: no foreground app on display=" + targetDisplayId);
+                    return;
+                }
+                if (pkg.equals(getPackageName()) || "com.android.systemui".equals(pkg)) {
+                    return;
+                }
+                if (State.isUserServiceAlive()) {
+                    State.userService.executeCommand("am force-stop " + pkg);
+                    State.log("touchpad: force-stopped " + pkg
+                            + " on display=" + targetDisplayId);
+                }
+            } catch (Throwable t) {
+                State.log("touchpad: kill foreground failed: " + t.getMessage());
+            }
+        }, "touchpad-kill").start();
+    }
+
+    private static final Pattern ACTIVITY_RECORD = Pattern.compile(
+            "ActivityRecord\\{[^}]* (\\S+?)/");
+
+    private String resolveTopPackageOnDisplay(int displayId) {
+        if (!State.isUserServiceAlive()) {
+            return null;
+        }
+        try {
+            String out = State.userService.executeCommand("dumpsys activity activities");
+            int exitIdx = out.indexOf("__EXIT_CODE");
+            if (exitIdx >= 0) {
+                out = out.substring(0, exitIdx);
+            }
+            boolean inTarget = false;
+            for (String line : out.split("\n")) {
+                String t = line.trim();
+                if (t.startsWith("Display #") && t.contains("activities from top to bottom")) {
+                    inTarget = t.startsWith("Display #" + displayId + " ");
+                    continue;
+                }
+                if (!inTarget) {
+                    continue;
+                }
+                if (t.startsWith("Display #")) {
+                    break; // passed the target display section
+                }
+                Matcher m = ACTIVITY_RECORD.matcher(t);
+                if (m.find()) {
+                    return m.group(1);
+                }
+            }
+        } catch (Throwable t) {
+            State.log("touchpad: resolve top package failed: " + t.getMessage());
+        }
+        return null;
+    }
+
     private void injectMouseEvent(int action, float x, float y, int buttonState, int actionButton) {
         if (inputManager == null) {
             return;
@@ -476,6 +714,62 @@ public final class DexTouchpadActivity extends Activity {
 
     private float dp(float value) {
         return value * getResources().getDisplayMetrics().density;
+    }
+
+    // ------------------------------------------------------------------
+    // Crosshair: own-screen ratio indicator
+    // ------------------------------------------------------------------
+
+    /**
+     * Draws a frame around the pad (its own screen 内屏/盖屏) plus an accent
+     * center crosshair. The frame is recomputed on every size change, so it
+     * stays correct across screen rotation. Decoration only: NOT clickable,
+     * never intercepts the pad's touch handling.
+     */
+    private final class CrosshairView extends View {
+        private final Paint framePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint accentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF box = new RectF();
+
+        CrosshairView(Context context) {
+            super(context);
+            setClickable(false);
+            setFocusable(false);
+            framePaint.setStyle(Paint.Style.STROKE);
+            framePaint.setStrokeWidth(dp(1.6f));
+            framePaint.setColor(Color.argb(180, 255, 255, 255));
+            accentPaint.setStyle(Paint.Style.STROKE);
+            accentPaint.setStrokeWidth(dp(2f));
+            accentPaint.setStrokeCap(Paint.Cap.ROUND);
+            accentPaint.setColor(getColor(R.color.ui_accent));
+        }
+
+        @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            // The frame mirrors the pad itself (own screen 内屏/盖屏). Deriving
+            // it from the view size keeps it correct through screen rotation,
+            // where the activity re-layouts but a one-time resolved display
+            // ratio would stay stale.
+            box.set(0f, 0f, w, h);
+            invalidate();
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (box.isEmpty()) {
+                return;
+            }
+            // The white rounded frame already marks the boundary, so no extra
+            // corner brackets. Center accent crosshair only.
+            canvas.drawRoundRect(box, dp(8f), dp(8f), framePaint);
+            float cx = box.centerX();
+            float cy = box.centerY();
+            float cross = dp(14f);
+            canvas.drawLine(cx - cross, cy, cx + cross, cy, accentPaint);
+            canvas.drawLine(cx, cy - cross, cx, cy + cross, accentPaint);
+        }
     }
 
     private static float clamp(float v, float min, float max) {

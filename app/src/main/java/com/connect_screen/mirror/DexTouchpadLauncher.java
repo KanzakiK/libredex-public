@@ -1,6 +1,7 @@
 package com.connect_screen.mirror;
 
 import android.app.ActivityOptions;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Point;
@@ -48,6 +49,53 @@ public final class DexTouchpadLauncher {
                 return;
             } catch (Exception rootFailure) {
                 State.log("DeX touchpad root launch failed: " + rootFailure.getMessage());
+            }
+        }
+        Toast.makeText(context, context.getString(R.string.touchpad_open_failed), Toast.LENGTH_SHORT).show();
+    }
+
+    /**
+     * Launches the OEM (SystemUI) DeX touchpad instead of the self-drawn one.
+     * Used by the DeX manage page entry; the connection page keeps using the
+     * self-drawn {@link #launch(Context)}. Same display pick + fallback chain as
+     * launch(): direct start with launch display, then shell am start.
+     */
+    public static void launchSystem(Context context) {
+        final String component = "com.android.systemui/.dextouchpad.activity.TouchpadActivity";
+        int displayId = pickCoverDisplay(context);
+        String displayArg = displayId >= 0 ? " --display " + displayId : "";
+        State.log("DeX system touchpad launch displayId=" + displayId);
+        try {
+            Intent intent = new Intent();
+            intent.setComponent(ComponentName.unflattenFromString(component));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && displayId >= 0) {
+                ActivityOptions options = ActivityOptions.makeBasic();
+                options.setLaunchDisplayId(displayId);
+                context.startActivity(intent, options.toBundle());
+            } else {
+                context.startActivity(intent);
+            }
+            return;
+        } catch (Exception directFailure) {
+            State.log("DeX system touchpad direct launch failed: "
+                    + directFailure.getMessage());
+        }
+        if (State.isUserServiceAlive()) {
+            try {
+                State.userService.executeCommand("am start" + displayArg + " -n " + component);
+                return;
+            } catch (Exception shellFailure) {
+                State.log("DeX system touchpad shell launch failed: "
+                        + shellFailure.getMessage());
+            }
+            try {
+                State.userService.executeCommand(
+                        "su -c 'am start" + displayArg + " -n " + component + "'");
+                return;
+            } catch (Exception rootFailure) {
+                State.log("DeX system touchpad root launch failed: "
+                        + rootFailure.getMessage());
             }
         }
         Toast.makeText(context, context.getString(R.string.touchpad_open_failed), Toast.LENGTH_SHORT).show();

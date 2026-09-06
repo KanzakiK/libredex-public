@@ -140,7 +140,7 @@ public class DexManageFragment extends Fragment {
             applyPreventSleepProp(isChecked);
         });
 
-        dexTouchpadButton.setOnClickListener(v -> DexTouchpadLauncher.launch(requireContext()));
+        dexTouchpadButton.setOnClickListener(v -> DexTouchpadLauncher.launchSystem(requireContext()));
         dexRestartButton.setOnClickListener(v -> restartSession());
         dexReleaseButton.setOnClickListener(v -> ExitAll.stopServices(requireContext()));
         dexChangeWallpaperButton.setOnClickListener(v -> openWallpaperPicker());

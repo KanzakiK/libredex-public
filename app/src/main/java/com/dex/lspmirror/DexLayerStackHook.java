@@ -734,48 +734,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             }
         };
         handler.post(fragmentInstaller);
-
-        final Runnable windowInstaller = new Runnable() {
-            private int attempts = 0;
-            private boolean installed = false;
-
-            @Override
-            public void run() {
-                if (installed) {
-                    return;
-                }
-                try {
-                    Class<?> touchpadWindow = XposedHelpers.findClass(
-                            "com.android.systemui.dextouchpad.activity.TouchpadWindow", cl);
-                    Method onStartSetup = touchpadWindow.getMethod("onStartSetup");
-                    XposedBridge.hookMethod(onStartSetup, new XC_MethodHook() {
-                        @Override
-                        protected void afterHookedMethod(MethodHookParam param) {
-                            try {
-                                Object view = XposedHelpers.getObjectField(
-                                        param.thisObject, "mWindowView");
-                                if (view instanceof android.view.View) {
-                                    CoverTouchpadBridge.install((android.view.View) view);
-                                }
-                            } catch (Throwable t) {
-                                XposedBridge.log(TAG
-                                        + ": sysui touchpad bridge hook failed: " + t);
-                            }
-                        }
-                    });
-                    installed = true;
-                    XposedBridge.log(TAG + ": sysui touchpad window hook installed");
-                } catch (Throwable t) {
-                    attempts++;
-                    if (attempts == 1 || attempts % 20 == 0) {
-                        XposedBridge.log(TAG + ": sysui touchpad window retry "
-                                + attempts + ": " + t);
-                    }
-                    handler.postDelayed(this, 3000);
-                }
-            }
-        };
-        handler.post(windowInstaller);
     }
 
     // The fake VirtualDisplay is never seen by the official WifiDisplayAdapter
