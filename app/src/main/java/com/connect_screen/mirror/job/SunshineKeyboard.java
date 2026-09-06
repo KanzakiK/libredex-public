@@ -15,6 +15,7 @@ import java.lang.reflect.Method;
 
 import com.connect_screen.mirror.Pref;
 import com.connect_screen.mirror.State;
+import com.connect_screen.mirror.shizuku.IUserService;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
 import com.connect_screen.mirror.shizuku.ShizukuUtils;
 
@@ -158,6 +159,171 @@ public class SunshineKeyboard {
         externalMirrorMode = !singleAppMode && false && State.externalDisplayId > 0;
         externalMirrorDisplayId = externalMirrorMode ? getExternalControlDisplayId() : Display.DEFAULT_DISPLAY;
         lastFocusedDisplayId = Integer.MIN_VALUE;
+        // Moonlight 会话：尝试拉起 uinput 虚拟键盘，让系统把键盘当真实外接键盘，
+        // Samsung IME 才会给拼音组合。失败自动回退 injectInputEvent。
+        startUinputKeyboard();
+    }
+
+    // ---- uinput 虚拟键盘（Moonlight 中文输入） ----
+
+    private static volatile boolean uinputActive = false;
+
+    private static void startUinputKeyboard() {
+        try {
+            IUserService us = State.userService;
+            if (us == null) {
+                Log.w(TAG, "startUinputKeyboard: userService not bound");
+                return;
+            }
+            uinputActive = us.startUinputKeyboard();
+            Log.i(TAG, "startUinputKeyboard active=" + uinputActive);
+        } catch (Throwable t) {
+            Log.w(TAG, "startUinputKeyboard failed: " + t);
+            uinputActive = false;
+        }
+    }
+
+    public static void stopUinputKeyboard() {
+        uinputActive = false;
+        try {
+            IUserService us = State.userService;
+            if (us != null) {
+                us.stopUinputKeyboard();
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "stopUinputKeyboard failed: " + t);
+        }
+    }
+
+    /**
+     * Android keycode -> Linux evdev KEY_* code. The two numbering schemes are
+     * different (KEYCODE_A=29 vs KEY_A=30), so this must be an explicit table,
+     * not an offset. Covers letters, digits, symbols, F-keys, modifiers and
+     * navigation keys used by physical keyboards.
+     */
+    private static int translateAndroidKeyToEvdev(int keycode) {
+        switch (keycode) {
+            // letters A-Z (evdev KEY_A=30, KEY_Z=44)
+            case KeyEvent.KEYCODE_A: return 30; case KeyEvent.KEYCODE_B: return 48;
+            case KeyEvent.KEYCODE_C: return 46; case KeyEvent.KEYCODE_D: return 32;
+            case KeyEvent.KEYCODE_E: return 18; case KeyEvent.KEYCODE_F: return 33;
+            case KeyEvent.KEYCODE_G: return 34; case KeyEvent.KEYCODE_H: return 35;
+            case KeyEvent.KEYCODE_I: return 23; case KeyEvent.KEYCODE_J: return 36;
+            case KeyEvent.KEYCODE_K: return 37; case KeyEvent.KEYCODE_L: return 38;
+            case KeyEvent.KEYCODE_M: return 50; case KeyEvent.KEYCODE_N: return 49;
+            case KeyEvent.KEYCODE_O: return 24; case KeyEvent.KEYCODE_P: return 25;
+            case KeyEvent.KEYCODE_Q: return 16; case KeyEvent.KEYCODE_R: return 19;
+            case KeyEvent.KEYCODE_S: return 31; case KeyEvent.KEYCODE_T: return 20;
+            case KeyEvent.KEYCODE_U: return 22; case KeyEvent.KEYCODE_V: return 47;
+            case KeyEvent.KEYCODE_W: return 17; case KeyEvent.KEYCODE_X: return 45;
+            case KeyEvent.KEYCODE_Y: return 21; case KeyEvent.KEYCODE_Z: return 44;
+            // digits row (KEY_1=2 ... KEY_0=11)
+            case KeyEvent.KEYCODE_1: return 2; case KeyEvent.KEYCODE_2: return 3;
+            case KeyEvent.KEYCODE_3: return 4; case KeyEvent.KEYCODE_4: return 5;
+            case KeyEvent.KEYCODE_5: return 6; case KeyEvent.KEYCODE_6: return 7;
+            case KeyEvent.KEYCODE_7: return 8; case KeyEvent.KEYCODE_8: return 9;
+            case KeyEvent.KEYCODE_9: return 10; case KeyEvent.KEYCODE_0: return 11;
+            // punctuation / symbols
+            case KeyEvent.KEYCODE_MINUS: return 12;     // KEY_MINUS
+            case KeyEvent.KEYCODE_EQUALS: return 13;    // KEY_EQUAL
+            case KeyEvent.KEYCODE_LEFT_BRACKET: return 26;  // KEY_LEFTBRACE
+            case KeyEvent.KEYCODE_RIGHT_BRACKET: return 27; // KEY_RIGHTBRACE
+            case KeyEvent.KEYCODE_SEMICOLON: return 39; // KEY_SEMICOLON
+            case KeyEvent.KEYCODE_APOSTROPHE: return 40; // KEY_APOSTROPHE
+            case KeyEvent.KEYCODE_GRAVE: return 41;     // KEY_GRAVE
+            case KeyEvent.KEYCODE_BACKSLASH: return 43; // KEY_BACKSLASH
+            case KeyEvent.KEYCODE_COMMA: return 51;     // KEY_COMMA
+            case KeyEvent.KEYCODE_PERIOD: return 52;    // KEY_DOT
+            case KeyEvent.KEYCODE_SLASH: return 53;     // KEY_SLASH
+            // action / editing
+            case KeyEvent.KEYCODE_SPACE: return 57;     // KEY_SPACE
+            case KeyEvent.KEYCODE_ENTER: return 28;     // KEY_ENTER
+            case KeyEvent.KEYCODE_TAB: return 15;       // KEY_TAB
+            case KeyEvent.KEYCODE_DEL: return 14;       // KEY_BACKSPACE
+            case KeyEvent.KEYCODE_FORWARD_DEL: return 111; // KEY_DELETE
+            case KeyEvent.KEYCODE_ESCAPE: return 1;     // KEY_ESC
+            case KeyEvent.KEYCODE_CAPS_LOCK: return 58; // KEY_CAPSLOCK
+            case KeyEvent.KEYCODE_INSERT: return 110;   // KEY_INSERT
+            case KeyEvent.KEYCODE_NUM_LOCK: return 69;  // KEY_NUMLOCK
+            case KeyEvent.KEYCODE_SCROLL_LOCK: return 70; // KEY_SCROLLLOCK
+            case KeyEvent.KEYCODE_SYSRQ: return 99;     // KEY_SYSRQ
+            case KeyEvent.KEYCODE_BREAK: return 119;    // KEY_PAUSE
+            // modifiers (left first)
+            case KeyEvent.KEYCODE_SHIFT_LEFT: return 42;   // KEY_LEFTSHIFT
+            case KeyEvent.KEYCODE_SHIFT_RIGHT: return 54;  // KEY_RIGHTSHIFT
+            case KeyEvent.KEYCODE_CTRL_LEFT: return 29;    // KEY_LEFTCTRL
+            case KeyEvent.KEYCODE_CTRL_RIGHT: return 97;   // KEY_RIGHTCTRL
+            case KeyEvent.KEYCODE_ALT_LEFT: return 56;     // KEY_LEFTALT
+            case KeyEvent.KEYCODE_ALT_RIGHT: return 100;   // KEY_RIGHTALT
+            case KeyEvent.KEYCODE_META_LEFT: return 125;   // KEY_LEFTMETA
+            case KeyEvent.KEYCODE_META_RIGHT: return 126;  // KEY_RIGHTMETA
+            case KeyEvent.KEYCODE_MENU: return 127;        // KEY_COMPOSE (menu fallback)
+            // navigation
+            case KeyEvent.KEYCODE_MOVE_HOME: return 102;   // KEY_HOME
+            case KeyEvent.KEYCODE_MOVE_END: return 107;    // KEY_END
+            case KeyEvent.KEYCODE_PAGE_UP: return 104;     // KEY_PAGEUP
+            case KeyEvent.KEYCODE_PAGE_DOWN: return 109;   // KEY_PAGEDOWN
+            case KeyEvent.KEYCODE_DPAD_UP: return 103;     // KEY_UP
+            case KeyEvent.KEYCODE_DPAD_DOWN: return 108;   // KEY_DOWN
+            case KeyEvent.KEYCODE_DPAD_LEFT: return 105;   // KEY_LEFT
+            case KeyEvent.KEYCODE_DPAD_RIGHT: return 106;  // KEY_RIGHT
+            // function keys F1-F12 (KEY_F1=59 ... KEY_F12=68)
+            case KeyEvent.KEYCODE_F1: return 59; case KeyEvent.KEYCODE_F2: return 60;
+            case KeyEvent.KEYCODE_F3: return 61; case KeyEvent.KEYCODE_F4: return 62;
+            case KeyEvent.KEYCODE_F5: return 63; case KeyEvent.KEYCODE_F6: return 64;
+            case KeyEvent.KEYCODE_F7: return 65; case KeyEvent.KEYCODE_F8: return 66;
+            case KeyEvent.KEYCODE_F9: return 67; case KeyEvent.KEYCODE_F10: return 68;
+            case KeyEvent.KEYCODE_F11: return 87; case KeyEvent.KEYCODE_F12: return 88;
+            // numpad
+            case KeyEvent.KEYCODE_NUMPAD_0: return 82; case KeyEvent.KEYCODE_NUMPAD_1: return 79;
+            case KeyEvent.KEYCODE_NUMPAD_2: return 80; case KeyEvent.KEYCODE_NUMPAD_3: return 81;
+            case KeyEvent.KEYCODE_NUMPAD_4: return 75; case KeyEvent.KEYCODE_NUMPAD_5: return 76;
+            case KeyEvent.KEYCODE_NUMPAD_6: return 77; case KeyEvent.KEYCODE_NUMPAD_7: return 71;
+            case KeyEvent.KEYCODE_NUMPAD_8: return 72; case KeyEvent.KEYCODE_NUMPAD_9: return 73;
+            case KeyEvent.KEYCODE_NUMPAD_ADD: return 78;    // KEY_KPPLUS
+            case KeyEvent.KEYCODE_NUMPAD_SUBTRACT: return 74; // KEY_KPMINUS
+            case KeyEvent.KEYCODE_NUMPAD_MULTIPLY: return 55; // KEY_KPASTERISK
+            case KeyEvent.KEYCODE_NUMPAD_DIVIDE: return 98;  // KEY_KPSLASH
+            case KeyEvent.KEYCODE_NUMPAD_DOT: return 83;     // KEY_KPDOT
+            case KeyEvent.KEYCODE_NUMPAD_ENTER: return 96;   // KEY_KPENTER
+            default: return -1;
+        }
+    }
+
+    /**
+     * Try to deliver a translated key via the uinput virtual keyboard. Returns
+     * true if the event was handed off (so the caller can skip injectInputEvent),
+     * false when the uinput path is unavailable so the caller falls back.
+     */
+    private static boolean trySendViaUinput(int androidKeyCode, boolean release) {
+        if (!uinputActive) {
+            return false;
+        }
+        IUserService us = State.userService;
+        if (us == null) {
+            uinputActive = false;
+            return false;
+        }
+        int evdev = translateAndroidKeyToEvdev(androidKeyCode);
+        if (evdev < 0) {
+            // 没有对应 evdev 码的键仍走注入。
+            return false;
+        }
+        try {
+            boolean ok = us.sendUinputKey(evdev, release);
+            if (!ok) {
+                uinputActive = false;
+            }
+            if (DEBUG_INPUT_EVENTS) {
+                Log.d(TAG, "sendUinputKey android=" + androidKeyCode
+                        + " evdev=" + evdev + " release=" + release + " ok=" + ok);
+            }
+            return ok;
+        } catch (Throwable t) {
+            Log.w(TAG, "sendUinputKey failed: " + t);
+            uinputActive = false;
+            return false;
+        }
     }
 
     private static boolean forwardEventToDisplay(KeyEvent event, int displayId) {
@@ -194,7 +360,20 @@ public class SunshineKeyboard {
         
         // 更新修饰键状态
         updateMetaState(androidKeyCode, !release);
-        
+
+        // 优先走 uinput 虚拟键盘（Moonlight 中文输入）：系统把它当真实外接键盘，
+        // Samsung IME 才会组合拼音。映射到 evdev 码独立于测，确保按住/弹起成对。
+        if (trySendViaUinput(androidKeyCode, release)) {
+            // uinput 事件派发给当前焦点窗口；确保焦点在 DeX 屏上。
+            int targetDisplayId = getTargetDisplayId();
+            if (targetDisplayId != Display.DEFAULT_DISPLAY
+                    && inputManager != null && lastFocusedDisplayId != targetDisplayId) {
+                InputRouting.setFocus(inputManager, targetDisplayId);
+                lastFocusedDisplayId = targetDisplayId;
+            }
+            return;
+        }
+
         KeyEvent keyEvent = new KeyEvent(now, now, 
                 release ? KeyEvent.ACTION_UP : KeyEvent.ACTION_DOWN,
                 androidKeyCode, 0, currentMetaState, // 使用当前的修饰键状态

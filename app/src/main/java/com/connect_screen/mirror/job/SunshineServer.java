@@ -498,6 +498,7 @@ public class SunshineServer {
         videoSourceThread = null;
         activeDexDisplayId = -1;
         State.streamingDebugInfo.setValue("串流未启动");
+        SunshineKeyboard.stopUinputKeyboard();
         SunshineAudio.restoreVolume(State.getContext());
         SunshineMouse.resetInjectedInputState();
         SunshineMouse.cleanupCursorOverlay();

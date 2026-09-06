@@ -63,6 +63,17 @@ public class UserService extends IUserService.Stub  {
     private Rect dpMirrorRestoreRect;
     private int lastScreenOffDisplayId = Display.DEFAULT_DISPLAY;
     private static volatile String cachedSuPath;
+
+    // uinput 虚拟键盘（Moonlight 中文输入）：helper 以 su 常驻运行，fd 存活期间
+    // 系统把它当作真实外接键盘，Samsung IME 才会启用拼音组合。fd 关闭即销毁，
+    // 因此 helper 进程和其 stdin 必须随会话存活。
+    private static final String UINPUT_KBD_ASSET = "native/arm64-v8a/uinput-kbd";
+    private static final String UINPUT_KBD_FILE_NAME = "uinput-kbd";
+    private Process uinputKbdProcess;
+    private java.io.OutputStream uinputKbdIn;
+    private java.io.BufferedReader uinputKbdReader;
+    private final Object uinputKbdLock = new Object();
+    private volatile boolean uinputKbdReady;
     private static final String[] SU_BINARY_CANDIDATES = {
             "/system/bin/su",
             "/system/xbin/su",
@@ -130,6 +141,11 @@ public class UserService extends IUserService.Stub  {
     public void destroy() {
         Log.i("UserService", "destroy");
         stopListenVolumeKey();
+        try {
+            stopUinputKeyboard();
+        } catch (RemoteException e) {
+            Ln.w("destroy: stopUinputKeyboard ignored " + e);
+        }
         setScreenPower(SurfaceControl.POWER_MODE_NORMAL);
         if (audioRecord != null) {
             audioRecord.stop();
@@ -890,6 +906,166 @@ public class UserService extends IUserService.Stub  {
         if (volumeKeyThread != null) {
             volumeKeyThread.interrupt();
             volumeKeyThread = null;
+        }
+    }
+
+    // ---- uinput 虚拟键盘（Moonlight 中文输入） ----
+
+    private String ensureUinputKbdBinary() {
+        try {
+            if (context == null) {
+                Ln.w("ensureUinputKbdBinary: context null, cannot extract asset");
+                return null;
+            }
+            // Same staging as qti-display-probe: /data/local/tmp is writable by
+            // the shell domain and survives reboots.
+            File dir = new File("/data/local/tmp");
+            File file = new File(dir, UINPUT_KBD_FILE_NAME);
+            if (file.exists() && file.length() > 0) {
+                return file.getAbsolutePath();
+            }
+            try (java.io.InputStream in = context.getAssets().open(UINPUT_KBD_ASSET);
+                 FileOutputStream out = new FileOutputStream(file)) {
+                byte[] buffer = new byte[8192];
+                int read;
+                while ((read = in.read(buffer)) >= 0) {
+                    out.write(buffer, 0, read);
+                }
+            }
+            if (!file.setExecutable(true, false)) {
+                Ln.w("ensureUinputKbdBinary: chmod failed " + file);
+            }
+            Ln.i("ensureUinputKbdBinary: extracted " + file + " size=" + file.length());
+            return file.getAbsolutePath();
+        } catch (Throwable t) {
+            Ln.e("ensureUinputKbdBinary failed", t);
+            return null;
+        }
+    }
+
+    @Override
+    public boolean startUinputKeyboard() throws RemoteException {
+        synchronized (uinputKbdLock) {
+            if (uinputKbdReady && uinputKbdProcess != null && uinputKbdProcess.isAlive()) {
+                Ln.i("startUinputKeyboard: already running");
+                return true;
+            }
+            stopUinputKeyboard();
+            String su = findSuBinary();
+            if (su == null) {
+                Ln.w("startUinputKeyboard: su not found");
+                return false;
+            }
+            String helper = ensureUinputKbdBinary();
+            if (helper == null) {
+                Ln.w("startUinputKeyboard: helper unavailable");
+                return false;
+            }
+            try {
+                // Run the helper via su so it lands in the magisk domain that is
+                // allowed to write /dev/uinput, and keep feeding its stdin so the
+                // fd stays alive for the whole session.
+                ProcessBuilder builder = new ProcessBuilder(su, "-c", helper);
+                builder.redirectErrorStream(false);
+                Process process = builder.start();
+                uinputKbdProcess = process;
+                uinputKbdIn = process.getOutputStream();
+                uinputKbdReader = new java.io.BufferedReader(
+                        new java.io.InputStreamReader(process.getInputStream()));
+                // Wait for READY (device created) so callers know it's usable.
+                long deadline = System.currentTimeMillis() + 5000;
+                boolean ready = false;
+                while (System.currentTimeMillis() < deadline) {
+                    if (!process.isAlive()) {
+                        break;
+                    }
+                    while (uinputKbdReader.ready()) {
+                        String line = uinputKbdReader.readLine();
+                        if (line == null) {
+                            break;
+                        }
+                        if ("READY".equals(line)) {
+                            ready = true;
+                            break;
+                        }
+                    }
+                    if (ready) {
+                        break;
+                    }
+                    try {
+                        Thread.sleep(30);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+                }
+                if (!ready) {
+                    Ln.e("startUinputKeyboard: no READY from helper");
+                    stopUinputKeyboard();
+                    return false;
+                }
+                uinputKbdReady = true;
+                Ln.i("startUinputKeyboard: OK helper=" + helper);
+                return true;
+            } catch (Throwable t) {
+                Ln.e("startUinputKeyboard failed", t);
+                stopUinputKeyboard();
+                return false;
+            }
+        }
+    }
+
+    @Override
+    public boolean sendUinputKey(int evdevCode, boolean release) throws RemoteException {
+        if (!uinputKbdReady) {
+            return false;
+        }
+        try {
+            String cmd = (release ? "R " : "P ") + evdevCode + "\n";
+            uinputKbdIn.write(cmd.getBytes("UTF-8"));
+            uinputKbdIn.flush();
+            return true;
+        } catch (Throwable t) {
+            Ln.e("sendUinputKey failed code=" + evdevCode + " release=" + release, t);
+            // 失败后降级：把进程标记为不可用，让 app 侧回退 injectInputEvent
+            uinputKbdReady = false;
+            return false;
+        }
+    }
+
+    @Override
+    public void stopUinputKeyboard() throws RemoteException {
+        synchronized (uinputKbdLock) {
+            uinputKbdReady = false;
+            if (uinputKbdIn != null) {
+                try {
+                    uinputKbdIn.write('D');
+                    uinputKbdIn.write('\n');
+                    uinputKbdIn.flush();
+                } catch (Throwable t) {
+                    Ln.w("stopUinputKeyboard: destroy cmd failed " + t);
+                }
+                try {
+                    uinputKbdIn.close();
+                } catch (Throwable ignored) {
+                }
+                uinputKbdIn = null;
+            }
+            if (uinputKbdReader != null) {
+                try {
+                    uinputKbdReader.close();
+                } catch (Throwable ignored) {
+                }
+                uinputKbdReader = null;
+            }
+            if (uinputKbdProcess != null) {
+                try {
+                    uinputKbdProcess.destroy();
+                } catch (Throwable ignored) {
+                }
+                uinputKbdProcess = null;
+            }
+            Ln.i("stopUinputKeyboard: done");
         }
     }
 

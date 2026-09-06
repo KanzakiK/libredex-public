@@ -57,4 +57,7 @@ interface IUserService {
    String getEnvironmentInfo() = 35;
    int stopSecondaryLauncher(int displayId) = 36;
    String fetchLspLogs() = 38;
+   boolean startUinputKeyboard() = 39;
+   boolean sendUinputKey(int evdevCode, boolean release) = 40;
+   void stopUinputKeyboard() = 41;
 }

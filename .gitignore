@@ -103,6 +103,7 @@ archive/DexHook/_original_check/
 
 # Local-only working dirs (agent memory, runtime logs, build output)
 .workbuddy/
+.trae/
 libredex_logs/
 logs/
 xposed-stubs/bin/
