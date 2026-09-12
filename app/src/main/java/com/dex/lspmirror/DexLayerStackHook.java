@@ -748,22 +748,25 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             Object atm = XposedHelpers.getObjectField(wms, "mAtmService");
             Object dexController = XposedHelpers.getObjectField(atm, "mDexController");
             installDexControllerGuard(dexController.getClass());
-            // The physical DP display is already registered, so the official
-            // method can run and also switches the TaskDisplayArea to the DeX
-            // windowing mode. The fake virtual display is not registered yet,
-            // so keep using the manual state mirror for it.
+            // Try the official DexController.registerExternalDesktopDisplay first — it
+            // internally requests activatable root task creation and notifies SystemUI.
+            // BUT we no longer return on success: on this device the official method can
+            // silently no-op when called from within an eligibility hook (DisplayContent
+            // exists but some sub-components aren't fully wired up yet), so we ALWAYS
+            // also run the manual field-mirror path below as a belt-and-suspenders guard.
+            // The manual path sets mPrimaryExternalDesktopDisplayId + IMS states directly,
+            // which is the working codepath we confirmed on Sunshine virtual displays.
             if (configuredDpDisplayId() == displayId) {
                 Method setExternal = findSetExternalDesktopDisplayId(dexController.getClass());
                 if (setExternal != null) {
                     try {
                         setExternal.invoke(dexController, displayId);
                         XposedBridge.log(TAG + ": dex controller official register displayId="
-                                + displayId);
-                        return;
+                                + displayId + " (also running manual fallback)");
                     } catch (Throwable t) {
                         Throwable cause = t.getCause() != null ? t.getCause() : t;
                         XposedBridge.log(TAG + ": official dex controller register failed, "
-                                + "falling back to manual state: " + cause);
+                                + "continuing to manual state: " + cause);
                     }
                 }
             }
