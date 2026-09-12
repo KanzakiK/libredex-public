@@ -920,6 +920,13 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             unmarkHomeSupported(previous);
             resetDexController(previous);
             restoreDpTaskDisplayArea(previous);
+            // DexController and TDA state are reset above, but the actual root
+            // tasks created by Dex mode (activatable, minimized, freeform) are
+            // NOT automatically removed. When a display is destroyed these tasks
+            // get migrated to the next surviving display (phone mirror VD or main
+            // display) — they remain invisible but still on the layer stack,
+            // causing "Dex画面叠在镜像下方" symptom. Clean them up now.
+            cleanupAllDexRootTasks();
             XposedBridge.log(TAG + ": dp dex cleared displayId=" + previous);
         }
         lastConfiguredDpDisplayId = configured;
@@ -997,6 +1004,173 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": removeHomeRootTask failed displayId="
                     + displayId + " " + t);
+        }
+    }
+
+    /**
+     * Remove ALL Dex root tasks across every surviving DisplayContent.
+     * Identified by type=0 (undefined) + windowingMode=freeform(4)/multi-window(1)
+     * OR having mDeskRootTaskType (activatable/minimized). Also kills any
+     * SecondaryLauncher activity that may still be alive.
+     */
+    private static void cleanupAllDexRootTasks() {
+        try {
+            Object wms = windowManagerService;
+            if (wms == null) return;
+            Object root = XposedHelpers.getObjectField(wms, "mRoot");
+            if (root == null) return;
+            // Collect all TDA first to avoid ConcurrentModificationException
+            java.util.List<Object> allTdas = new java.util.ArrayList<>();
+            collectAllTaskDisplayAreas(root, allTdas);
+            java.util.List<Object> toRemove = new java.util.ArrayList<>();
+            for (Object tda : allTdas) {
+                collectDexRootTasks(tda, toRemove);
+            }
+            if (toRemove.isEmpty()) {
+                XposedBridge.log(TAG + ": cleanupAllDexRootTasks: no Dex root tasks found");
+                return;
+            }
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks found " + toRemove.size()
+                    + " Dex root tasks, removing...");
+            for (Object rootTask : toRemove) {
+                removeRootTaskSafely(rootTask);
+            }
+            killSecondaryLauncherIfNeeded(wms);
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks done");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks failed: " + t);
+        }
+    }
+
+    private static void collectAllTaskDisplayAreas(Object rootWC, java.util.List<Object> out) {
+        try {
+            Method getChildren = rootWC.getClass().getMethod("getChildren");
+            Object children = getChildren.invoke(rootWC);
+            if (!(children instanceof Iterable)) return;
+            for (Object dc : (Iterable<?>) children) {
+                if (dc == null) continue;
+                try {
+                    Method getTdas = dc.getClass().getMethod("getTaskDisplayAreas");
+                    Object tdas = getTdas.invoke(dc);
+                    if (tdas instanceof Iterable) {
+                        for (Object tda : (Iterable<?>) tdas) {
+                            if (tda != null) out.add(tda);
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private static void collectDexRootTasks(Object tda, java.util.List<Object> out) {
+        try {
+            Method getRootTasks = tda.getClass().getMethod("getRootTasks");
+            Object rootTasks = getRootTasks.invoke(tda);
+            if (!(rootTasks instanceof Iterable)) return;
+            for (Object rootTask : (Iterable<?>) rootTasks) {
+                if (rootTask != null && isDexRootTask(rootTask)) out.add(rootTask);
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    private static boolean isDexRootTask(Object rootTask) {
+        try {
+            Method getRootType = rootTask.getClass().getMethod("getRootType");
+            int rootType = (Integer) getRootType.invoke(rootTask);
+            Method getWinMode = rootTask.getClass().getMethod("getWindowingMode");
+            int winMode = (Integer) getWinMode.invoke(rootTask);
+            // Dex creates type=0 (undefined) root tasks in freeform(4) or
+            // multi-window(1) mode. Also catch anything with mDeskRootTaskType.
+            if (rootType == 0 && (winMode == 4 || winMode == 1)) return true;
+            try {
+                java.lang.reflect.Field f = rootTask.getClass().getDeclaredField("mDeskRootTaskType");
+                f.setAccessible(true);
+                if (f.get(rootTask) != null) return true;
+            } catch (NoSuchFieldException ignored) {}
+            return false;
+        } catch (Throwable t) { return false; }
+    }
+
+    private static void removeRootTaskSafely(Object rootTask) {
+        try {
+            XposedBridge.log(TAG + ": removing Dex root task " + describeTask(rootTask));
+            Method removeIfPossible = rootTask.getClass().getMethod("removeIfPossible");
+            removeIfPossible.invoke(rootTask);
+            return;
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": removeIfPossible failed: " + t);
+        }
+        try {
+            Method setVisible = rootTask.getClass().getMethod("setVisible", boolean.class);
+            setVisible.invoke(rootTask, false);
+            Object parent = XposedHelpers.getObjectField(rootTask, "mParent");
+            if (parent != null) {
+                try {
+                    parent.getClass().getMethod("removeChild", Object.class)
+                            .invoke(parent, rootTask);
+                } catch (Throwable ignored) {}
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": removeRootTaskSafely fallback failed: " + t);
+        }
+    }
+
+    private static String describeTask(Object task) {
+        try {
+            Method getTaskId = task.getClass().getMethod("getTaskId");
+            int id = (Integer) getTaskId.invoke(task);
+            Method getDisplayId = task.getClass().getMethod("getDisplayId");
+            int displayId = (Integer) getDisplayId.invoke(task);
+            String deskType = "?";
+            try {
+                java.lang.reflect.Field f = task.getClass().getDeclaredField("mDeskRootTaskType");
+                f.setAccessible(true);
+                Object dt = f.get(task);
+                if (dt != null) deskType = dt.toString();
+            } catch (NoSuchFieldException ignored) {}
+            return "Task{#" + id + " display=" + displayId + " desk=" + deskType + "}";
+        } catch (Throwable t) { return task.getClass().getSimpleName(); }
+    }
+
+    private static void killSecondaryLauncherIfNeeded(Object wms) {
+        try {
+            Object atm = XposedHelpers.getObjectField(wms, "mAtmService");
+            if (atm == null) return;
+            Object root = XposedHelpers.getObjectField(wms, "mRoot");
+            if (root == null) return;
+            java.util.List<Object> allTdas = new java.util.ArrayList<>();
+            collectAllTaskDisplayAreas(root, allTdas);
+            for (Object tda : allTdas) {
+                try {
+                    Object rootTasks = tda.getClass().getMethod("getRootTasks").invoke(tda);
+                    if (!(rootTasks instanceof Iterable)) continue;
+                    for (Object rt : (Iterable<?>) rootTasks) {
+                        if (rt == null) continue;
+                        Object children = rt.getClass().getMethod("getChildren").invoke(rt);
+                        if (!(children instanceof Iterable)) continue;
+                        for (Object task : (Iterable<?>) children) {
+                            if (task == null) continue;
+                            Object acts = task.getClass().getMethod("getActivities").invoke(task);
+                            if (!(acts instanceof Iterable)) continue;
+                            for (Object act : (Iterable<?>) acts) {
+                                try {
+                                    Object comp = act.getClass().getMethod("getComponentName").invoke(act);
+                                    if (comp == null) continue;
+                                    String cls = (String) comp.getClass().getMethod("getClassName").invoke(comp);
+                                    if (cls != null && cls.contains("SecondaryLauncher")) {
+                                        XposedBridge.log(TAG + ": killing SecondaryLauncher");
+                                        try {
+                                            act.getClass().getMethod("finishIfPossible").invoke(act);
+                                        } catch (Throwable ignored) {}
+                                    }
+                                } catch (Throwable ignored) {}
+                            }
+                        }
+                    }
+                } catch (Throwable ignored) {}
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": killSecondaryLauncherIfNeeded failed: " + t);
         }
     }
 
