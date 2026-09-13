@@ -144,7 +144,7 @@ public class SunshineServer {
 
             // 创建对话框
             if (suppressPin != null) {
-                submitPin(suppressPin);
+                submitPinAny(suppressPin);
             } else {
                 AlertDialog dialog = new MaterialAlertDialogBuilder(
                         context, R.style.ThemeOverlay_LibreDeX_MaterialAlertDialog)
@@ -166,10 +166,34 @@ public class SunshineServer {
     private static void submitPinFromDialog(EditText input, Context context) {
         String pin = input.getText().toString();
         if (pin.length() == 4) {
-            submitPin(pin);
+            submitPinAny(pin);
         } else {
             Toast.makeText(context, context.getString(R.string.pin_invalid_toast), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    /**
+     * PIN 提交分流：根据当前引擎选择正确的实现。
+     * 私有引擎走 native submitPin (libsunshine.so)；
+     * 官方引擎走 SunshineHostAdapter.submitPin (libsunshine_android.so)。
+     */
+    static boolean submitPinAny(String pin) {
+        try {
+            com.connect_screen.mirror.SunshineService svc = com.connect_screen.mirror.SunshineService.instance;
+            if (svc != null && Pref.getUseOfficialSunshineEngine()) {
+                SunshineHostAdapter adapter = svc.getOfficialHostAdapter();
+                if (adapter != null && adapter.isRunning()) {
+                    boolean ok = adapter.submitPin(pin);
+                    State.log("PIN submitted to official engine: " + (ok ? "OK" : "REJECTED"));
+                    return ok;
+                }
+            }
+        } catch (Throwable t) {
+            State.log("submitPinAny fallback to native: " + t.getMessage());
+        }
+        submitPin(pin);
+        State.log("PIN submitted to private native engine");
+        return true;
     }
 
     private static void styleDialogButtons(AlertDialog dialog, Context context) {

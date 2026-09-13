@@ -44,7 +44,16 @@ public final class SunshineHostAdapter {
                 return;
             }
             try {
-                SunshineHostConfig config = new SunshineHostConfig.Builder(context.getFilesDir())
+                // Use a dedicated subdirectory so official Sunshine state/cert/key files
+                // are completely isolated from the private libsunshine.so path.
+                // Both engines use identically-named files (sunshine_state.json,
+                // sunshine_cert.pem, sunshine_key.pem) — sharing a directory causes
+                // parse failures and write races when switching between them.
+                java.io.File officialDir = new java.io.File(context.getFilesDir(), "official_sunshine");
+                if (!officialDir.exists()) {
+                    officialDir.mkdirs();
+                }
+                SunshineHostConfig config = new SunshineHostConfig.Builder(officialDir)
                         .setHostName("LibreDeX")
                         .setPort(47989)
                         .setEnableHevc(Pref.getEncoderCodec() == Pref.ENCODER_CODEC_H265)

@@ -586,6 +586,7 @@ public class ConnectionFragment extends Fragment {
         }
         ExternalDisplayMonitor.refreshState(getContext());
         new Handler(Looper.getMainLooper()).post(() -> {
+            if (!isAdded()) return;
             // The active output may have changed while this page is displayed
             // (e.g. DP plugged in auto-starts DeX while the fragment still
             // thinks it is on Moonlight). Re-sync the transport tab and layout

@@ -66,6 +66,17 @@ public final class DexMirrorVideoSource implements SunshineVideoSource, AutoClos
             // 共享状态：触控/输入注入目标显示（m5 复用）
             SunshineServer.activeDexDisplayId = vdId;
             SunshineMouse.setDexTargetDisplayId(vdId);
+            SunshineKeyboard.setDexTargetDisplayId(vdId);
+            // 关键：initialize 设 screenWidth/screenHeight/mapMouseToTouch/IInputManager
+            // 没调的话 handleAbsMouseMovePacket 里 x/width 会出 NaN，注入事件全被 reject
+            try {
+                SunshineMouse.initialize(width, height);
+            } catch (Throwable ignored) {
+            }
+            try {
+                SunshineKeyboard.initialize();
+            } catch (Throwable ignored) {
+            }
             try {
                 InputRouting.bindAllExternalInputToDisplay(vdId);
                 State.log("[DexMirrorVideoSource] bound external input to display " + vdId);

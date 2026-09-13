@@ -92,6 +92,10 @@ public class SunshineService extends Service {
     private SunshineHostAdapter officialHostAdapter;
     private int instanceGeneration;
 
+    public SunshineHostAdapter getOfficialHostAdapter() {
+        return officialHostAdapter;
+    }
+
     private int currentTimeout;
     private PowerManager.WakeLock cpuWakeLock;
     private WifiManager.WifiLock wifiLock;

@@ -106,6 +106,7 @@ public class SunshineKeyboard {
     private static boolean singleAppMode;
     private static boolean externalMirrorMode;
     private static int externalMirrorDisplayId = Display.DEFAULT_DISPLAY;
+    private static int dexTargetDisplayId = Integer.MIN_VALUE;
     private static int lastFocusedDisplayId = Integer.MIN_VALUE;
 
     // 添加修饰键状态跟踪
@@ -410,6 +411,9 @@ public class SunshineKeyboard {
     }
 
     private static int getTargetDisplayId() {
+        if (dexTargetDisplayId >= 0) {
+            return dexTargetDisplayId;
+        }
         if (singleAppMode) {
             if (State.mirrorVirtualDisplay == null) {
                 return -1;
@@ -420,6 +424,10 @@ public class SunshineKeyboard {
             return externalMirrorDisplayId;
         }
         return Display.DEFAULT_DISPLAY;
+    }
+
+    public static void setDexTargetDisplayId(int displayId) {
+        dexTargetDisplayId = displayId;
     }
 
     private static int getExternalControlDisplayId() {
