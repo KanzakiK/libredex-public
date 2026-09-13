@@ -1,3 +1,30 @@
+## 0.2.20（2026-09-13）
+
+### English
+
+**Bug Fixes**
+
+- **DP/HDMI unplug no longer reboots the device**: cleanupAllDexRootTasks() was tearing down Task SurfaceControls synchronously from the DMS hook. The ndroid.anim thread's WindowAnimator.animate() could still hold references from the current frame, causing SurfaceControl.mLock == null → NPE → system_server crash → full reboot. Deferred cleanup 300ms to let the animator frame drain first. Same root cause also triggered three earlier system_server crashes (ActivityTaskSupervisor NPE, TaskOrganizerController IndexOutOfBounds, Watchdog half_watchdog).
+- **Mouse cursor no longer disappears after stopping DP output**: unbindAllExternalInputToDefaultDisplay() now does symmetric cleanup — unbinds each external input device from the Dex display, forces InputReader reconfiguration via reflection, and clears static Dex display state to prevent stale routing on next connect.
+- **DexController.registerExternalDesktopDisplay SecurityException**: setExternalDesktopDisplayId() throws 'Package android does not belong to 10050' from LSPosed hook context on OneUI 8.0 / Android 16. The official register path also silently blocked activatable root task creation on physical DP displays (app windows appeared as native freeform instead of Dex-style). Removed the official path entirely; all displays (DP + Sunshine) now use the pure manual fallback.
+- **Official Sunshine engine crashes on connect / all mouse events rejected as NaN / keyboard injects to wrong display / engine state collision with private fork**: See commit 1793434 for details. All four fixed.
+
+**UI Improvements**
+
+- Moved the "Official Sunshine engine (experimental)" switch out of the Screen Management card into its own standalone card immediately below Screen Management, with a short subtitle. Also added missing zh-rCN translation.
+
+### 简体中文
+
+**Bug 修复**
+
+- **DP/HDMI 拔插不再触发整机重启**：cleanupAllDexRootTasks() 在 DMS hook 中同步执行 emoveImmediately() 销毁 Task SurfaceControl，但 ndroid.anim 线程的 WindowAnimator.animate() 可能还持有当前 frame 的引用，导致 SurfaceControl.mLock == null → NPE → system_server crash → 整机重启。修复：延迟 300ms 让当前动画帧先跑完。同根因还触发了当天另外三次 system_server crash（ActivityTaskSupervisor NPE、TaskOrganizerController IndexOutOfBounds、Watchdog half_watchdog）。
+- **停止 DP 输出后鼠标光标不再消失**：unbindAllExternalInputToDefaultDisplay() 现在做对称清理——解绑 Dex 显示上的所有外部输入设备、通过反射强制 InputReader 重配置、清理静态 Dex 显示状态防止下次连接时残留路由。
+- **DexController.registerExternalDesktopDisplay SecurityException**：在 OneUI 8.0 / Android 16 上，LSPosed hook 上下文调用 setExternalDesktopDisplayId() 会抛出 'Package android does not belong to 10050'。官方 register 路径还会静默阻止物理 DP 显示上的 activatable root task 创建（App 窗口显示为 native freeform 而非 Dex 样式）。已删除官方路径，所有显示（DP + Sunshine）统一使用手动 fallback。
+- **官方 Sunshine 引擎连接崩溃 / 鼠标事件全被 NaN 拒绝 / 键盘注入到错误显示 / 与私有引擎状态文件冲突**：详见 commit 1793434，四个问题均已修复。
+
+**UI 改进**
+
+- "官方 Sunshine 引擎（实验性）"开关从屏幕管理卡中抽出，单独成卡紧贴屏幕管理下方，附带简短副标题说明。同时补齐 zh-rCN 翻译。
 # LibreDeX 更新记录 / Changelog
 
 ## 0.2.14（2026-09-06）
