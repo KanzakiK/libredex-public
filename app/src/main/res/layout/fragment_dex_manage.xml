@@ -292,20 +292,6 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/dex_use_official_engine"
-                        android:textColor="@color/ui_text_primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-                    <androidx.appcompat.widget.SwitchCompat
-                        android:id="@+id/dexUseOfficialEngineSwitch"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content" />
-                </LinearLayout>
-                <LinearLayout style="@style/LibreDeXRow">
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:text="@string/dex_fake_off"
                         android:textColor="@color/ui_text_primary"
                         android:textSize="14sp"
@@ -334,6 +320,35 @@
                     style="@style/LibreDeXButtonSoft"
                     android:layout_marginTop="8dp"
                     android:text="@string/dex_manual_off" />
+            </LinearLayout>
+
+            <LinearLayout style="@style/LibreDeXCard" android:layout_marginTop="12dp" android:orientation="vertical">
+                <LinearLayout style="@style/LibreDeXRow">
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/dex_use_official_engine"
+                            android:textColor="@color/ui_text_primary"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="@string/dex_use_official_engine_desc"
+                            android:textColor="@color/ui_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/dexUseOfficialEngineSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content" />
+                </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 

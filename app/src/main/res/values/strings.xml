@@ -122,6 +122,7 @@
     <string name="dex_black_image_off">Simulate screen-off with black image</string>
     <string name="dex_block_auto_lock">Block auto-lock</string>
     <string name="dex_use_official_engine">Official Sunshine engine (experimental)</string>
+    <string name="dex_use_official_engine_desc">Use the official Sunshine native engine instead of the private fork. Restart Sunshine after toggling.</string>
     <string name="dex_fake_off">Fake screen-off (power key does not lock)</string>
     <string name="dex_block_sleep">Block sleep</string>
     <string name="dex_manual_off">Manual screen-off</string>
