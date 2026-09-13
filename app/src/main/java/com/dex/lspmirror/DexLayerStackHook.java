@@ -1009,9 +1009,20 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
 
     /**
      * Remove ALL Dex root tasks across every surviving DisplayContent.
-     * Identified by type=0 (undefined) + windowingMode=freeform(4)/multi-window(1)
-     * OR having mDeskRootTaskType (activatable/minimized). Also kills any
-     * SecondaryLauncher activity that may still be alive.
+     *
+     * THREE-STAGE STRATEGY (fix35):
+     * 1. Collect all Task nodes on the **specific Dex display** we tracked
+     *    (via lastConfiguredDpDisplayId — dynamic, NOT hardcoded >= 6).
+     * 2. removeImmediately each Task (STEP 2).
+     * 3. Null out the TaskDisplayArea HOME task template fields
+     *    (mCanHostHomeTask=false, mRootHomeTask=null, mTmpHomeChildren.clear)
+     *    so WMS cannot respawn SecondaryLauncher after our cleanup.
+     *
+     * WHY LAST_CONFIGURED_DP_DISPLAY_ID, NOT >= 6?
+     * Android displayId is dynamically assigned, not fixed. The Dex physical
+     * DP/HDMI display might be ID 6 today, ID 7 tomorrow, ID 12 after reboot.
+     * We already track the exact Dex display ID in syncConfiguredDpDisplay()
+     * via DEX_FLAG_DISPLAY_IDS + lastConfiguredDpDisplayId — use that instead.
      */
     private static void cleanupAllDexRootTasks() {
         try {
@@ -1019,100 +1030,224 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             if (wms == null) return;
             Object root = XposedHelpers.getObjectField(wms, "mRoot");
             if (root == null) return;
-            // Collect all TDA first to avoid ConcurrentModificationException
-            java.util.List<Object> allTdas = new java.util.ArrayList<>();
-            collectAllTaskDisplayAreas(root, allTdas);
-            java.util.List<Object> toRemove = new java.util.ArrayList<>();
-            for (Object tda : allTdas) {
-                collectDexRootTasks(tda, toRemove);
-            }
-            if (toRemove.isEmpty()) {
-                XposedBridge.log(TAG + ": cleanupAllDexRootTasks: no Dex root tasks found");
+
+            // STEP 1: Find ALL Task nodes on the specific Dex display we tracked
+            // Use lastConfiguredDpDisplayId — this is the EXACT display that was
+            // previously used for Dex mode and needs cleanup now.
+            final int dexDisplayId = lastConfiguredDpDisplayId;
+            if (dexDisplayId < 0) {
+                XposedBridge.log(TAG + ": cleanupAllDexRootTasks: no known Dex display ID");
                 return;
             }
-            XposedBridge.log(TAG + ": cleanupAllDexRootTasks found " + toRemove.size()
-                    + " Dex root tasks, removing...");
-            for (Object rootTask : toRemove) {
-                removeRootTaskSafely(rootTask);
+            XposedBridge.log(TAG + ":  target Dex displayId=" + dexDisplayId);
+
+            // Use ONLY mChildren field reflection — no getter methods!
+            java.util.List<Object> toRemove = new java.util.ArrayList<>();
+            java.util.Set<Integer> seenIds = new java.util.HashSet<>();
+            java.util.List<Object> allDescendants = new java.util.ArrayList<>();
+            java.util.List<Integer> nodeDisplayIds = new java.util.ArrayList<>();
+            // Also collect Dex display TaskDisplayAreas for Step 3 (kill HOME template)
+            java.util.List<Object> dexTDAs = new java.util.ArrayList<>();
+            java.util.Set<Integer> seenTDADisplays = new java.util.HashSet<>();
+            collectAllChildrenWithContext(root, -1, 0, allDescendants, nodeDisplayIds);
+            XposedBridge.log(TAG + ":  PROBE total descendants=" + allDescendants.size());
+
+            int taskLikeCount = 0;
+            for (int i = 0; i < allDescendants.size(); i++) {
+                Object wc = allDescendants.get(i);
+                int contextDisplayId = nodeDisplayIds.get(i);
+                if (wc == null) continue;
+                // Collect Dex-display TaskDisplayAreas for Step 3
+                String cn = wc.getClass().getName();
+                if (cn.contains("TaskDisplayArea") && contextDisplayId == dexDisplayId
+                        && !seenTDADisplays.contains(contextDisplayId)) {
+                    dexTDAs.add(wc);
+                    seenTDADisplays.add(contextDisplayId);
+                    XposedBridge.log(TAG + ":  COLLECT TDA display=" + contextDisplayId);
+                }
+                // DIAGNOSTIC: print ALL nodes whose class contains "Task"
+                if (cn.contains("Task")) {
+                    taskLikeCount++;
+                    int taskId = -1;
+                    try {
+                        java.lang.reflect.Field f = wc.getClass().getDeclaredField("mTaskId");
+                        f.setAccessible(true);
+                        Object v = f.get(wc);
+                        if (v instanceof Integer) taskId = (Integer) v;
+                    } catch (Throwable ignored) {}
+                    XposedBridge.log(TAG + ":  PROBE[" + taskLikeCount + "] class=" + cn.substring(cn.lastIndexOf('.') + 1)
+                            + " taskId=" + taskId + " contextDisplayId=" + contextDisplayId);
+                }
+
+                // Is this a Task? (class name contains "Task" but not TaskDisplayArea/TaskFragment/ActivityRecord)
+                if (!cn.contains(".Task") && !cn.endsWith("Task")) continue;
+                if (cn.contains("TaskDisplayArea")) continue;
+                if (cn.contains("TaskFragment")) continue;
+                if (cn.contains("ActivityRecord")) continue;
+                if (cn.contains("WindowState")) continue;
+
+                // Get taskId via mTaskId field
+                int taskId = -1;
+                try {
+                    java.lang.reflect.Field f = wc.getClass().getDeclaredField("mTaskId");
+                    f.setAccessible(true);
+                    Object v = f.get(wc);
+                    if (v instanceof Integer) taskId = (Integer) v;
+                } catch (Throwable ignored) {}
+                if (taskId > 0 && seenIds.contains(taskId)) continue;
+
+                // ONLY collect Task from the specific Dex display we're cleaning up
+                int displayId = contextDisplayId;
+                if (displayId != dexDisplayId) continue;
+
+                XposedBridge.log(TAG + ":  COLLECT Task id=" + taskId
+                        + " display=" + displayId
+                        + " class=" + cn.substring(cn.lastIndexOf('.') + 1));
+                toRemove.add(wc);
+                if (taskId > 0) seenIds.add(taskId);
             }
-            killSecondaryLauncherIfNeeded(wms);
-            XposedBridge.log(TAG + ": cleanupAllDexRootTasks done");
+            XposedBridge.log(TAG + ":  PROBE total Task-like nodes=" + taskLikeCount);
+
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks: found " + toRemove.size()
+                    + " Dex display tasks to remove");
+
+            if (toRemove.isEmpty()) {
+                XposedBridge.log(TAG + ": cleanupAllDexRootTasks: nothing to remove");
+                return;
+            }
+
+            // STEP 2: Remove each Task node
+            int removed = 0;
+            for (Object task : toRemove) {
+                if (removeRootTaskSafely(task)) removed++;
+            }
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks done: removed "
+                    + removed + "/" + toRemove.size());
+
+            // STEP 3: Kill the HOME task template on Dex TDAs so WMS cannot respawn SecondaryLauncher
+            for (Object tda : dexTDAs) {
+                try {
+                    // Set mCanHostHomeTask = false
+                    try {
+                        java.lang.reflect.Field f = tda.getClass().getDeclaredField("mCanHostHomeTask");
+                        f.setAccessible(true);
+                        f.set(tda, false);
+                        XposedBridge.log(TAG + ":  STEP3 mCanHostHomeTask=false on " + tda.getClass().getSimpleName());
+                    } catch (Throwable t) {
+                        XposedBridge.log(TAG + ":  STEP3 mCanHostHomeTask failed: " + t.getMessage());
+                    }
+                    // Set mRootHomeTask = null (kills the template)
+                    try {
+                        java.lang.reflect.Field f = tda.getClass().getDeclaredField("mRootHomeTask");
+                        f.setAccessible(true);
+                        Object oldVal = f.get(tda);
+                        f.set(tda, null);
+                        XposedBridge.log(TAG + ":  STEP3 mRootHomeTask set null (was "
+                                + (oldVal == null ? "null" : oldVal.getClass().getSimpleName()) + ")");
+                    } catch (Throwable t) {
+                        XposedBridge.log(TAG + ":  STEP3 mRootHomeTask failed: " + t.getMessage());
+                    }
+                    // Set mTmpHomeChildren = empty
+                    try {
+                        java.lang.reflect.Field f = tda.getClass().getDeclaredField("mTmpHomeChildren");
+                        f.setAccessible(true);
+                        Object list = f.get(tda);
+                        if (list instanceof java.util.Collection) {
+                            ((java.util.Collection<?>) list).clear();
+                            XposedBridge.log(TAG + ":  STEP3 mTmpHomeChildren cleared");
+                        }
+                    } catch (Throwable t) {
+                        XposedBridge.log(TAG + ":  STEP3 mTmpHomeChildren failed: " + t.getMessage());
+                    }
+                } catch (Throwable t) {
+                    XposedBridge.log(TAG + ": cleanupAllDexRootTasks STEP3 FAILED: " + t);
+                }
+            }
         } catch (Throwable t) {
-            XposedBridge.log(TAG + ": cleanupAllDexRootTasks failed: " + t);
+            XposedBridge.log(TAG + ": cleanupAllDexRootTasks FAILED: " + t);
         }
     }
 
-    private static void collectAllTaskDisplayAreas(Object rootWC, java.util.List<Object> out) {
-        try {
-            Method getChildren = rootWC.getClass().getMethod("getChildren");
-            Object children = getChildren.invoke(rootWC);
-            if (!(children instanceof Iterable)) return;
-            for (Object dc : (Iterable<?>) children) {
-                if (dc == null) continue;
-                try {
-                    Method getTdas = dc.getClass().getMethod("getTaskDisplayAreas");
-                    Object tdas = getTdas.invoke(dc);
-                    if (tdas instanceof Iterable) {
-                        for (Object tda : (Iterable<?>) tdas) {
-                            if (tda != null) out.add(tda);
-                        }
-                    }
-                } catch (Throwable ignored) {}
-            }
-        } catch (Throwable ignored) {}
-    }
-
-    private static void collectDexRootTasks(Object tda, java.util.List<Object> out) {
-        try {
-            Method getRootTasks = tda.getClass().getMethod("getRootTasks");
-            Object rootTasks = getRootTasks.invoke(tda);
-            if (!(rootTasks instanceof Iterable)) return;
-            for (Object rootTask : (Iterable<?>) rootTasks) {
-                if (rootTask != null && isDexRootTask(rootTask)) out.add(rootTask);
-            }
-        } catch (Throwable ignored) {}
-    }
-
-    private static boolean isDexRootTask(Object rootTask) {
-        try {
-            Method getRootType = rootTask.getClass().getMethod("getRootType");
-            int rootType = (Integer) getRootType.invoke(rootTask);
-            Method getWinMode = rootTask.getClass().getMethod("getWindowingMode");
-            int winMode = (Integer) getWinMode.invoke(rootTask);
-            // Dex creates type=0 (undefined) root tasks in freeform(4) or
-            // multi-window(1) mode. Also catch anything with mDeskRootTaskType.
-            if (rootType == 0 && (winMode == 4 || winMode == 1)) return true;
+    /** Recursively collect all descendants via mChildren field reflection.
+     * Also records the displayId context at each level (inherited from parent DisplayContent).
+     * Output: out = descendant nodes, displayIds[i] = displayId for out[i]
+     * DEBUG: prints full tree structure with indentation
+     */
+    private static void collectAllChildrenWithContext(Object container, int currentDisplayId, int depth,
+            java.util.List<Object> out, java.util.List<Integer> displayIds) {
+        if (container == null) return;
+        // If this IS a DisplayContent, update the context displayId
+        String cn = container.getClass().getName();
+        if (cn.contains("DisplayContent")) {
             try {
-                java.lang.reflect.Field f = rootTask.getClass().getDeclaredField("mDeskRootTaskType");
+                java.lang.reflect.Field f = container.getClass().getDeclaredField("mDisplayId");
                 f.setAccessible(true);
-                if (f.get(rootTask) != null) return true;
-            } catch (NoSuchFieldException ignored) {}
-            return false;
-        } catch (Throwable t) { return false; }
+                Object v = f.get(container);
+                if (v instanceof Integer) currentDisplayId = (Integer) v;
+            } catch (Throwable ignored) {}
+        }
+        // DEBUG: print this node
+        Object childrenRaw;
+        int childCount = 0;
+        try {
+            childrenRaw = XposedHelpers.getObjectField(container, "mChildren");
+            if (childrenRaw instanceof Iterable) {
+                for (Object _ : (Iterable<?>) childrenRaw) childCount++;
+            }
+        } catch (Throwable t) { childCount = -1; childrenRaw = null; }
+        StringBuilder indent = new StringBuilder();
+        for (int i = 0; i < depth; i++) indent.append("  ");
+        String shortCn = cn.substring(cn.lastIndexOf('.') + 1);
+        XposedBridge.log(TAG + ":  TREE" + indent + shortCn
+                + " ctx=" + currentDisplayId + " kids=" + childCount);
+        // If this is a TaskDisplayArea, dump all home-related fields
+        if (cn.contains("TaskDisplayArea")) {
+            for (java.lang.reflect.Field f : container.getClass().getDeclaredFields()) {
+                String fn = f.getName();
+                if (fn.toLowerCase().contains("home")) {
+                    try {
+                        f.setAccessible(true);
+                        Object v = f.get(container);
+                        String vs = (v == null) ? "null" : v.getClass().getSimpleName();
+                        if (v instanceof Number) vs = v.toString();
+                        XposedBridge.log(TAG + ":  TREE" + indent + "  FIELD " + fn + "=" + vs);
+                    } catch (Throwable t) {
+                        XposedBridge.log(TAG + ":  TREE" + indent + "  FIELD " + fn + " ERR:" + t.getMessage());
+                    }
+                }
+            }
+        }
+
+        if (!(childrenRaw instanceof Iterable)) return;
+        for (Object child : (Iterable<?>) childrenRaw) {
+            if (child == null) continue;
+            out.add(child);
+            displayIds.add(currentDisplayId);
+            collectAllChildrenWithContext(child, currentDisplayId, depth + 1, out, displayIds);
+        }
     }
 
-    private static void removeRootTaskSafely(Object rootTask) {
+
+    private static boolean removeRootTaskSafely(Object rootTask) {
         try {
-            XposedBridge.log(TAG + ": removing Dex root task " + describeTask(rootTask));
+            XposedBridge.log(TAG + ": removing " + describeTask(rootTask));
+            // Android 16: removeImmediately() is the official path for WindowContainer
+            try {
+                Method removeImmediately = rootTask.getClass().getMethod("removeImmediately");
+                removeImmediately.invoke(rootTask);
+                XposedBridge.log(TAG + ":  removed via removeImmediately");
+                return true;
+            } catch (NoSuchMethodException ignored) {
+                // Fallback to removeIfPossible
+            }
             Method removeIfPossible = rootTask.getClass().getMethod("removeIfPossible");
             removeIfPossible.invoke(rootTask);
-            return;
+            XposedBridge.log(TAG + ":  removed via removeIfPossible");
+            return true;
         } catch (Throwable t) {
-            XposedBridge.log(TAG + ": removeIfPossible failed: " + t);
+            XposedBridge.log(TAG + ": removeRootTaskSafely failed: " + t);
         }
-        try {
-            Method setVisible = rootTask.getClass().getMethod("setVisible", boolean.class);
-            setVisible.invoke(rootTask, false);
-            Object parent = XposedHelpers.getObjectField(rootTask, "mParent");
-            if (parent != null) {
-                try {
-                    parent.getClass().getMethod("removeChild", Object.class)
-                            .invoke(parent, rootTask);
-                } catch (Throwable ignored) {}
-            }
-        } catch (Throwable t) {
-            XposedBridge.log(TAG + ": removeRootTaskSafely fallback failed: " + t);
-        }
+        return false;
     }
 
     private static String describeTask(Object task) {
@@ -1132,47 +1267,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         } catch (Throwable t) { return task.getClass().getSimpleName(); }
     }
 
-    private static void killSecondaryLauncherIfNeeded(Object wms) {
-        try {
-            Object atm = XposedHelpers.getObjectField(wms, "mAtmService");
-            if (atm == null) return;
-            Object root = XposedHelpers.getObjectField(wms, "mRoot");
-            if (root == null) return;
-            java.util.List<Object> allTdas = new java.util.ArrayList<>();
-            collectAllTaskDisplayAreas(root, allTdas);
-            for (Object tda : allTdas) {
-                try {
-                    Object rootTasks = tda.getClass().getMethod("getRootTasks").invoke(tda);
-                    if (!(rootTasks instanceof Iterable)) continue;
-                    for (Object rt : (Iterable<?>) rootTasks) {
-                        if (rt == null) continue;
-                        Object children = rt.getClass().getMethod("getChildren").invoke(rt);
-                        if (!(children instanceof Iterable)) continue;
-                        for (Object task : (Iterable<?>) children) {
-                            if (task == null) continue;
-                            Object acts = task.getClass().getMethod("getActivities").invoke(task);
-                            if (!(acts instanceof Iterable)) continue;
-                            for (Object act : (Iterable<?>) acts) {
-                                try {
-                                    Object comp = act.getClass().getMethod("getComponentName").invoke(act);
-                                    if (comp == null) continue;
-                                    String cls = (String) comp.getClass().getMethod("getClassName").invoke(comp);
-                                    if (cls != null && cls.contains("SecondaryLauncher")) {
-                                        XposedBridge.log(TAG + ": killing SecondaryLauncher");
-                                        try {
-                                            act.getClass().getMethod("finishIfPossible").invoke(act);
-                                        } catch (Throwable ignored) {}
-                                    }
-                                } catch (Throwable ignored) {}
-                            }
-                        }
-                    }
-                } catch (Throwable ignored) {}
-            }
-        } catch (Throwable t) {
-            XposedBridge.log(TAG + ": killSecondaryLauncherIfNeeded failed: " + t);
-        }
-    }
 
     private static void forceDpTaskDisplayAreaFreeform(Object tda, int displayId) {
         forceTaskDisplayAreaFreeform(tda, displayId, true);
