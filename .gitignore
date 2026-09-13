@@ -108,3 +108,14 @@ libredex_logs/
 logs/
 xposed-stubs/bin/
 __pycache__/
+
+# APK 解包临时目录
+tmp_apk_*
+
+# 调试临时日志
+build_err.txt
+compile_err.txt
+containers_dex.txt
+err2.txt
+err3.txt
+gradle_log.txt

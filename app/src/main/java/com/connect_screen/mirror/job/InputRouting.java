@@ -116,11 +116,15 @@ public class InputRouting {
     /**
      * Reset every external input device's routing back to the default display.
      *
-     * The legacy (deX) output path associates external inputs to the external
-     * display's uniqueId via {@link #bindInputToDisplay}. That association is
-     * left behind after the session stops/unplugs, so a mouse stays routed to a
-     * display that no longer exists and its pointer keeps getting canceled
-     * (cursor invisible / input dead). Call this on session teardown.
+     * {@link #bindInputToDisplay} can associate a device at three levels —
+     * descriptor→uniqueId, port→uniqueId, or port→port number — depending on
+     * which fallback succeeded at bind time.  This method clears *all three*
+     * levels for every external device and then calls reconfigureDevices() so
+     * InputReader rebuilds each device's viewport from scratch before the old
+     * target display disappears.  Without the full teardown, InputReader can
+     * hold a stale "should be associated with uniqueId=X" cache; when X's
+     * viewport is later removed (HDMI unplugged) the device becomes dead until
+     * physically re-enumerated (e.g. toggle Bluetooth on a mouse).
      */
     public static void unbindAllExternalInputToDefaultDisplay() {
         if (!shouldBind()) {
@@ -130,17 +134,54 @@ public class InputRouting {
         if (inputManager == null) {
             return;
         }
+        Map<String, String> descriptorToPort = InputRouting.getInputDeviceDescriptorToPortMap();
         for (int deviceId : inputManager.getInputDeviceIds()) {
             InputDevice inputDevice = inputManager.getInputDevice(deviceId);
             if (inputDevice == null || !inputDevice.isExternal()) {
                 continue;
             }
+            String descriptor = inputDevice.getDescriptor();
+            String inputPort = descriptorToPort.get(descriptor);
             try {
-                inputManager.removeUniqueIdAssociationByDescriptor(inputDevice.getDescriptor());
-                State.log("Reset external input routing to default: " + inputDevice.getName());
+                // Level 1 — descriptor → uniqueId (the happy-path bind uses this).
+                inputManager.removeUniqueIdAssociationByDescriptor(descriptor);
+                // Level 2 — port → uniqueId (first fallback).
+                if (inputPort != null) {
+                    try {
+                        inputManager.removeUniqueIdAssociation(inputPort);
+                    } catch (Throwable ignored) {}
+                    // Level 3 — port → display port number (second fallback).
+                    try {
+                        inputManager.removePortAssociation(inputPort);
+                    } catch (Throwable ignored) {}
+                }
+                State.log("Reset external input routing to default: " + inputDevice.getName()
+                        + (inputPort != null ? " (port=" + inputPort + ")" : ""));
             } catch (Throwable e) {
                 State.log("Failed to reset routing for " + inputDevice.getName() + ": " + e.getMessage());
             }
+        }
+        // Force InputReader to rebuild every device's viewport *now*, before the
+        // HDMI display's viewport disappears.  Otherwise the stale uniqueId
+        // association survives into the next DISPLAY_INFO reconfiguration and
+        // InputReader ends up unable to find a matching viewport.
+        // reconfigureDevices() is @hide — call reflectively.
+        try {
+            java.lang.reflect.Method reconfigure = IInputManager.class.getMethod("reconfigureDevices");
+            reconfigure.invoke(inputManager);
+            State.log("Forced InputReader reconfigureDevices after clearing associations");
+        } catch (NoSuchMethodException ignored) {
+            // Fallback: trigger a harmless synthetic event that forces reconfigure
+            // through the normal updateInputDevices() path in InputManagerService.
+            try {
+                inputManager.getInputDeviceIds();
+                State.log("InputReader reconfigureDevices() unavailable; "
+                        + "depended on removeAssociation calls to trigger reconfigure");
+            } catch (Throwable e2) {
+                State.log("InputReader reconfigure fallback failed (non-fatal): " + e2.getMessage());
+            }
+        } catch (Throwable e) {
+            State.log("InputReader reconfigureDevices failed (non-fatal): " + e.getMessage());
         }
     }
 

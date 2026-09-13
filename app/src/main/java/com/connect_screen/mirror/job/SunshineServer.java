@@ -498,6 +498,11 @@ public class SunshineServer {
         videoSourceThread = null;
         activeDexDisplayId = -1;
         State.streamingDebugInfo.setValue("串流未启动");
+        // Clear any input-device→Dex-display associations so the mouse doesn't
+        // get left pointing at a now-gone VirtualDisplay viewport (see
+        // InputRouting.unbindAllExternalInputToDefaultDisplay for details).
+        InputRouting.detachInputDeviceListener();
+        InputRouting.unbindAllExternalInputToDefaultDisplay();
         SunshineKeyboard.stopUinputKeyboard();
         SunshineAudio.restoreVolume(State.getContext());
         SunshineMouse.resetInjectedInputState();

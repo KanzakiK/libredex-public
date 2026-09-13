@@ -748,31 +748,12 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             Object atm = XposedHelpers.getObjectField(wms, "mAtmService");
             Object dexController = XposedHelpers.getObjectField(atm, "mDexController");
             installDexControllerGuard(dexController.getClass());
-            // Try the official DexController.registerExternalDesktopDisplay first — it
-            // internally requests activatable root task creation and notifies SystemUI.
-            // BUT we no longer return on success: on this device the official method can
-            // silently no-op when called from within an eligibility hook (DisplayContent
-            // exists but some sub-components aren't fully wired up yet), so we ALWAYS
-            // also run the manual field-mirror path below as a belt-and-suspenders guard.
-            // The manual path sets mPrimaryExternalDesktopDisplayId + IMS states directly,
-            // which is the working codepath we confirmed on Sunshine virtual displays.
-            if (configuredDpDisplayId() == displayId) {
-                Method setExternal = findSetExternalDesktopDisplayId(dexController.getClass());
-                if (setExternal != null) {
-                    try {
-                        setExternal.invoke(dexController, displayId);
-                        XposedBridge.log(TAG + ": dex controller official register displayId="
-                                + displayId + " (also running manual fallback)");
-                    } catch (Throwable t) {
-                        Throwable cause = t.getCause() != null ? t.getCause() : t;
-                        XposedBridge.log(TAG + ": official dex controller register failed, "
-                                + "continuing to manual state: " + cause);
-                    }
-                }
-            }
-            // The official setExternalDesktopDisplayId dereferences
-            // RootWindowContainer.getDisplayContent() before the display is fully
-            // registered from our hook, so mirror only the state it would set.
+            // Pure manual path: set DexController + IMS state directly.
+            // Confirmed working on both Sunshine virtual displays AND physical DP displays.
+            // DO NOT call setExternalDesktopDisplayId — on this device it either throws
+            // SecurityException ("Package android does not belong to 10050") or silently
+            // blocks activatable root creation, which is the root cause of DP sessions
+            // having only native freeform small-windows instead of proper Dex-style app windows.
             java.lang.reflect.Field primaryDisplayField = dexController.getClass()
                     .getDeclaredField("mPrimaryExternalDesktopDisplayId");
             primaryDisplayField.setAccessible(true);
@@ -1228,7 +1209,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         try {
             Method getMode = tda.getClass().getMethod("getWindowingMode");
             int mode = (Integer) getMode.invoke(tda);
-            if (mode != 4) {
+            if (mode != 4 && mode != 5) {
                 tda.getClass().getMethod("setWindowingMode", int.class)
                         .invoke(tda, 4);
                 XposedBridge.log(TAG + ": dex TDA freeform forced displayId="
