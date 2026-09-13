@@ -907,7 +907,15 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             // get migrated to the next surviving display (phone mirror VD or main
             // display) — they remain invisible but still on the layer stack,
             // causing "Dex画面叠在镜像下方" symptom. Clean them up now.
-            cleanupAllDexRootTasks();
+            // IMPORTANT: cleanupAllDexRootTasks calls removeImmediately() which
+            // tears down Task SurfaceControls. The caller (DMS hook, display thread)
+            // and the caller of this hook chain may still hold SurfaceControl refs
+            // that are being processed by WindowAnimator on the android.anim thread.
+            // If we run removeImmediately() synchronously here, the next frame's
+            // WindowAnimator.animate() hits a null SurfaceControl → NPE → system_server
+            // crash. Post 300ms so the current frame drains first.
+            android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            mainHandler.postDelayed(() -> cleanupAllDexRootTasks(), 300);
             XposedBridge.log(TAG + ": dp dex cleared displayId=" + previous);
         }
         lastConfiguredDpDisplayId = configured;

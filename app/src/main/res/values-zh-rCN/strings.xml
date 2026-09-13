@@ -121,6 +121,8 @@
     <string name="dex_auto_off">自动熄屏</string>
     <string name="dex_black_image_off">黑色图片模拟熄屏</string>
     <string name="dex_block_auto_lock">阻止自动锁屏</string>
+    <string name="dex_use_official_engine">官方 Sunshine 引擎（实验性）</string>
+    <string name="dex_use_official_engine_desc">使用官方 Sunshine 原生引擎替代私有分支。切换后需重启 Sunshine。</string>
     <string name="dex_fake_off">假熄屏（电源键不锁屏）</string>
     <string name="dex_block_sleep">阻止休眠</string>
     <string name="dex_manual_off">手动息屏</string>
