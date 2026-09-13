@@ -1049,10 +1049,8 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             // Also collect Dex display TaskDisplayAreas for Step 3 (kill HOME template)
             java.util.List<Object> dexTDAs = new java.util.ArrayList<>();
             java.util.Set<Integer> seenTDADisplays = new java.util.HashSet<>();
-            collectAllChildrenWithContext(root, -1, 0, allDescendants, nodeDisplayIds);
-            XposedBridge.log(TAG + ":  PROBE total descendants=" + allDescendants.size());
+            collectAllChildrenWithContext(root, -1, allDescendants, nodeDisplayIds);
 
-            int taskLikeCount = 0;
             for (int i = 0; i < allDescendants.size(); i++) {
                 Object wc = allDescendants.get(i);
                 int contextDisplayId = nodeDisplayIds.get(i);
@@ -1063,20 +1061,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                         && !seenTDADisplays.contains(contextDisplayId)) {
                     dexTDAs.add(wc);
                     seenTDADisplays.add(contextDisplayId);
-                    XposedBridge.log(TAG + ":  COLLECT TDA display=" + contextDisplayId);
-                }
-                // DIAGNOSTIC: print ALL nodes whose class contains "Task"
-                if (cn.contains("Task")) {
-                    taskLikeCount++;
-                    int taskId = -1;
-                    try {
-                        java.lang.reflect.Field f = wc.getClass().getDeclaredField("mTaskId");
-                        f.setAccessible(true);
-                        Object v = f.get(wc);
-                        if (v instanceof Integer) taskId = (Integer) v;
-                    } catch (Throwable ignored) {}
-                    XposedBridge.log(TAG + ":  PROBE[" + taskLikeCount + "] class=" + cn.substring(cn.lastIndexOf('.') + 1)
-                            + " taskId=" + taskId + " contextDisplayId=" + contextDisplayId);
                 }
 
                 // Is this a Task? (class name contains "Task" but not TaskDisplayArea/TaskFragment/ActivityRecord)
@@ -1100,13 +1084,9 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                 int displayId = contextDisplayId;
                 if (displayId != dexDisplayId) continue;
 
-                XposedBridge.log(TAG + ":  COLLECT Task id=" + taskId
-                        + " display=" + displayId
-                        + " class=" + cn.substring(cn.lastIndexOf('.') + 1));
                 toRemove.add(wc);
                 if (taskId > 0) seenIds.add(taskId);
             }
-            XposedBridge.log(TAG + ":  PROBE total Task-like nodes=" + taskLikeCount);
 
             XposedBridge.log(TAG + ": cleanupAllDexRootTasks: found " + toRemove.size()
                     + " Dex display tasks to remove");
@@ -1171,9 +1151,8 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     /** Recursively collect all descendants via mChildren field reflection.
      * Also records the displayId context at each level (inherited from parent DisplayContent).
      * Output: out = descendant nodes, displayIds[i] = displayId for out[i]
-     * DEBUG: prints full tree structure with indentation
      */
-    private static void collectAllChildrenWithContext(Object container, int currentDisplayId, int depth,
+    private static void collectAllChildrenWithContext(Object container, int currentDisplayId,
             java.util.List<Object> out, java.util.List<Integer> displayIds) {
         if (container == null) return;
         // If this IS a DisplayContent, update the context displayId
@@ -1186,44 +1165,16 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                 if (v instanceof Integer) currentDisplayId = (Integer) v;
             } catch (Throwable ignored) {}
         }
-        // DEBUG: print this node
         Object childrenRaw;
-        int childCount = 0;
         try {
             childrenRaw = XposedHelpers.getObjectField(container, "mChildren");
-            if (childrenRaw instanceof Iterable) {
-                for (Object _ : (Iterable<?>) childrenRaw) childCount++;
-            }
-        } catch (Throwable t) { childCount = -1; childrenRaw = null; }
-        StringBuilder indent = new StringBuilder();
-        for (int i = 0; i < depth; i++) indent.append("  ");
-        String shortCn = cn.substring(cn.lastIndexOf('.') + 1);
-        XposedBridge.log(TAG + ":  TREE" + indent + shortCn
-                + " ctx=" + currentDisplayId + " kids=" + childCount);
-        // If this is a TaskDisplayArea, dump all home-related fields
-        if (cn.contains("TaskDisplayArea")) {
-            for (java.lang.reflect.Field f : container.getClass().getDeclaredFields()) {
-                String fn = f.getName();
-                if (fn.toLowerCase().contains("home")) {
-                    try {
-                        f.setAccessible(true);
-                        Object v = f.get(container);
-                        String vs = (v == null) ? "null" : v.getClass().getSimpleName();
-                        if (v instanceof Number) vs = v.toString();
-                        XposedBridge.log(TAG + ":  TREE" + indent + "  FIELD " + fn + "=" + vs);
-                    } catch (Throwable t) {
-                        XposedBridge.log(TAG + ":  TREE" + indent + "  FIELD " + fn + " ERR:" + t.getMessage());
-                    }
-                }
-            }
-        }
-
+        } catch (Throwable t) { return; }
         if (!(childrenRaw instanceof Iterable)) return;
         for (Object child : (Iterable<?>) childrenRaw) {
             if (child == null) continue;
             out.add(child);
             displayIds.add(currentDisplayId);
-            collectAllChildrenWithContext(child, currentDisplayId, depth + 1, out, displayIds);
+            collectAllChildrenWithContext(child, currentDisplayId, out, displayIds);
         }
     }
 
