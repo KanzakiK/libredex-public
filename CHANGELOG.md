@@ -1,6 +1,30 @@
-# LibreDeX 更新记录 / Changelog
+## 0.2.20（2026-09-13）
 
-## 0.2.14（2026-09-06）
+### English
+
+**Bug Fixes**
+
+- **Stopping DP/HDMI output no longer reboots the device**: disconnecting the cable or pressing "Stop DP output" could kick the whole phone into a reboot. Root cause was a race between two system threads and is now resolved — unplug is a clean operation.
+- **Mouse cursor no longer disappears after DP disconnect**: when switching from DP DeX back to the phone screen, the physical mouse could stop working until the phone was restarted. Re-binding input devices is now handled symmetrically on both connect and disconnect.
+- **App windows on DP/HDMI now keep their Dex-style borders**: in some cases the official DeX engine path would silently downgrade activatable tasks to freeform windows. LibreDeX now always uses the manual path, which correctly creates Dex-style activatable windows on every output.
+- **Official Sunshine engine four-in-one fix**: switching the engine to the official native version crashed on connect, rejected every mouse event as NaN, sent keyboard input to the wrong display, and clobbered the private engine's state files if both were used in quick succession. All four resolved.
+
+**UI Improvements**
+
+- The "Official Sunshine engine (experimental)" toggle used to live inside the Screen Management card alongside auto-off, fake-off and block-sleep. It has been pulled out into its own standalone card directly below Screen Management, with a short subtitle explaining what it does.
+
+### 简体中文
+
+**Bug 修复**
+
+- **停止 DP/HDMI 输出不再触发整机重启**：拔掉数据线或点击"停止 DP 输出"曾经可能直接把手机带重启。根因是两个系统线程之间的 race，现已彻底修复——拔插变成一次干净的操作。
+- **停止 DP 后鼠标光标不再消失**：从 DP DeX 切回手机屏幕时，物理鼠标可能完全失效直到重启。重新绑定输入设备现在在连接和断开两个方向上对称处理。
+- **DP/HDMI 上 App 窗口恢复 Dex 风格边框**：某些情况下官方 DeX 引擎路径会静默把 activatable task 降级为 freeform 窗口。LibreDeX 现在统一使用手动路径，所有输出上都正确创建 Dex 风格的 activatable 窗口。
+- **官方 Sunshine 引擎四合一修复**：切换到官方原生引擎时，连接会崩溃、鼠标事件全被 NaN 拒绝、键盘发到错误的屏幕、两个引擎连续使用还会互相污染状态文件。四个问题全部修复。
+
+**UI 改进**
+
+- "官方 Sunshine 引擎（实验性）"开关原来跟自动熄屏、假熄屏、阻止休眠挤在同一张卡里，现在抽出来单独成卡，紧贴屏幕管理卡下方，附带简短副标题说明用途。## 0.2.14（2026-09-06）
 
 ### English
 
