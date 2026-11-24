@@ -42,9 +42,7 @@ public class SettingsFragment extends Fragment {
     private Button themeSystemButton;
     private Button themeLightButton;
     private Button themeDarkButton;
-    private Button languageSystemButton;
-    private Button languageZhButton;
-    private Button languageEnButton;
+    private Button languageButton;
     private boolean pendingLogExport;
 
     private final ActivityResultLauncher<Intent> storagePermissionLauncher =
@@ -79,9 +77,7 @@ public class SettingsFragment extends Fragment {
         themeSystemButton = view.findViewById(R.id.themeSystemButton);
         themeLightButton = view.findViewById(R.id.themeLightButton);
         themeDarkButton = view.findViewById(R.id.themeDarkButton);
-        languageSystemButton = view.findViewById(R.id.languageSystemButton);
-        languageZhButton = view.findViewById(R.id.languageZhButton);
-        languageEnButton = view.findViewById(R.id.languageEnButton);
+        languageButton = view.findViewById(R.id.languageButton);
 
         tintButton(shizukuGrantButton, R.color.ui_accent_soft, R.color.ui_accent);
 
@@ -94,9 +90,7 @@ public class SettingsFragment extends Fragment {
         themeLightButton.setOnClickListener(v -> setThemeMode("light"));
         themeDarkButton.setOnClickListener(v -> setThemeMode("dark"));
 
-        languageSystemButton.setOnClickListener(v -> setLanguageMode("system"));
-        languageZhButton.setOnClickListener(v -> setLanguageMode("zh-rCN"));
-        languageEnButton.setOnClickListener(v -> setLanguageMode("en"));
+        languageButton.setOnClickListener(v -> showLanguageDialog());
 
         view.findViewById(R.id.wizardEntry).setOnClickListener(v ->
                 InitializationGuideDialog.show(requireActivity()));
@@ -175,9 +169,7 @@ public class SettingsFragment extends Fragment {
         setSegButton(themeDarkButton, "dark".equals(mode));
 
         String lang = Pref.getLanguageMode();
-        setSegButton(languageSystemButton, "system".equals(lang));
-        setSegButton(languageZhButton, "zh-rCN".equals(lang));
-        setSegButton(languageEnButton, "en".equals(lang));
+        languageButton.setText(currentLanguageLabel());
     }
 
     private void requestLogExport() {
@@ -314,6 +306,39 @@ public class SettingsFragment extends Fragment {
             requireActivity().recreate();
         } catch (Throwable ignored) {
         }
+    }
+
+    private int currentLanguageIndex() {
+        String mode = Pref.getLanguageMode();
+        if (mode == null || mode.isEmpty()) {
+            mode = "system";
+        }
+        String[] tags = getResources().getStringArray(R.array.language_tags);
+        for (int i = 0; i < tags.length; i++) {
+            if (tags[i].equals(mode)) {
+                return i;
+            }
+        }
+        return 0;
+    }
+
+    private String currentLanguageLabel() {
+        return getResources().getStringArray(R.array.language_labels)[currentLanguageIndex()];
+    }
+
+    private void showLanguageDialog() {
+        String[] tags = getResources().getStringArray(R.array.language_tags);
+        String[] labels = getResources().getStringArray(R.array.language_labels);
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.settings_language)
+                .setSingleChoiceItems(labels, currentLanguageIndex(), (dialog, which) -> {
+                    dialog.dismiss();
+                    if (which >= 0 && which < tags.length) {
+                        setLanguageMode(tags[which]);
+                    }
+                })
+                .setNegativeButton(R.string.action_cancel, null)
+                .show();
     }
 
     private void setSegButton(Button button, boolean active) {

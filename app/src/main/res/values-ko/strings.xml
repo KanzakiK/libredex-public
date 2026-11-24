@@ -331,6 +331,7 @@
     <string name="settings_language_follow_system">시스템 설정 따름</string>
     <string name="settings_language_zh">简体中文</string>
     <string name="settings_language_en">English</string>
+    <string name="settings_language_ko">한국어</string>
     <string name="settings_online">온라인</string>
     <string name="settings_offline">오프라인</string>
     <string name="settings_authorized_userservice">인증됨 · UserService 온라인</string>

@@ -12,9 +12,11 @@ Checks:
 import re
 import sys
 import xml.etree.ElementTree as ET
+from pathlib import Path
 
-EN = r"D:\dex_work\app\src\main\res\values\strings.xml"
-ZH = r"D:\dex_work\app\src\main\res\values-zh-rCN\strings.xml"
+ROOT = Path(__file__).resolve().parents[1]
+EN = str(ROOT / "app/src/main/res/values/strings.xml")
+ZH = str(ROOT / "app/src/main/res/values-zh-rCN/strings.xml")
 
 BRAND = re.compile(
     r"^(LibreDeX|DeX|Moonlight|Shizuku|Sunshine|LSPosed|Vector|DP|HDMI|Display|"
@@ -35,6 +37,7 @@ CJK_IN_EN_ALLOWED = {
 
 # ZH values that legitimately contain no CJK (brand names, tech placeholders)
 ZH_ALLOWED_UNTRANSLATED = {
+    "settings_language_ko": "한국어",
     "about_version_app_fmt": "LibreDeX %1$s",
     "connection_ip_placeholder": "IP：--",
     "dex_display_summary_fmt": "%1$s · 1920×1080 · 60Hz",

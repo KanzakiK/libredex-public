@@ -183,18 +183,10 @@
                 android:orientation="horizontal"
                 android:padding="4dp">
                 <Button
-                    android:id="@+id/languageSystemButton"
-                    style="@style/LibreDeXSegButton"
-                    android:text="@string/settings_language_follow_system" />
-                <Button
-                    android:id="@+id/languageZhButton"
-                    style="@style/LibreDeXSegButton"
-                    android:text="@string/settings_language_zh" />
-                <Button
-                    android:id="@+id/languageEnButton"
+                    android:id="@+id/languageButton"
                     style="@style/LibreDeXSegButton"
                     android:layout_marginEnd="0dp"
-                    android:text="@string/settings_language_en" />
+                    android:text="@string/settings_language_follow_system" />
             </LinearLayout>
         </LinearLayout>
 
