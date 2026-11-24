@@ -9,6 +9,19 @@ plugins {
 def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.2.20'
 def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 266).toString().toInteger()
 
+// Keep only locale resources that actually exist in the repository. Adding a
+// values-xx directory is then enough to ship a new language; no build file
+// edit is required. Non-locale qualifiers such as values-night are ignored.
+def supportedLocales = ['en']
+file('src/main/res').listFiles()?.each { dir ->
+    if (!dir.isDirectory()) return
+    def matcher = (dir.name =~ /^values-([a-z]{2}(?:-r[A-Z]{2})?)$/)
+    if (matcher.matches()) {
+        def locale = matcher[0][1]
+        if (!supportedLocales.contains(locale)) supportedLocales << locale
+    }
+}
+
 def optionalTransportModule = project.findProperty('optionalTransportModule')
 if (optionalTransportModule == null && rootProject.file('local.properties').exists()) {
     def localProperties = new Properties()
@@ -64,10 +77,9 @@ android {
         versionCode libredexVersionCode
         versionName libredexVersionName
 
-        // i18n: only ship en + zh-rCN resources to keep the APK lean.
-        // values/ (default, no qualifier) = English after the i18n pass;
-        // values-zh-rCN/ = Simplified Chinese.
-        resConfigs "en", "zh-rCN"
+        // values/ (no qualifier) is the English default; locale-specific
+        // values-xx directories are detected above.
+        resConfigs supportedLocales
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField 'String', 'OPTIONAL_TRANSPORT_PROVIDER',
