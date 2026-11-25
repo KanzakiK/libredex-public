@@ -157,6 +157,27 @@ public final class CursorSurfaceController {
                 + " nativePointerHidden=" + nativePointerHidden);
     }
 
+    private static Object resolveParentControl(int displayId) {
+        android.view.IWindowManager windowManager = ServiceUtils.getWindowManager();
+        if (windowManager == null) {
+            return null;
+        }
+        String[] names = {"getA11yOverlayLayer", "getHandwritingSurfaceForDisplay"};
+        for (String name : names) {
+            try {
+                Method method = windowManager.getClass().getMethod(name, int.class);
+                Object parent = method.invoke(windowManager, displayId);
+                if (parent != null) {
+                    State.log(TAG + ": parent=" + name + " display=" + displayId);
+                    return parent;
+                }
+            } catch (Throwable t) {
+                State.log(TAG + ": " + name + " unavailable: " + t.getMessage());
+            }
+        }
+        return null;
+    }
+
     private static boolean initReflection() {
         if (surfaceControlClass != null) {
             return true;
@@ -205,12 +226,17 @@ public final class CursorSurfaceController {
             hotspotX = Math.round(size * HOTSPOT_X_RATIO);
             hotspotY = Math.round(size * HOTSPOT_Y_RATIO);
 
+            Object parent = resolveParentControl(displayId);
             Object builder = builderClass.getDeclaredConstructor().newInstance();
             setName.invoke(builder, "libredex-cursor");
             setBufferSize.invoke(builder, size, size);
             setFormat.invoke(builder, PixelFormat.TRANSLUCENT);
             setHidden.invoke(builder, true);
-            setParent.invoke(builder, new Object[]{null});
+            if (parent != null) {
+                setParent.invoke(builder, parent);
+            } else {
+                setParent.invoke(builder, new Object[]{null});
+            }
             cursorControl = build.invoke(builder);
             cursorSurface = surfaceConstructor.newInstance(cursorControl);
             drawCursor(context, size);
