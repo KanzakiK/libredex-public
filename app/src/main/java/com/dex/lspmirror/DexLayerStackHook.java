@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Member;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -2491,47 +2492,87 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
 
     private static void installCursorPermissionHook(ClassLoader cl) {
         try {
-            Class<?> policyClass = XposedHelpers.findClass(
-                    "com.android.server.policy.PhoneWindowManager", cl);
-            int hooked = 0;
-            for (final Method method : policyClass.getDeclaredMethods()) {
-                if (!"checkAddPermission".equals(method.getName())) {
-                    continue;
+            Class<?> policyClass = null;
+            Object wms = getWindowManagerServiceInternal();
+            if (wms != null) {
+                try {
+                    Object policy = XposedHelpers.getObjectField(wms, "mPolicy");
+                    if (policy != null) {
+                        policyClass = policy.getClass();
+                    }
+                } catch (Throwable ignored) {
                 }
-                XposedBridge.hookMethod(method, new XC_MethodHook() {
-                    @Override
-                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        int type = -1;
-                        String packageName = null;
-                        for (Object arg : param.args) {
-                            if (arg instanceof Integer && type < 0) {
-                                type = (Integer) arg;
-                            } else if (arg instanceof String && packageName == null) {
-                                packageName = (String) arg;
-                            } else if (arg != null
-                                    && "android.view.WindowManager$LayoutParams".equals(
-                                    arg.getClass().getName())) {
-                                type = XposedHelpers.getIntField(arg, "type");
-                                Object field = XposedHelpers.getObjectField(arg, "packageName");
-                                if (field instanceof String) {
-                                    packageName = (String) field;
+            }
+            if (policyClass == null) {
+                policyClass = XposedHelpers.findClass(
+                        "com.android.server.policy.PhoneWindowManager", cl);
+            }
+            int hooked = 0;
+            Set<Method> hookedMethods = new HashSet<>();
+            for (Class<?> current = policyClass; current != null; current = current.getSuperclass()) {
+                for (final Method method : current.getDeclaredMethods()) {
+                    if (!"checkAddPermission".equals(method.getName())
+                            || !hookedMethods.add(method)) {
+                        continue;
+                    }
+                    XposedBridge.hookMethod(method, new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                            int type = -1;
+                            String packageName = null;
+                            for (Object arg : param.args) {
+                                if (arg instanceof Integer && type < 0) {
+                                    type = (Integer) arg;
+                                } else if (arg instanceof String && packageName == null) {
+                                    packageName = (String) arg;
+                                } else if (arg != null
+                                        && "android.view.WindowManager$LayoutParams".equals(
+                                        arg.getClass().getName())) {
+                                    type = XposedHelpers.getIntField(arg, "type");
+                                    Object field = XposedHelpers.getObjectField(arg, "packageName");
+                                    if (field instanceof String) {
+                                        packageName = (String) field;
+                                    }
                                 }
                             }
+                            if (type == 2018 && packageName != null
+                                    && ("com.libredex".equals(packageName)
+                                    || "com.libredex.debug".equals(packageName))) {
+                                param.setResult(0);
+                                XposedBridge.log(TAG + ": cursor TYPE_POINTER allowed pkg="
+                                        + packageName);
+                            }
                         }
-                        if (type == 2018 && packageName != null
-                                && ("com.libredex".equals(packageName)
-                                || "com.libredex.debug".equals(packageName))) {
-                            param.setResult(0);
-                            XposedBridge.log(TAG + ": cursor TYPE_POINTER allowed pkg="
-                                    + packageName);
-                        }
-                    }
-                });
-                hooked++;
+                    });
+                    hooked++;
+                }
             }
-            XposedBridge.log(TAG + ": cursor permission hooks installed=" + hooked);
+            XposedBridge.log(TAG + ": cursor permission hooks installed=" + hooked
+                    + " class=" + policyClass.getName());
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": cursor permission hook failed: " + t);
+        }
+    }
+
+    private static Object getWindowManagerServiceInternal() {
+        if (windowManagerService != null) {
+            return windowManagerService;
+        }
+        try {
+            Class<?> serviceManager = Class.forName("android.os.ServiceManager");
+            IBinder binder = (IBinder) serviceManager.getMethod("getService", String.class)
+                    .invoke(null, "window");
+            if (binder == null) {
+                return null;
+            }
+            Class<?> stub = Class.forName("android.view.IWindowManager$Stub");
+            Object local = stub.getMethod("asInterface", IBinder.class).invoke(null, binder);
+            if (local != null) {
+                windowManagerService = local;
+            }
+            return local;
+        } catch (Throwable t) {
+            return null;
         }
     }
 
