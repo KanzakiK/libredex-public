@@ -7,7 +7,7 @@ plugins {
 // Version is normally injected by scripts/build.ps1 via -PlibredexVersionName / -PlibredexVersionCode.
 // The fallbacks below only keep IDE and direct gradlew builds usable.
 def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.2.20'
-def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 270).toString().toInteger()
+def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 271).toString().toInteger()
 
 // Keep only locale resources that actually exist in the repository. Adding a
 // values-xx directory is then enough to ship a new language; no build file

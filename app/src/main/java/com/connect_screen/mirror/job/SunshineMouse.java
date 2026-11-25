@@ -653,7 +653,7 @@ public class SunshineMouse {
         dexTargetDisplayId = displayId;
         State.log("SunshineMouse Dex target displayId=" + displayId);
         if (displayId >= 0) {
-            CursorSurfaceController.followSystemPointer(displayId);
+            CursorSurfaceController.attach(displayId);
         } else {
             CursorSurfaceController.detach();
         }

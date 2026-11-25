@@ -128,11 +128,9 @@ public final class DexTouchpadActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        if (targetDisplayId != Display.DEFAULT_DISPLAY) {
-            CursorSurfaceController.followSystemPointer(targetDisplayId);
-        } else {
-            CursorSurfaceController.detach();
-        }
+        // Do not tear down the cursor here. During Moonlight reconnect the
+        // touchpad Activity can be recreated while the DeX display is still
+        // alive; the old Activity must not close the new Activity's cursor.
         super.onDestroy();
     }
 

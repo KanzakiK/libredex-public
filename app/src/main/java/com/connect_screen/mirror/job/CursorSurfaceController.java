@@ -65,6 +65,7 @@ public final class CursorSurfaceController {
     private static float lastY;
     private static boolean followSystem;
     private static boolean pollScheduled;
+    private static int moveLogCount;
 
     private static final Runnable SYSTEM_CURSOR_POLL = CursorSurfaceController::pollSystemCursor;
 
@@ -99,6 +100,11 @@ public final class CursorSurfaceController {
             MAIN.removeCallbacks(SYSTEM_CURSOR_POLL);
             pollScheduled = false;
             moveOnMain(x, y);
+            if (moveLogCount < 5) {
+                moveLogCount++;
+                State.log(TAG + ": move x=" + x + " y=" + y
+                        + " display=" + attachedDisplayId + " control=" + (cursorControl != null));
+            }
         });
     }
 
@@ -141,6 +147,7 @@ public final class CursorSurfaceController {
         }
         attachedDisplayId = displayId;
         attachedLayerStack = layerStack;
+        moveLogCount = 0;
         // Some Samsung builds do not expose IInputManager.setPointerIconVisible().
         // That must not prevent our own topmost cursor from being drawn: the
         // system Sprite may be excluded from Moonlight capture even when visible.
@@ -310,6 +317,7 @@ public final class CursorSurfaceController {
         releaseOnMain(true);
         attachedDisplayId = -1;
         attachedLayerStack = -1;
+        moveLogCount = 0;
         State.log(TAG + ": detached");
     }
 
