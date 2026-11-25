@@ -33,8 +33,8 @@ public class ExternalDisplayFramePacer {
     private final Surface outputSurface;
     private final float[] identityMatrix = new float[16];
 
-    private HandlerThread renderThread;
-    private Handler renderHandler;
+    private volatile HandlerThread renderThread;
+    private volatile Handler renderHandler;
     private EGLDisplay eglDisplay = EGL14.EGL_NO_DISPLAY;
     private EGLContext eglContext = EGL14.EGL_NO_CONTEXT;
     private EGLSurface eglOutputSurface = EGL14.EGL_NO_SURFACE;
@@ -44,8 +44,8 @@ public class ExternalDisplayFramePacer {
     private ExternalTextureRenderer renderer;
     private boolean frameAvailable;
     private boolean hasFrame;
-    private boolean stopping;
-    private boolean released;
+    private volatile boolean stopping;
+    private volatile boolean released;
     private long nextFrameAtMs;
     private long lastDebugAtMs;
     private volatile long lastSourceFrameAtMs;
@@ -127,37 +127,46 @@ public class ExternalDisplayFramePacer {
 
     public void stop() {
         stopping = true;
-        if (renderHandler == null) {
+        Handler handler = renderHandler;
+        HandlerThread thread = renderThread;
+        if (handler == null || thread == null) {
             return;
         }
 
-        if (Thread.currentThread() == renderThread) {
+        if (Thread.currentThread() == thread) {
             releaseGlSafely();
-            renderThread.quitSafely();
-            renderThread = null;
-            renderHandler = null;
+            thread.quitSafely();
+            clearRenderThread(handler, thread);
             return;
         }
 
-        CountDownLatch released = new CountDownLatch(1);
-        renderHandler.removeCallbacks(frameTicker);
-        renderHandler.postAtFrontOfQueue(() -> {
+        CountDownLatch releaseComplete = new CountDownLatch(1);
+        handler.removeCallbacks(frameTicker);
+        boolean releasePosted = handler.postAtFrontOfQueue(() -> {
             try {
                 releaseGlSafely();
             } finally {
-                released.countDown();
+                releaseComplete.countDown();
             }
         });
-        try {
-            released.await(1, TimeUnit.SECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+        if (releasePosted) {
+            try {
+                releaseComplete.await(1, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
-        if (renderThread != null) {
-            renderThread.quitSafely();
+        thread.quitSafely();
+        clearRenderThread(handler, thread);
+    }
+
+    private void clearRenderThread(Handler handler, HandlerThread thread) {
+        if (renderHandler == handler) {
+            renderHandler = null;
+        }
+        if (renderThread == thread) {
             renderThread = null;
         }
-        renderHandler = null;
     }
 
     private void initGl() {
@@ -222,7 +231,8 @@ public class ExternalDisplayFramePacer {
     private final Runnable frameTicker = new Runnable() {
         @Override
         public void run() {
-            if (stopping || released || renderHandler == null) {
+            Handler handler = renderHandler;
+            if (stopping || released || handler == null) {
                 return;
             }
             long frameIntervalMs = Math.max(1, Math.round(1000f / frameRate));
@@ -241,7 +251,10 @@ public class ExternalDisplayFramePacer {
             if (nextFrameAtMs < now) {
                 nextFrameAtMs = now + frameIntervalMs;
             }
-            renderHandler.postAtTime(this, nextFrameAtMs);
+            if (stopping || released || renderHandler != handler) {
+                return;
+            }
+            handler.postAtTime(this, nextFrameAtMs);
         }
     };
 
