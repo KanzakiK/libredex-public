@@ -318,6 +318,9 @@ public class AutoRotateAndScaleForMoonlight {
                 android.util.Log.w("AutoRotateAndScaleForMoonlight", "ignore paced frame render failure", e);
             }
 
+            if (stopping || renderHandler == null) {
+                return;
+            }
             long frameIntervalMs = Math.max(1, Math.round(1000f / Math.max(1, virtualDisplayArgs.refreshRate)));
             nextFrameAtMs += frameIntervalMs;
             long now = SystemClock.uptimeMillis();
@@ -389,56 +392,60 @@ public class AutoRotateAndScaleForMoonlight {
     private void surfaceDestroyed() {
         stopping = true;
         activeVirtualDisplayId = -1;
-        renderHandler.post(() -> {
-            renderHandler.removeCallbacks(frameTicker);
-            if (portraitInputSurfaceTexture != null) {
-                portraitInputSurfaceTexture.setOnFrameAvailableListener(null);
-            }
-            if (landscapeInputSurfaceTexture != null) {
-                landscapeInputSurfaceTexture.setOnFrameAvailableListener(null);
-            }
-            // 清理OpenGL资源
-            if (portraitRenderer != null) {
-                portraitRenderer.release();
-                portraitRenderer = null;
-            }
-            if (portraitInputTextureId != -1) {
-                int[] textures = new int[]{portraitInputTextureId};
-                GLES20.glDeleteTextures(1, textures, 0);
-                portraitInputTextureId = -1;
-            }
-
-            if (landscapeRenderer != null) {
-                landscapeRenderer.release();
-                landscapeRenderer = null;
-            }
-            if (landscapeInputTextureId != -1) {
-                int[] textures = new int[]{landscapeInputTextureId};
-                GLES20.glDeleteTextures(1, textures, 0);
-                landscapeInputTextureId = -1;
-            }
-
-            // 原有的清理代码
-            if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
-                EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
-                if (eglOutputSurface != EGL14.EGL_NO_SURFACE) {
-                    EGL14.eglDestroySurface(eglDisplay, eglOutputSurface);
+        Handler handler = renderHandler;
+        if (handler != null) {
+            handler.post(() -> {
+                handler.removeCallbacks(frameTicker);
+                if (portraitInputSurfaceTexture != null) {
+                    portraitInputSurfaceTexture.setOnFrameAvailableListener(null);
                 }
-                if (eglContext != EGL14.EGL_NO_CONTEXT) {
-                    EGL14.eglDestroyContext(eglDisplay, eglContext);
+                if (landscapeInputSurfaceTexture != null) {
+                    landscapeInputSurfaceTexture.setOnFrameAvailableListener(null);
                 }
-                EGL14.eglTerminate(eglDisplay);
-            }
-            eglDisplay = EGL14.EGL_NO_DISPLAY;
-            eglContext = EGL14.EGL_NO_CONTEXT;
-            eglOutputSurface = EGL14.EGL_NO_SURFACE;
-        });
+                // 清理OpenGL资源
+                if (portraitRenderer != null) {
+                    portraitRenderer.release();
+                    portraitRenderer = null;
+                }
+                if (portraitInputTextureId != -1) {
+                    int[] textures = new int[]{portraitInputTextureId};
+                    GLES20.glDeleteTextures(1, textures, 0);
+                    portraitInputTextureId = -1;
+                }
+
+                if (landscapeRenderer != null) {
+                    landscapeRenderer.release();
+                    landscapeRenderer = null;
+                }
+                if (landscapeInputTextureId != -1) {
+                    int[] textures = new int[]{landscapeInputTextureId};
+                    GLES20.glDeleteTextures(1, textures, 0);
+                    landscapeInputTextureId = -1;
+                }
+
+                // 原有的清理代码
+                if (eglDisplay != EGL14.EGL_NO_DISPLAY) {
+                    EGL14.eglMakeCurrent(eglDisplay, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_SURFACE, EGL14.EGL_NO_CONTEXT);
+                    if (eglOutputSurface != EGL14.EGL_NO_SURFACE) {
+                        EGL14.eglDestroySurface(eglDisplay, eglOutputSurface);
+                    }
+                    if (eglContext != EGL14.EGL_NO_CONTEXT) {
+                        EGL14.eglDestroyContext(eglDisplay, eglContext);
+                    }
+                    EGL14.eglTerminate(eglDisplay);
+                }
+                eglDisplay = EGL14.EGL_NO_DISPLAY;
+                eglContext = EGL14.EGL_NO_CONTEXT;
+                eglOutputSurface = EGL14.EGL_NO_SURFACE;
+            });
+        }
 
         // 清理线程
         if (renderThread != null) {
             renderThread.quitSafely();
             renderThread = null;
         }
+        renderHandler = null;
         if (portraitInputSurface != null) {
             portraitInputSurface.release();
             portraitInputSurface = null;

@@ -14,7 +14,7 @@ import dev.lizardbyte.sunshine.android.SunshineVideoSource;
  * 本类把 LibreDeX 的 DeX 桌面（createDexMirror）渲染到该 surface，与私有
  * SunshineServer.startDexAnywhereVideoSource 的核心链路一致。
  *
- * 约定：start() 非阻塞返回（官方在主线程调用），VD 保活由后台线程持有。
+ * 约定：start() 非阻塞返回（官方在主线程调用），VD 由 UserService 持有到 stop()。
  */
 public final class DexMirrorVideoSource implements SunshineVideoSource, AutoCloseable {
 
@@ -25,7 +25,6 @@ public final class DexMirrorVideoSource implements SunshineVideoSource, AutoClos
     private int frameRate;
     private int dexDisplayId = -1;
     private volatile boolean active;
-    private Thread keepAliveThread;
 
     @Override
     public void start(Surface surface, int width, int height, int frameRate) {
@@ -85,22 +84,6 @@ public final class DexMirrorVideoSource implements SunshineVideoSource, AutoClos
             }
             State.log("[DexMirrorVideoSource] DeX mirror started id=" + vdId
                     + " " + width + "x" + height + "@" + frameRate);
-            // 保活：VD 生命周期跟随本 source，直到 stop()
-            Thread thread = new Thread(() -> {
-                while (active) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-            }, "dex-video-source");
-            thread.setDaemon(true);
-            synchronized (lock) {
-                keepAliveThread = thread;
-            }
-            thread.start();
         } catch (RemoteException e) {
             State.log("[DexMirrorVideoSource] start failed: " + e.getMessage());
         } catch (Throwable t) {
@@ -117,16 +100,6 @@ public final class DexMirrorVideoSource implements SunshineVideoSource, AutoClos
 
     private void stopLocked() {
         active = false;
-        Thread thread = keepAliveThread;
-        keepAliveThread = null;
-        if (thread != null && thread != Thread.currentThread()) {
-            thread.interrupt();
-            try {
-                thread.join(1000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
         if (dexDisplayId >= 0 && State.isUserServiceAlive()) {
             try {
                 State.userService.destroyExternalMirror();

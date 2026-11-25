@@ -197,6 +197,12 @@ public final class DpMirrorPresentation {
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
             State.log("DpMirrorPresentation: surface destroyed");
+            ready = false;
+            AutoRotateAndScaleForMoonlight activePipeline = pipeline;
+            pipeline = null;
+            if (activePipeline != null) {
+                activePipeline.stop();
+            }
             readyLatch.countDown();
         }
     };
