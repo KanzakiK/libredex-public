@@ -1,10 +1,7 @@
 package com.dex.lspmirror;
 
-import android.os.Binder;
-import android.os.IBinder;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Looper;
 import android.os.Build;
 import android.util.SparseArray;
@@ -30,7 +27,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final String TAG = "DexLspMirror";
     private static final String MODE_SELF = "self";
     private static final String MODE_SOURCE = "source";
-    private static final String CURSOR_PARENT_SERVICE = "libredex.cursor";
 
     private static final Map<IBinder, Integer> MIRROR_TOKENS = new ConcurrentHashMap<>();
     private static final Set<Integer> DEX_FLAG_DISPLAY_IDS = ConcurrentHashMap.newKeySet();
@@ -52,7 +48,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static volatile int lastConfiguredDpDisplayId = -1;
     private static volatile boolean tdaDisplayIdFallbackLogged;
     private static volatile boolean bootDpStateCleanupDone;
-    private static volatile boolean cursorParentServiceRegistered;
 
     @Override
     public void handleLoadPackage(LoadPackageParam lpparam) {
@@ -67,7 +62,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         systemServerClassLoader = lpparam.classLoader;
         cleanupStaleDpStateAtBoot();
         XposedBridge.log(TAG + ": hooking system_server");
-        registerCursorParentService();
         // 自报状态：hook 真正注入 system_server 后设置系统属性，
         // App 侧直接读 getprop 即可判定模块是否生效（比翻 lspd 日志可靠）。
         try {
@@ -2404,93 +2398,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             Throwable cause = t.getCause() != null ? t.getCause() : t;
             XposedBridge.log(TAG + ": forceWallpaperAttach failed displayId=" + displayId
                     + " attempt=" + attempt + ": " + cause);
-        }
-    }
-
-    private static void registerCursorParentService() {
-        if (cursorParentServiceRegistered) {
-            return;
-        }
-        try {
-            IBinder service = new Binder() {
-                @Override
-                protected boolean onTransact(int code, Parcel data, Parcel reply, int flags) {
-                    if (code != 1) {
-                        return false;
-                    }
-                    Object parent = null;
-                    try {
-                        int displayId = data.readInt();
-                        parent = resolveCursorParent(displayId);
-                    } catch (Throwable t) {
-                        XposedBridge.log(TAG + ": cursor parent lookup failed: " + t);
-                    }
-                    reply.writeParcelable((Parcelable) parent, 0);
-                    return true;
-                }
-            };
-            Class<?> serviceManager = Class.forName("android.os.ServiceManager");
-            serviceManager.getMethod("addService", String.class, IBinder.class)
-                    .invoke(null, CURSOR_PARENT_SERVICE, service);
-            cursorParentServiceRegistered = true;
-            XposedBridge.log(TAG + ": cursor parent service registered");
-        } catch (Throwable t) {
-            XposedBridge.log(TAG + ": cursor parent service failed: " + t);
-        }
-    }
-
-    private static Object resolveCursorParent(int displayId) {
-        Object wms = getWindowManagerServiceInternal();
-        if (wms == null) {
-            return null;
-        }
-        Object root = XposedHelpers.getObjectField(wms, "mRoot");
-        if (root == null) {
-            return null;
-        }
-        Method getDisplayContent = findDeclaredMethod(root.getClass(), "getDisplayContent", int.class);
-        if (getDisplayContent == null) {
-            return null;
-        }
-        Object dc;
-        try {
-            dc = getDisplayContent.invoke(root, displayId);
-        } catch (Throwable t) {
-            return null;
-        }
-        if (dc == null) {
-            return null;
-        }
-        Method getOverlay = findDeclaredMethod(dc.getClass(), "getOverlayLayer");
-        if (getOverlay == null) {
-            return null;
-        }
-        try {
-            return getOverlay.invoke(dc);
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
-    private static Object getWindowManagerServiceInternal() {
-        if (windowManagerService != null) {
-            return windowManagerService;
-        }
-        try {
-            Class<?> serviceManager = Class.forName("android.os.ServiceManager");
-            IBinder binder = (IBinder) serviceManager.getMethod("getService", String.class)
-                    .invoke(null, "window");
-            if (binder == null) {
-                return null;
-            }
-            Class<?> stub = Class.forName("android.view.IWindowManager$Stub");
-            Object local = stub.getMethod("asInterface", IBinder.class).invoke(null, binder);
-            if (local != null) {
-                windowManagerService = local;
-            }
-            return local;
-        } catch (Throwable t) {
-            return null;
         }
     }
 
