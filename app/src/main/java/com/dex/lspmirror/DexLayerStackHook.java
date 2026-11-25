@@ -72,6 +72,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         }
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
+        installCursorLayerHook(cl);
         installRefreshRateUnlockHooks(cl);
         installVdRefreshRateHook(cl);
         try {
@@ -2398,6 +2399,92 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             Throwable cause = t.getCause() != null ? t.getCause() : t;
             XposedBridge.log(TAG + ": forceWallpaperAttach failed displayId=" + displayId
                     + " attempt=" + attempt + ": " + cause);
+        }
+    }
+
+    private static void installCursorLayerHook(ClassLoader cl) {
+        try {
+            Class<?> wmsClass = XposedHelpers.findClass(
+                    "com.android.server.wm.WindowManagerService", cl);
+            Method addWindow = null;
+            for (Method method : wmsClass.getDeclaredMethods()) {
+                if (!"addWindow".equals(method.getName()) || method.getParameterTypes().length < 10) {
+                    continue;
+                }
+                if (addWindow == null || method.getParameterTypes().length
+                        > addWindow.getParameterTypes().length) {
+                    addWindow = method;
+                }
+            }
+            if (addWindow == null) {
+                XposedBridge.log(TAG + ": cursor layer hook: addWindow not found");
+                return;
+            }
+            final Method targetAddWindow = addWindow;
+            XposedBridge.hookMethod(addWindow, new XC_MethodHook() {
+                @Override
+                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                    Object result = param.result;
+                    if (!(result instanceof Integer) || (Integer) result != 0) {
+                        return;
+                    }
+                    Class<?>[] types = targetAddWindow.getParameterTypes();
+                    int attrsIndex = -1;
+                    int clientIndex = -1;
+                    for (int i = 0; i < types.length; i++) {
+                        String name = types[i].getName();
+                        if ("android.view.WindowManager$LayoutParams".equals(name)) {
+                            attrsIndex = i;
+                        } else if ("android.view.IWindow".equals(name)) {
+                            clientIndex = i;
+                        }
+                    }
+                    if (attrsIndex < 0 || clientIndex < 0) {
+                        return;
+                    }
+                    Object session = param.args[0];
+                    String packageName = null;
+                    try {
+                        packageName = (String) XposedHelpers.getObjectField(session, "mPackageName");
+                    } catch (Throwable ignored) {
+                    }
+                    if (packageName == null
+                            || (!"com.libredex".equals(packageName)
+                            && !"com.libredex.debug".equals(packageName))) {
+                        return;
+                    }
+                    Object attrs = param.args[attrsIndex];
+                    int type = XposedHelpers.getIntField(attrs, "type");
+                    int width = XposedHelpers.getIntField(attrs, "width");
+                    int height = XposedHelpers.getIntField(attrs, "height");
+                    if (type != 2038 || width > 120 || height > 120) {
+                        return;
+                    }
+                    Object client = param.args[clientIndex];
+                    Object binder = client.getClass().getMethod("asBinder").invoke(client);
+                    Object map = XposedHelpers.getObjectField(param.thisObject, "mWindowMap");
+                    if (!(map instanceof Map)) {
+                        return;
+                    }
+                    Object windowState = ((Map<?, ?>) map).get(binder);
+                    if (windowState == null) {
+                        return;
+                    }
+                    Field baseLayerField = findDeclaredField(windowState.getClass(), "mBaseLayer");
+                    Field subLayerField = findDeclaredField(windowState.getClass(), "mSubLayer");
+                    if (baseLayerField != null) {
+                        baseLayerField.setInt(windowState, 351000);
+                    }
+                    if (subLayerField != null) {
+                        subLayerField.setInt(windowState, 1);
+                    }
+                    XposedBridge.log(TAG + ": cursor window layer raised pkg=" + packageName
+                            + " size=" + width + "x" + height);
+                }
+            });
+            XposedBridge.log(TAG + ": cursor layer hook installed");
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cursor layer hook failed: " + t);
         }
     }
 
