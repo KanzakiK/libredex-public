@@ -5,14 +5,19 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.RemoteException;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.widget.Toast;
 
 import androidx.core.content.FileProvider;
 
 import com.connect_screen.mirror.BuildConfig;
+import com.connect_screen.mirror.R;
 import com.connect_screen.mirror.State;
+import com.connect_screen.mirror.shizuku.IUserService;
 
 import rikka.shizuku.Shizuku;
 
@@ -34,12 +39,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
-import com.connect_screen.mirror.R;
 
 public class FetchLogAndShare implements Job {
     private final AcquireShizuku acquireShizuku = new AcquireShizuku();
+    private static final AtomicBoolean exportInProgress = new AtomicBoolean();
+    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean userServiceRequested = false;
 
     private final Context context;
@@ -80,29 +87,58 @@ public class FetchLogAndShare implements Job {
             }
         }
 
+        IUserService userService = State.userService;
+        if (userService == null) {
+            Toast.makeText(context, context.getString(R.string.log_fetch_service_failed),
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!exportInProgress.compareAndSet(false, true)) {
+            State.log("Log export already in progress");
+            return;
+        }
+        Context appContext = context.getApplicationContext();
+        try {
+            new Thread(() -> {
+                try {
+                    exportLogs(appContext, userService);
+                } finally {
+                    exportInProgress.set(false);
+                }
+            }, "libredex-log-export").start();
+            State.log("Log export started on background thread");
+        } catch (RuntimeException | Error e) {
+            exportInProgress.set(false);
+            throw e;
+        }
+    }
+
+    private void exportLogs(Context appContext, IUserService userService) {
+        long startedAtMs = SystemClock.elapsedRealtime();
+        State.log("Log export worker started");
         try {
             File legacyLog = new File(Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS), "libredex_logcat.log");
             if (legacyLog.exists()) {
                 legacyLog.delete();
             }
-            String logDirPath = State.userService.fetchLogs();
+            String logDirPath = userService.fetchLogs();
             if (logDirPath == null || logDirPath.trim().isEmpty()) {
-                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_dir_failed), Toast.LENGTH_SHORT).show();
+                showToast(appContext, R.string.log_fetch_dir_failed, Toast.LENGTH_SHORT);
                 return;
             }
             File logDir = new File(logDirPath);
             File[] logs = logDir.listFiles((dir, name) ->
                     name.startsWith(LOG_FILE_PREFIX) && name.endsWith(LOG_FILE_SUFFIX));
             if (logs == null || logs.length == 0) {
-                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_none), Toast.LENGTH_SHORT).show();
+                showToast(appContext, R.string.log_fetch_none, Toast.LENGTH_SHORT);
                 return;
             }
 
             File exportDir = new File(Environment.getExternalStoragePublicDirectory(
-                    Environment.DIRECTORY_DOWNLOADS), State.getContext().getString(R.string.notify_sunshine_title));
+                    Environment.DIRECTORY_DOWNLOADS), appContext.getString(R.string.notify_sunshine_title));
             if (!exportDir.exists() && !exportDir.mkdirs()) {
-                Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_mkdir_failed), Toast.LENGTH_SHORT).show();
+                showToast(appContext, R.string.log_fetch_mkdir_failed, Toast.LENGTH_SHORT);
                 return;
             }
 
@@ -111,19 +147,19 @@ public class FetchLogAndShare implements Job {
             File zipFile = new File(exportDir, ZIP_PREFIX + stamp + ".zip");
             String environmentInfo = null;
             try {
-                environmentInfo = State.userService.getEnvironmentInfo();
+                environmentInfo = userService.getEnvironmentInfo();
             } catch (Throwable ignored) {
             }
             String lspLogs = null;
             try {
-                lspLogs = State.userService.fetchLspLogs();
+                lspLogs = userService.fetchLspLogs();
             } catch (Throwable ignored) {
                 // LSPosed log collection is best-effort; never block export.
             }
             String deviceInfo = buildDeviceInfo(logs, environmentInfo);
             createLogZip(logs, zipFile, deviceInfo, lspLogs);
 
-            File cacheDir = State.getContext().getCacheDir();
+            File cacheDir = appContext.getCacheDir();
             File cacheCopyFile = new File(cacheDir, zipFile.getName());
             Files.copy(zipFile.toPath(), cacheCopyFile.toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
@@ -131,17 +167,36 @@ public class FetchLogAndShare implements Job {
 
             Intent shareIntent = new Intent(Intent.ACTION_SEND);
             shareIntent.setType("application/zip");
-            Uri fileUri = FileProvider.getUriForFile(State.getContext(),
-                    State.getContext().getPackageName() + ".provider",
+            Uri fileUri = FileProvider.getUriForFile(appContext,
+                    appContext.getPackageName() + ".provider",
                     cacheCopyFile);
             shareIntent.putExtra(Intent.EXTRA_STREAM, fileUri);
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            State.getContext().startActivity(Intent.createChooser(
-                    shareIntent, State.getContext().getString(R.string.log_share_archive)));
-        } catch (RemoteException | IOException e) {
-            Toast.makeText(State.getContext(), State.getContext().getString(R.string.log_fetch_failed), Toast.LENGTH_LONG).show();
-            throw new RuntimeException(e);
+            mainHandler.post(() -> {
+                Context activityContext = State.getContext();
+                if (activityContext == null) {
+                    activityContext = appContext;
+                }
+                Intent chooser = Intent.createChooser(
+                        shareIntent, activityContext.getString(R.string.log_share_archive));
+                chooser.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                try {
+                    activityContext.startActivity(chooser);
+                } catch (RuntimeException e) {
+                    showToast(appContext, R.string.log_fetch_failed, Toast.LENGTH_LONG);
+                }
+            });
+            State.log("Log export finished in "
+                    + (SystemClock.elapsedRealtime() - startedAtMs) + "ms");
+        } catch (RemoteException | IOException | RuntimeException e) {
+            State.log("Log export failed: " + android.util.Log.getStackTraceString(e));
+            showToast(appContext, R.string.log_fetch_failed, Toast.LENGTH_LONG);
         }
+    }
+
+    private static void showToast(Context context, int messageRes, int duration) {
+        mainHandler.post(() -> Toast.makeText(
+                context, context.getString(messageRes), duration).show());
     }
 
     private static void createLogZip(File[] logs, File zipFile, String deviceInfo, String lspLogs)
@@ -155,7 +210,9 @@ public class FetchLogAndShare implements Job {
                 // Embed the correlation header inside every log file so a single
                 // log can be matched back to the app version / device / env that
                 // produced it, instead of only living in device_info.txt.
-                writeWithHeader(new FileInputStream(log), deviceInfo, zos);
+                try (InputStream in = new BufferedInputStream(new FileInputStream(log))) {
+                    writeWithHeader(in, deviceInfo, zos);
+                }
                 zos.closeEntry();
             }
             if (lspLogs != null && !lspLogs.trim().isEmpty()) {
