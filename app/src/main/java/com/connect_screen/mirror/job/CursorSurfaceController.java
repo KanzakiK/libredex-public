@@ -46,10 +46,6 @@ public final class CursorSurfaceController {
         MAIN.post(CursorSurfaceController::moveOnMain);
     }
 
-    public static void followSystemPointer(int displayId) {
-        attach(displayId);
-    }
-
     public static void detach() {
         MAIN.post(CursorSurfaceController::detachOnMain);
     }

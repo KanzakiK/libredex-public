@@ -41,8 +41,6 @@ public final class DisplayManager {
     }
 
     private final Object manager; // instance of hidden class android.hardware.display.DisplayManagerGlobal
-    private Method requestDisplayPowerMethod;
-
     public static DisplayManager create() {
         try {
             Class<?> clazz = Class.forName("android.hardware.display.DisplayManagerGlobal");
@@ -131,13 +129,6 @@ public final class DisplayManager {
         ctor.setAccessible(true);
         android.hardware.display.DisplayManager dm = ctor.newInstance(FakeContext.get());
         return dm.createVirtualDisplay(name, width, height, dpi, surface, flags);
-    }
-
-    private Method getRequestDisplayPowerMethod() throws NoSuchMethodException {
-        if (requestDisplayPowerMethod == null) {
-            requestDisplayPowerMethod = manager.getClass().getMethod("requestDisplayPower", int.class, boolean.class);
-        }
-        return requestDisplayPowerMethod;
     }
 
     public DisplayListenerHandle registerDisplayListener(DisplayListener listener, Handler handler) {

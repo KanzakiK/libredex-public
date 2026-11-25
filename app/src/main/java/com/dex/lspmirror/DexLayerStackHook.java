@@ -1213,10 +1213,6 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     }
 
 
-    private static void forceDpTaskDisplayAreaFreeform(Object tda, int displayId) {
-        forceTaskDisplayAreaFreeform(tda, displayId, true);
-    }
-
     private static void forceTaskDisplayAreaFreeform(
             Object tda, int displayId, boolean trackRestore) {
         try {

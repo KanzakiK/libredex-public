@@ -49,7 +49,6 @@ public class CreateVirtualDisplay {
     private static final int VIRTUAL_DISPLAY_FLAG_SUPPORTS_TOUCH = 1 << 6;
     private static final int VIRTUAL_DISPLAY_FLAG_ROTATES_WITH_CONTENT = 1 << 7;
     private static final int VIRTUAL_DISPLAY_FLAG_DESTROY_CONTENT_ON_REMOVAL = 1 << 8;
-    private static final int VIRTUAL_DISPLAY_FLAG_SHOULD_SHOW_SYSTEM_DECORATIONS = 1 << 9;
     private static final int VIRTUAL_DISPLAY_FLAG_TRUSTED = 1 << 10;
     private static final int VIRTUAL_DISPLAY_FLAG_OWN_DISPLAY_GROUP = 1 << 11;
     private static final int VIRTUAL_DISPLAY_FLAG_ALWAYS_UNLOCKED = 1 << 12;
@@ -143,15 +142,6 @@ public class CreateVirtualDisplay {
         } else {
             State.log("Mirror projection requires Shizuku permission to turn off screen");
         }
-    }
-
-    private static VirtualDisplay createByMediaProjection(VirtualDisplayArgs virtualDisplayArgs, Surface surface) {
-        VirtualDisplay virtualDisplay = State.getMediaProjection().createVirtualDisplay(virtualDisplayArgs.virtualDisplayName,
-                virtualDisplayArgs.width, virtualDisplayArgs.height, virtualDisplayArgs.dpi,
-                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
-                surface, null, null);
-        State.setMediaProjection(null);
-        return virtualDisplay;
     }
 
     private static @NonNull VirtualDisplay createByShizuku(VirtualDisplayArgs virtualDisplayArgs, Surface surface, boolean ownContentOnly, MediaProjection mediaProjection) {

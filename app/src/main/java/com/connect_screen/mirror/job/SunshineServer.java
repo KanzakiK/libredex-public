@@ -61,7 +61,6 @@ public class SunshineServer {
     public static String suppressPin;
     public static String pinCandidate;
     private static final AtomicBoolean stoppingVirtualDisplay = new AtomicBoolean(false);
-    private static final long MOONLIGHT_PROJECTION_START_TIMEOUT_MS = 15_000L;
     private static final Handler MAIN_HANDLER = new Handler(Looper.getMainLooper());
     private static volatile long activeMoonlightSessionId;
     private static volatile Thread videoSourceThread;

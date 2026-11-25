@@ -49,9 +49,6 @@ public final class InitializationGuideDialog {
     private TextView lspStatusText;
     private TextView fileStatusText;
 
-    // 一次会话自动请求 root 的 guard
-    private boolean rootRequestedOnce;
-
     private InitializationGuideDialog(Activity activity) {
         this.activity = activity;
     }

@@ -127,18 +127,6 @@ public class ProjectViaMoonlight implements Job {
         State.log("[MirrorPrimary] keep MediaProjection for Android native audio capture");
     }
 
-    private boolean mirrorExternalDisplay(int width, int height, Surface surface) throws YieldException {
-        return mirrorDisplay(
-                "[MirrorExternalDisplay]",
-                "Moonlight-mirror",
-                State.externalDisplayId,
-                State.externalControlDisplayId > 0 ? State.externalControlDisplayId : State.externalDisplayId,
-                width,
-                height,
-                surface,
-                "Mirror mode failed to mirror external display. Restart Sunshine service and retry.");
-    }
-
     private boolean mirrorDisplay(
             String logPrefix,
             String mirrorName,
