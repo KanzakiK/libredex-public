@@ -5,7 +5,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
@@ -31,6 +30,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
+import com.connect_screen.mirror.job.CursorSurfaceController;
 import com.connect_screen.mirror.job.InputRouting;
 import com.connect_screen.mirror.job.SunshineServer;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
@@ -96,14 +96,6 @@ public final class DexTouchpadActivity extends Activity {
     private long mouseDownTime;
     private boolean mousePressed;
 
-    // cursor overlay on the target display
-    private WindowManager cursorWindowManager;
-    private ImageView cursorView;
-    private WindowManager.LayoutParams cursorParams;
-    private int cursorHotspotX;
-    private int cursorHotspotY;
-    private int cursorDisplayId = Integer.MIN_VALUE;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -128,12 +120,19 @@ public final class DexTouchpadActivity extends Activity {
                 + cursorFieldW + "x" + cursorFieldH);
 
         setContentView(buildPadView());
-        ensureCursorOverlay();
+        if (targetDisplayId != Display.DEFAULT_DISPLAY) {
+            CursorSurfaceController.attach(targetDisplayId);
+            CursorSurfaceController.move(cursorX, cursorY);
+        }
     }
 
     @Override
     protected void onDestroy() {
-        removeCursorOverlay();
+        if (targetDisplayId != Display.DEFAULT_DISPLAY) {
+            CursorSurfaceController.followSystemPointer(targetDisplayId);
+        } else {
+            CursorSurfaceController.detach();
+        }
         super.onDestroy();
     }
 
@@ -205,81 +204,8 @@ public final class DexTouchpadActivity extends Activity {
     // Cursor overlay on the target display
     // ------------------------------------------------------------------
 
-    private void ensureCursorOverlay() {
-        try {
-            removeCursorOverlay();
-            DisplayManager displayManager = (DisplayManager) getSystemService(DISPLAY_SERVICE);
-            if (displayManager == null) {
-                return;
-            }
-            Display targetDisplay = displayManager.getDisplay(targetDisplayId);
-            if (targetDisplay == null) {
-                return;
-            }
-            android.content.Context displayContext = createDisplayContext(targetDisplay);
-            cursorWindowManager = (WindowManager) displayContext.getSystemService(WINDOW_SERVICE);
-            if (cursorWindowManager == null) {
-                return;
-            }
-            // Imported 48x48 PNG at 60% size (36dp * 0.6 ~= 22dp @1x density).
-            int cursorSize = (int) (22 * displayContext.getResources().getDisplayMetrics().density);
-            // mouse_cursor.png is a 48x48 classic pointer whose tip sits about
-            // (4.5,2) inside the bitmap. FIT_START maps it 1:1 onto the square
-            // view, so scale the tip offset by cursorSize/48 for exact clicks.
-            cursorHotspotX = Math.round(cursorSize * 4.5f / 48f);
-            cursorHotspotY = Math.round(cursorSize * 2f / 48f);
-            cursorView = new ImageView(displayContext);
-            cursorView.setImageResource(R.drawable.mouse_cursor);
-            cursorView.setScaleType(ImageView.ScaleType.FIT_START);
-            cursorParams = new WindowManager.LayoutParams(
-                    cursorSize, cursorSize,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                    PixelFormat.TRANSLUCENT);
-            cursorParams.gravity = Gravity.TOP | Gravity.START;
-            cursorParams.x = Math.round(cursorX - cursorHotspotX);
-            cursorParams.y = Math.round(cursorY - cursorHotspotY);
-            cursorWindowManager.addView(cursorView, cursorParams);
-            cursorDisplayId = targetDisplayId;
-            State.log("touchpad: cursor overlay shown on displayId=" + targetDisplayId);
-        } catch (Throwable t) {
-            State.log("touchpad: cursor overlay failed: " + t.getMessage());
-            cursorWindowManager = null;
-            cursorParams = null;
-            cursorView = null;
-        }
-    }
-
     private void updateCursorPosition(float x, float y) {
-        if (cursorView == null || cursorParams == null || cursorWindowManager == null
-                || cursorDisplayId != targetDisplayId) {
-            ensureCursorOverlay();
-        }
-        if (cursorView == null || cursorParams == null || cursorWindowManager == null) {
-            return;
-        }
-        cursorParams.x = Math.round(x) - cursorHotspotX;
-        cursorParams.y = Math.round(y) - cursorHotspotY;
-        try {
-            cursorWindowManager.updateViewLayout(cursorView, cursorParams);
-        } catch (Throwable ignored) {
-        }
-    }
-
-    private void removeCursorOverlay() {
-        if (cursorWindowManager != null && cursorView != null) {
-            try {
-                cursorWindowManager.removeView(cursorView);
-            } catch (Throwable ignored) {
-            }
-        }
-        cursorWindowManager = null;
-        cursorParams = null;
-        cursorView = null;
-        cursorDisplayId = Integer.MIN_VALUE;
+        CursorSurfaceController.move(x, y);
     }
 
     // ------------------------------------------------------------------

@@ -3,6 +3,7 @@ package android.hardware.input;
 import android.os.Binder;
 import android.os.IBinder;
 import android.os.IInterface;
+import android.graphics.PointF;
 import android.view.InputDevice;
 import android.view.InputEvent;
 
@@ -23,4 +24,6 @@ public interface IInputManager extends IInterface {
     void addUniqueIdAssociationByPort(String inputPort, String displayUniqueId);
     void addUniqueIdAssociationByDescriptor(String inputDeviceDescriptor, String displayUniqueId);
     void removeUniqueIdAssociationByDescriptor(String inputDeviceDescriptor);
+    PointF getCursorPosition();
+    void setPointerIconVisible(boolean visible, int displayId);
 }

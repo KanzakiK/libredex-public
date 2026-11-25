@@ -59,6 +59,7 @@ public class ProjectViaDp implements Job {
             }
         }
         activeMirror = false;
+        SunshineMouse.setDexTargetDisplayId(Integer.MIN_VALUE);
         activeDisplayId = -1;
         clearConfiguredDisplayId();
         // Unplug/session teardown: release the external-input hot-plug listener
@@ -218,6 +219,7 @@ public class ProjectViaDp implements Job {
 
         active = true;
         activeDisplayId = displayId;
+        SunshineMouse.setDexTargetDisplayId(displayId);
         activeMirror = false;
         Pref.setDpSessionStarted(true);
         final int targetDisplayId = displayId;

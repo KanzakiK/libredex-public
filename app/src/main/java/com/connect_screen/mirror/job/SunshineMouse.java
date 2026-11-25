@@ -2,29 +2,22 @@ package com.connect_screen.mirror.job;
 
 import android.content.Context;
 import android.content.res.Configuration;
-import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.hardware.display.DisplayManager;
 import android.hardware.input.IInputManager;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.Display;
 import android.view.DisplayCutout;
-import android.view.Gravity;
 import android.view.IWindowManager;
 import android.view.InputDevice;
 import android.view.MotionEvent;
 import android.view.MotionEventHidden;
 import android.view.Surface;
-import android.view.WindowManager;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 
 import com.connect_screen.mirror.Pref;
-import com.connect_screen.mirror.R;
 import com.connect_screen.mirror.State;
 import com.connect_screen.mirror.SunshineService;
 import com.connect_screen.mirror.shizuku.ServiceUtils;
@@ -73,14 +66,6 @@ public class SunshineMouse {
     private static boolean mapMouseToTouch;
     private static Method setActionButtonMethod;
     private static int lastFocusedDisplayId = Integer.MIN_VALUE;
-    private static final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private static WindowManager cursorWindowManager;
-    private static WindowManager.LayoutParams cursorParams;
-    private static ImageView cursorView;
-    private static int cursorDisplayId = Integer.MIN_VALUE;
-    private static int cursorHotspotX;
-    private static int cursorHotspotY;
-    private static boolean useAndroidCursorOverlay;
     private static final int MOUSE_TOUCH_POINTER_ID = 0;
     private static final Object touchInputDebugLock = new Object();
     private static long touchInputDebugWindowStartMs;
@@ -131,7 +116,6 @@ public class SunshineMouse {
         externalMirrorWidth = Math.max(1, State.externalDisplayWidth);
         externalMirrorHeight = Math.max(1, State.externalDisplayHeight);
         mapMouseToTouch = Pref.getMapMouseToTouch();
-        useAndroidCursorOverlay = Pref.getUseAndroidCursorOverlay();
         singlePoint = null;
         leftMouseDown = false;
         mouseDownTime = 0;
@@ -141,10 +125,8 @@ public class SunshineMouse {
         resetTouchInputDebugStats();
         pointers.clear();
         bufferedMove.clear();
-        if (useAndroidCursorOverlay) {
-            showCursorOverlay();
-        } else {
-            cleanupCursorOverlay();
+        if (dexTargetDisplayId >= 0) {
+            CursorSurfaceController.attach(dexTargetDisplayId);
         }
 
         DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
@@ -466,9 +448,7 @@ public class SunshineMouse {
         point.x = clamp(point.x + deltaX * scaleX, 0, bounds.x);
         point.y = clamp(point.y + deltaY * scaleY, 0, bounds.y);
         singlePoint = point;
-        if (useAndroidCursorOverlay) {
-            updateCursorOverlay(singlePoint.x, singlePoint.y);
-        }
+        CursorSurfaceController.move(singlePoint.x, singlePoint.y);
         if (mapMouseToTouch) {
             if (leftMouseDown) {
                 handleTouchEventMove(MOUSE_TOUCH_POINTER_ID, singlePoint.x, singlePoint.y);
@@ -488,9 +468,7 @@ public class SunshineMouse {
         // 根据屏幕旋转调整坐标
         Point point = translate(x, y);
         singlePoint = point;
-        if (useAndroidCursorOverlay) {
-            updateCursorOverlay(singlePoint.x, singlePoint.y);
-        }
+        CursorSurfaceController.move(singlePoint.x, singlePoint.y);
         if (mapMouseToTouch) {
             if (leftMouseDown) {
                 handleTouchEventMove(MOUSE_TOUCH_POINTER_ID, singlePoint.x, singlePoint.y);
@@ -674,6 +652,11 @@ public class SunshineMouse {
     public static void setDexTargetDisplayId(int displayId) {
         dexTargetDisplayId = displayId;
         State.log("SunshineMouse Dex target displayId=" + displayId);
+        if (displayId >= 0) {
+            CursorSurfaceController.followSystemPointer(displayId);
+        } else {
+            CursorSurfaceController.detach();
+        }
     }
 
     private static int getExternalControlDisplayId() {
@@ -718,114 +701,7 @@ public class SunshineMouse {
     }
 
     public static void cleanupCursorOverlay() {
-        mainHandler.post(SunshineMouse::cleanupCursorOverlayOnMain);
-    }
-
-    private static void cleanupCursorOverlayOnMain() {
-        if (cursorWindowManager != null && cursorView != null) {
-            try {
-                cursorWindowManager.removeView(cursorView);
-            } catch (Throwable e) {
-                Log.w(TAG, "remove cursor overlay failed: " + e.getMessage());
-            }
-        }
-        cursorWindowManager = null;
-        cursorParams = null;
-        cursorView = null;
-        cursorDisplayId = Integer.MIN_VALUE;
-    }
-
-    private static void showCursorOverlay() {
-        if (!useAndroidCursorOverlay) {
-            return;
-        }
-        int targetDisplayId = getTargetDisplayId();
-        if (targetDisplayId < 0) {
-            return;
-        }
-        mainHandler.post(() -> {
-            int currentTargetDisplayId = getTargetDisplayId();
-            if (currentTargetDisplayId < 0) {
-                return;
-            }
-            if (cursorView != null && cursorDisplayId == currentTargetDisplayId) {
-                cursorView.setVisibility(android.view.View.VISIBLE);
-                return;
-            }
-            cleanupCursorOverlayOnMain();
-            Context context = State.getContext();
-            if (context == null) {
-                return;
-            }
-            DisplayManager displayManager = (DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
-            if (displayManager == null) {
-                return;
-            }
-            Display targetDisplay = displayManager.getDisplay(currentTargetDisplayId);
-            if (targetDisplay == null) {
-                return;
-            }
-            Context displayContext = context.createDisplayContext(targetDisplay);
-            cursorWindowManager = (WindowManager) displayContext.getSystemService(Context.WINDOW_SERVICE);
-            if (cursorWindowManager == null) {
-                return;
-            }
-
-            int cursorSize = Math.max(24, (int) (32 * displayContext.getResources().getDisplayMetrics().density));
-            cursorHotspotX = 0;
-            cursorHotspotY = 0;
-            cursorView = new ImageView(displayContext);
-            cursorView.setImageResource(R.drawable.mouse_cursor);
-            cursorView.setScaleType(ImageView.ScaleType.FIT_START);
-            cursorParams = new WindowManager.LayoutParams(
-                    cursorSize,
-                    cursorSize,
-                    WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                    PixelFormat.TRANSLUCENT);
-            cursorParams.gravity = Gravity.TOP | Gravity.START;
-            cursorParams.x = 0;
-            cursorParams.y = 0;
-            try {
-                cursorWindowManager.addView(cursorView, cursorParams);
-                cursorDisplayId = currentTargetDisplayId;
-                State.log("Moonlight cursor overlay shown on displayId=" + currentTargetDisplayId);
-            } catch (Throwable e) {
-                Log.w(TAG, "show cursor overlay failed: " + e.getMessage(), e);
-                cursorWindowManager = null;
-                cursorParams = null;
-                cursorView = null;
-                cursorDisplayId = Integer.MIN_VALUE;
-            }
-        });
-    }
-
-    private static void updateCursorOverlay(float x, float y) {
-        if (!useAndroidCursorOverlay) {
-            return;
-        }
-        int targetDisplayId = getTargetDisplayId();
-        if (targetDisplayId < 0) {
-            return;
-        }
-        mainHandler.post(() -> {
-            if (cursorView == null || cursorParams == null || cursorWindowManager == null || cursorDisplayId != getTargetDisplayId()) {
-                showCursorOverlay();
-            }
-            if (cursorView == null || cursorParams == null || cursorWindowManager == null) {
-                return;
-            }
-            cursorParams.x = Math.round(x) - cursorHotspotX;
-            cursorParams.y = Math.round(y) - cursorHotspotY;
-            try {
-                cursorWindowManager.updateViewLayout(cursorView, cursorParams);
-            } catch (Throwable e) {
-                Log.w(TAG, "update cursor overlay failed: " + e.getMessage());
-            }
-        });
+        CursorSurfaceController.detach();
     }
 
     private static void injectMouseHover(float x, float y) {

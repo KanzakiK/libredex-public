@@ -138,6 +138,7 @@ public final class DexMirrorVideoSource implements SunshineVideoSource, AutoClos
         if (SunshineServer.activeDexDisplayId >= 0) {
             SunshineServer.activeDexDisplayId = -1;
         }
+        SunshineMouse.setDexTargetDisplayId(Integer.MIN_VALUE);
         Surface s = surface;
         surface = null;
         if (s != null) {
