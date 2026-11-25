@@ -141,13 +141,13 @@ public final class CursorSurfaceController {
         }
         attachedDisplayId = displayId;
         attachedLayerStack = layerStack;
-        if (!hideNativePointer(displayId)) {
-            State.log(TAG + ": cannot hide native pointer; keeping system pointer");
-            releaseOnMain(false);
-            return;
-        }
+        // Some Samsung builds do not expose IInputManager.setPointerIconVisible().
+        // That must not prevent our own topmost cursor from being drawn: the
+        // system Sprite may be excluded from Moonlight capture even when visible.
+        boolean nativePointerHidden = hideNativePointer(displayId);
         State.log(TAG + ": top surface shown display=" + displayId
-                + " layerStack=" + layerStack + " layer=" + CURSOR_LAYER);
+                + " layerStack=" + layerStack + " layer=" + CURSOR_LAYER
+                + " nativePointerHidden=" + nativePointerHidden);
     }
 
     private static boolean initReflection() {
