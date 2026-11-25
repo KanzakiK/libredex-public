@@ -47,7 +47,8 @@ public class State {
     public static volatile String lastMoonlightControlInputInfo;
     public static String serverUuid;
     private static Job currentJob;
-    public static List<String> logs = new ArrayList<>();
+    private static final int MAX_LOG_LINES = 1000;
+    private static final BoundedLogBuffer logs = new BoundedLogBuffer(MAX_LOG_LINES);
     private static MediaProjection mediaProjection;
     public static MediaProjection mediaProjectionInUse;
     public static int lastSingleAppDisplay;
@@ -192,7 +193,7 @@ public class State {
 
     public static boolean isJobRunning() {
         return currentJob != null;
-    }   
+    }
 
     public static void cancelCurrentJob(String reason) {
         if (currentJob == null) {
@@ -255,10 +256,14 @@ public class State {
     public static void log(String message) {
         logs.add(message);
         Log.i("ConnectScreen", message);
-        if (currentActivity != null && currentActivity.get() != null) {
-            IMainActivity  mainActivity = (IMainActivity) currentActivity.get();
-            mainActivity.updateLogs();
-        }
+    }
+
+    public static List<String> getLogSnapshot() {
+        return logs.snapshot();
+    }
+
+    public static int getLogCount() {
+        return logs.size();
     }
 
     public static MediaProjection getMediaProjection() {

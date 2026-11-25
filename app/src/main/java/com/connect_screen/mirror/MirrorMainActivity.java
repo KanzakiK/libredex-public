@@ -36,7 +36,7 @@ import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 import rikka.shizuku.Shizuku;
 
-public class MirrorMainActivity extends AppCompatActivity implements IMainActivity {
+public class MirrorMainActivity extends AppCompatActivity {
 
     static {
         Shell.enableVerboseLogging = BuildConfig.DEBUG;
@@ -360,14 +360,6 @@ public class MirrorMainActivity extends AppCompatActivity implements IMainActivi
                 refresh();
                 State.resumeJob();
             }
-        }
-    }
-
-    @Override
-    public void updateLogs() {
-        captureHomeFragment();
-        if (homePageFragment != null) {
-            homePageFragment.updateLogs();
         }
     }
 

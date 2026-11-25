@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import java.util.List;
+
 public final class DebugLogDialog {
     private DebugLogDialog() {
     }
@@ -25,7 +27,7 @@ public final class DebugLogDialog {
         summary.setText(buildDebugPanelSummaryText(State.streamingDebugInfo.getValue()));
         RecyclerView recyclerView = content.findViewById(R.id.debugLogRecyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(context));
-        LogAdapter adapter = new LogAdapter(State.logs);
+        LogAdapter adapter = new LogAdapter(State.getLogSnapshot());
         recyclerView.setAdapter(adapter);
         content.findViewById(R.id.viewRecentHandshakeButton).setOnClickListener(v ->
                 DebugDialogs.showLastMoonlightHandshakeDialog(context));
@@ -47,8 +49,10 @@ public final class DebugLogDialog {
                     return;
                 }
                 summary.setText(buildDebugPanelSummaryText(State.streamingDebugInfo.getValue()));
-                if (lastLogCount != State.logs.size()) {
-                    lastLogCount = State.logs.size();
+                int currentLogCount = State.getLogCount();
+                if (lastLogCount != currentLogCount) {
+                    lastLogCount = currentLogCount;
+                    adapter.setLogs(State.getLogSnapshot());
                     adapter.notifyDataSetChanged();
                     recyclerView.scrollToPosition(Math.max(0, adapter.getItemCount() - 1));
                 }

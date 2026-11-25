@@ -1029,10 +1029,6 @@ public class ConnectionFragment extends Fragment {
         }
     }
 
-    public void updateLogs() {
-        // 完整日志弹窗在打开时读取 State.logs。
-    }
-
     private void refreshIpAddress() {
         if (ipText == null || getContext() == null) {
             return;
