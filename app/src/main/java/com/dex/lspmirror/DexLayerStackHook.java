@@ -75,6 +75,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         installFakeScreenHooks(cl);
         installCursorLayerHook(cl);
         installCursorPermissionHook(cl);
+        installCursorConstructorHook(cl);
         installRefreshRateUnlockHooks(cl);
         installVdRefreshRateHook(cl);
         try {
@@ -2571,6 +2572,72 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             return local;
         } catch (Throwable t) {
             return null;
+        }
+    }
+
+    private static void installCursorConstructorHook(ClassLoader cl) {
+        try {
+            Class<?> windowStateClass = XposedHelpers.findClass(
+                    "com.android.server.wm.WindowState", cl);
+            int hooked = 0;
+            for (final java.lang.reflect.Constructor<?> constructor
+                    : windowStateClass.getDeclaredConstructors()) {
+                XposedBridge.hookMethod(constructor, new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        Object attrs = null;
+                        String sessionPackage = null;
+                        for (Object arg : param.args) {
+                            if (arg == null) {
+                                continue;
+                            }
+                            String name = arg.getClass().getName();
+                            if ("android.view.WindowManager$LayoutParams".equals(name)) {
+                                attrs = arg;
+                            } else if (name.endsWith("Session")) {
+                                try {
+                                    Object pkg = XposedHelpers.getObjectField(arg, "mPackageName");
+                                    if (pkg instanceof String) {
+                                        sessionPackage = (String) pkg;
+                                    }
+                                } catch (Throwable ignored) {
+                                }
+                            }
+                        }
+                        if (attrs == null) {
+                            return;
+                        }
+                        int type = XposedHelpers.getIntField(attrs, "type");
+                        int width = XposedHelpers.getIntField(attrs, "width");
+                        int height = XposedHelpers.getIntField(attrs, "height");
+                        String attrsPackage = null;
+                        Object pkg = XposedHelpers.getObjectField(attrs, "packageName");
+                        if (pkg instanceof String) {
+                            attrsPackage = (String) pkg;
+                        }
+                        String packageName = attrsPackage != null ? attrsPackage : sessionPackage;
+                        boolean libredex = "com.libredex".equals(packageName)
+                                || "com.libredex.debug".equals(packageName);
+                        if (!libredex || type != 2038 || width > 120 || height > 120) {
+                            return;
+                        }
+                        Field base = findDeclaredField(windowStateClass, "mBaseLayer");
+                        Field sub = findDeclaredField(windowStateClass, "mSubLayer");
+                        if (base != null) {
+                            base.setInt(param.thisObject, 351000);
+                        }
+                        if (sub != null) {
+                            sub.setInt(param.thisObject, 1);
+                        }
+                        XposedBridge.log(TAG + ": cursor constructor layer raised pkg="
+                                + packageName + " size=" + width + "x" + height);
+                    }
+                });
+                hooked++;
+            }
+            XposedBridge.log(TAG + ": cursor constructor hooks=" + hooked);
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cursor constructor hook failed: " + t);
         }
     }
 

@@ -84,7 +84,7 @@ public final class CursorSurfaceController {
                 displayContext.getResources(), R.drawable.mouse_cursor));
         cursor.setScaleType(ImageView.ScaleType.FIT_START);
 
-        int[] types = {2018, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY};
+        int[] types = {WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY};
         for (int type : types) {
             WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
                     size, size, type,
