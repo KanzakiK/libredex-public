@@ -7,6 +7,7 @@ import android.os.Build;
 import android.util.SparseArray;
 import android.hardware.display.DisplayManager;
 import android.view.Display;
+import android.view.SurfaceControl;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
@@ -28,6 +29,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final String TAG = "DexLspMirror";
     private static final String MODE_SELF = "self";
     private static final String MODE_SOURCE = "source";
+    private static final int CURSOR_OVERLAY_LAYER = Integer.MAX_VALUE - 16;
 
     private static final Map<IBinder, Integer> MIRROR_TOKENS = new ConcurrentHashMap<>();
     private static final Set<Integer> DEX_FLAG_DISPLAY_IDS = ConcurrentHashMap.newKeySet();
@@ -37,6 +39,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
     private static final Set<Integer> DEX_DEXCONTROLLER_NOTIFIED = ConcurrentHashMap.newKeySet();
     private static final Set<Integer> WALLPAPER_ATTACH_DONE = ConcurrentHashMap.newKeySet();
     private static final Set<String> TDA_DISPLAY_ID_DIAGNOSED = ConcurrentHashMap.newKeySet();
+    private static final Set<Integer> CURSOR_PINNED_WINDOWS = ConcurrentHashMap.newKeySet();
     private static volatile boolean dexControllerGuardInstalled;
     private static volatile boolean dpMirrorGuardArmed;
     private static volatile int dpExternalStackId = -1;
@@ -2481,13 +2484,87 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                     if (subLayerField != null) {
                         subLayerField.setInt(windowState, 1);
                     }
+                    boolean pinned = pinCursorSurfaceToDisplayOverlay(windowState);
                     XposedBridge.log(TAG + ": cursor window layer raised pkg=" + packageName
-                            + " size=" + width + "x" + height);
+                            + " size=" + width + "x" + height + " overlayPinned=" + pinned);
                 }
             });
             XposedBridge.log(TAG + ": cursor layer hook installed");
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": cursor layer hook failed: " + t);
+        }
+    }
+
+    private static boolean pinCursorSurfaceToDisplayOverlay(Object windowState) {
+        try {
+            Field surfaceField = findDeclaredField(windowState.getClass(), "mSurfaceControl");
+            if (surfaceField == null) {
+                XposedBridge.log(TAG + ": cursor overlay pin skipped: WindowState surface missing");
+                return false;
+            }
+            Object surfaceValue = surfaceField.get(windowState);
+            if (!(surfaceValue instanceof SurfaceControl)
+                    || !((SurfaceControl) surfaceValue).isValid()) {
+                XposedBridge.log(TAG + ": cursor overlay pin skipped: WindowState surface invalid");
+                return false;
+            }
+            Method getDisplayContent = findDeclaredMethod(
+                    windowState.getClass(), "getDisplayContent");
+            Object displayContent = getDisplayContent == null
+                    ? null : getDisplayContent.invoke(windowState);
+            if (displayContent == null) {
+                XposedBridge.log(TAG + ": cursor overlay pin skipped: display content missing");
+                return false;
+            }
+            Method getOverlayLayer = findDeclaredMethod(displayContent.getClass(), "getOverlayLayer");
+            Object overlayValue = getOverlayLayer == null
+                    ? null : getOverlayLayer.invoke(displayContent);
+            if (!(overlayValue instanceof SurfaceControl)) {
+                String[] overlayFields = {
+                        "mOverlayLayer", "mA11yOverlayLayer", "mInputOverlayLayer"
+                };
+                for (String fieldName : overlayFields) {
+                    Field field = findDeclaredField(displayContent.getClass(), fieldName);
+                    Object value = field == null ? null : field.get(displayContent);
+                    if (value instanceof SurfaceControl
+                            && ((SurfaceControl) value).isValid()) {
+                        overlayValue = value;
+                        break;
+                    }
+                }
+            }
+            if (!(overlayValue instanceof SurfaceControl)) {
+                Field overlayContainersField = findDeclaredField(
+                        displayContent.getClass(), "mOverlayContainers");
+                if (overlayContainersField == null) {
+                    XposedBridge.log(TAG
+                            + ": cursor overlay pin skipped: overlay SurfaceControl missing");
+                    return false;
+                }
+                Object overlayContainers = overlayContainersField.get(displayContent);
+                Method getSurfaceControl = overlayContainers == null ? null
+                        : findDeclaredMethod(overlayContainers.getClass(), "getSurfaceControl");
+                overlayValue = getSurfaceControl == null
+                        ? null : getSurfaceControl.invoke(overlayContainers);
+            }
+            if (!(overlayValue instanceof SurfaceControl)
+                    || !((SurfaceControl) overlayValue).isValid()) {
+                XposedBridge.log(TAG + ": cursor overlay pin skipped: display overlay invalid");
+                return false;
+            }
+            SurfaceControl cursorSurface = (SurfaceControl) surfaceValue;
+            SurfaceControl displayOverlay = (SurfaceControl) overlayValue;
+            SurfaceControl.Transaction transaction = new SurfaceControl.Transaction();
+            transaction.reparent(cursorSurface, displayOverlay)
+                    .setLayer(cursorSurface, CURSOR_OVERLAY_LAYER)
+                    .setVisibility(cursorSurface, true)
+                    .apply();
+            XposedBridge.log(TAG + ": cursor surface reparented to display overlay layer="
+                    + CURSOR_OVERLAY_LAYER);
+            return true;
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cursor overlay pin failed: " + t);
+            return false;
         }
     }
 
@@ -2635,9 +2712,46 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                 });
                 hooked++;
             }
-            XposedBridge.log(TAG + ": cursor constructor hooks=" + hooked);
+            Method prepareSurfaces = findDeclaredMethod(windowStateClass, "prepareSurfaces");
+            if (prepareSurfaces != null) {
+                XposedBridge.hookMethod(prepareSurfaces, new XC_MethodHook() {
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        maybePinCursorWindow(param.thisObject);
+                    }
+                });
+            }
+            XposedBridge.log(TAG + ": cursor constructor hooks=" + hooked
+                    + " prepareSurfaces=" + (prepareSurfaces != null));
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": cursor constructor hook failed: " + t);
+        }
+    }
+
+    private static void maybePinCursorWindow(Object windowState) {
+        try {
+            int identity = System.identityHashCode(windowState);
+            if (CURSOR_PINNED_WINDOWS.contains(identity)) {
+                return;
+            }
+            Object attrs = XposedHelpers.getObjectField(windowState, "mAttrs");
+            int type = XposedHelpers.getIntField(attrs, "type");
+            int width = XposedHelpers.getIntField(attrs, "width");
+            int height = XposedHelpers.getIntField(attrs, "height");
+            Object packageValue = XposedHelpers.getObjectField(attrs, "packageName");
+            String packageName = packageValue instanceof String ? (String) packageValue : null;
+            boolean libredex = "com.libredex".equals(packageName)
+                    || "com.libredex.debug".equals(packageName);
+            if (!libredex || type != 2038 || width > 120 || height > 120) {
+                return;
+            }
+            if (pinCursorSurfaceToDisplayOverlay(windowState)) {
+                CURSOR_PINNED_WINDOWS.add(identity);
+                XposedBridge.log(TAG + ": cursor surface ready pkg=" + packageName
+                        + " size=" + width + "x" + height + " overlayPinned=true");
+            }
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cursor prepare-surface pin failed: " + t);
         }
     }
 
