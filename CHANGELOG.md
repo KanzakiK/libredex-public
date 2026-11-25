@@ -1,3 +1,43 @@
+## 0.2.22（2026-11-25）
+
+### English
+
+**New Features**
+
+- **Korean interface and an expandable language selector**: LibreDeX now includes a complete Korean translation. The previous fixed three-button language row has been replaced by a single selector dialog, making it easier to add more languages without redesigning the settings page.
+
+**Bug Fixes**
+
+- **The DeX pointer now stays above system UI**: when using the built-in virtual touchpad or a Moonlight session, the LibreDeX cursor could disappear behind the taskbar, the open-app list, or other windows even though clicks still worked. The cursor is now kept on the topmost layer and remains visible across the DeX interface.
+- **More reliable stop and reconnect behavior**: stale rendering surfaces are now cleaned up when DP/HDMI or Moonlight sessions stop or restart. This prevents repeated buffer errors and fixes a rare crash when ending a Moonlight session.
+
+**Improvements**
+
+- **Log export no longer freezes the interface**: log collection, archive creation, and file copying now run in the background, then return to the UI only to open the share sheet. In-memory logs are also capped, preventing memory usage from growing indefinitely during long sessions.
+
+Thanks to **@ssch71** for contributing the Korean translation.
+
+---
+
+### 简体中文
+
+**新功能**
+
+- **韩语界面与可扩展的语言选择器**：LibreDeX 现已提供完整的韩语翻译。原来的三按钮语言选择区改为单一选择对话框，后续增加新语言时无需重新调整设置页布局。
+
+**问题修复**
+
+- **DeX 光标不再被系统界面遮挡**：使用内置虚拟触控板或 Moonlight 串流时，LibreDeX 光标原先可能被任务栏、最近任务列表或其他窗口盖住，虽然点击仍然有效却看不到指针。现在光标会保持在最上层，在整个 DeX 界面中持续可见。
+- **停止与重连更加可靠**：DP/HDMI 或 Moonlight 会话停止、重启时，现在会正确清理残留的渲染画面，避免持续产生缓冲区错误，并修复了结束 Moonlight 会话时偶发的崩溃。
+
+**优化**
+
+- **导出日志不再卡住界面**：日志收集、压缩和文件复制均改到后台执行，完成后才切回界面打开分享面板；内存日志也增加了固定上限，长时间运行不会再无限增长。
+
+感谢 **@ssch71** 贡献韩语翻译。
+
+---
+
 ## 0.2.20（2026-09-13）
 
 ### English
@@ -24,7 +64,9 @@
 
 **UI 改进**
 
-- "官方 Sunshine 引擎（实验性）"开关原来跟自动熄屏、假熄屏、阻止休眠挤在同一张卡里，现在抽出来单独成卡，紧贴屏幕管理卡下方，附带简短副标题说明用途。## 0.2.14（2026-09-06）
+- "官方 Sunshine 引擎（实验性）"开关原来跟自动熄屏、假熄屏、阻止休眠挤在同一张卡里，现在抽出来单独成卡，紧贴屏幕管理卡下方，附带简短副标题说明用途。
+
+## 0.2.14（2026-09-06）
 
 ### English
 

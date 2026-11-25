@@ -6,8 +6,9 @@ plugins {
 
 // Version is normally injected by scripts/build.ps1 via -PlibredexVersionName / -PlibredexVersionCode.
 // The fallbacks below only keep IDE and direct gradlew builds usable.
-def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.2.20'
-def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 280).toString().toInteger()
+def libredexVersionName = project.findProperty('libredexVersionName') ?: '0.2.22'
+def libredexVersionCode = (project.findProperty('libredexVersionCode') ?: 281).toString().toInteger()
+def libredexCommit = project.findProperty('libredexCommit') ?: System.getenv('LIBREDEX_COMMIT')
 
 // Keep only locale resources that actually exist in the repository. Adding a
 // values-xx directory is then enough to ship a new language; no build file
@@ -88,7 +89,7 @@ android {
         // git is unavailable). Surfaced in the About page and log exports, and
         // used to restart the Shizuku UserService when the code changed even
         // though the version number did not.
-        buildConfigField 'String', 'COMMIT', '"' + resolveGitCommit() + '"'
+        buildConfigField 'String', 'COMMIT', '"' + (libredexCommit ?: resolveGitCommit()) + '"'
 
         ndk {
             ndkVersion "28.0.13004108"
@@ -131,7 +132,7 @@ android {
             applicationIdSuffix ".debug"
         }
     }
-    
+
     buildFeatures {
         aidl true
         buildConfig true
@@ -166,7 +167,7 @@ android {
 
 dependencies {
     implementation project(':hidden-api-stub')
-    
+
     implementation "com.github.topjohnwu.libsu:core:6.0.0"
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.fragment:fragment:1.6.2'
