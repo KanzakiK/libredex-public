@@ -60,4 +60,7 @@ interface IUserService {
    boolean startUinputKeyboard() = 39;
    boolean sendUinputKey(int evdevCode, boolean release) = 40;
    void stopUinputKeyboard() = 41;
+   oneway void showLibreDeXCursor(int displayId, int x, int y) = 42;
+   oneway void moveLibreDeXCursor(int x, int y) = 43;
+   oneway void hideLibreDeXCursor() = 44;
 }

@@ -5,9 +5,11 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.hardware.display.IDisplayManager;
 import android.hardware.display.VirtualDisplay;
@@ -18,12 +20,17 @@ import android.media.AudioRecord;
 import android.media.MediaRecorder;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
 import android.os.RemoteException;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.Surface;
+import android.view.WindowManager;
+import android.widget.ImageView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -45,6 +52,7 @@ import androidx.annotation.Nullable;
 import com.connect_screen.mirror.job.AndroidVersions;
 import com.connect_screen.mirror.job.CreateVirtualDisplay;
 import com.connect_screen.mirror.BuildConfig;
+import com.connect_screen.mirror.R;
 import com.connect_screen.mirror.State;
 
 import rikka.shizuku.SystemServiceHelper;
@@ -63,6 +71,16 @@ public class UserService extends IUserService.Stub  {
     private Rect dpMirrorRestoreRect;
     private int lastScreenOffDisplayId = Display.DEFAULT_DISPLAY;
     private static volatile String cachedSuPath;
+
+    private final Handler cursorHandler = new Handler(Looper.getMainLooper());
+    private WindowManager cursorWindowManager;
+    private ImageView cursorView;
+    private WindowManager.LayoutParams cursorParams;
+    private int cursorDisplayId = -1;
+    private int cursorHotspotX;
+    private int cursorHotspotY;
+    private float cursorX;
+    private float cursorY;
 
     // uinput 虚拟键盘（Moonlight 中文输入）：helper 以 su 常驻运行，fd 存活期间
     // 系统把它当作真实外接键盘，Samsung IME 才会启用拼音组合。fd 关闭即销毁，
@@ -2458,5 +2476,109 @@ public class UserService extends IUserService.Stub  {
             releaseAudioPolicy();
             return null;
         }
+    }
+
+    @Override
+    public void showLibreDeXCursor(int displayId, int x, int y) {
+        cursorHandler.post(() -> showCursorWindow(displayId, x, y));
+    }
+
+    @Override
+    public void moveLibreDeXCursor(int x, int y) {
+        cursorX = x;
+        cursorY = y;
+        cursorHandler.post(this::moveCursorWindow);
+    }
+
+    @Override
+    public void hideLibreDeXCursor() {
+        cursorHandler.post(this::hideCursorWindow);
+    }
+
+    private void showCursorWindow(int displayId, int x, int y) {
+        hideCursorWindow();
+        if (context == null) {
+            Ln.w("cursor: no UserService context");
+            return;
+        }
+        android.hardware.display.DisplayManager displayManager =
+                (android.hardware.display.DisplayManager) context.getSystemService(Context.DISPLAY_SERVICE);
+        Display display = displayManager == null ? null : displayManager.getDisplay(displayId);
+        if (display == null) {
+            Ln.w("cursor: display " + displayId + " unavailable");
+            return;
+        }
+        Context displayContext = context.createDisplayContext(display);
+        WindowManager windowManager = (WindowManager) displayContext.getSystemService(Context.WINDOW_SERVICE);
+        if (windowManager == null) {
+            return;
+        }
+        int size = Math.max(24, Math.round(32f * displayContext.getResources().getDisplayMetrics().density));
+        cursorHotspotX = Math.round(size * 4.5f / 48f);
+        cursorHotspotY = Math.round(size * 2f / 48f);
+        cursorX = x;
+        cursorY = y;
+
+        Bitmap source = BitmapFactory.decodeResource(displayContext.getResources(), R.drawable.mouse_cursor);
+        if (source == null) {
+            Ln.w("cursor: mouse_cursor resource missing");
+            return;
+        }
+        Bitmap scaled = Bitmap.createScaledBitmap(source, size, size, true);
+        ImageView view = new ImageView(displayContext);
+        view.setImageBitmap(scaled);
+        view.setScaleType(ImageView.ScaleType.FIT_START);
+
+        int[] types = {2018, 2015, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY};
+        for (int type : types) {
+            WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                    size, size, type,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT);
+            params.gravity = Gravity.TOP | Gravity.START;
+            params.x = Math.round(cursorX) - cursorHotspotX;
+            params.y = Math.round(cursorY) - cursorHotspotY;
+            try {
+                windowManager.addView(view, params);
+                cursorWindowManager = windowManager;
+                cursorView = view;
+                cursorParams = params;
+                cursorDisplayId = displayId;
+                Ln.i("cursor: TYPE=" + type + " display=" + displayId + " size=" + size);
+                return;
+            } catch (Throwable t) {
+                Ln.w("cursor: TYPE=" + type + " failed: " + t.getMessage());
+            }
+        }
+    }
+
+    private void moveCursorWindow() {
+        if (cursorView == null || cursorWindowManager == null || cursorParams == null) {
+            Ln.w("cursor: move before show, display=" + cursorDisplayId);
+            return;
+        }
+        cursorParams.x = Math.round(cursorX) - cursorHotspotX;
+        cursorParams.y = Math.round(cursorY) - cursorHotspotY;
+        try {
+            cursorWindowManager.updateViewLayout(cursorView, cursorParams);
+        } catch (Throwable t) {
+            Ln.w("cursor: update failed: " + t.getMessage());
+        }
+    }
+
+    private void hideCursorWindow() {
+        if (cursorView != null && cursorWindowManager != null) {
+            try {
+                cursorWindowManager.removeView(cursorView);
+            } catch (Throwable ignored) {
+            }
+        }
+        cursorView = null;
+        cursorParams = null;
+        cursorWindowManager = null;
+        cursorDisplayId = -1;
     }
 }
