@@ -73,6 +73,7 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
         ClassLoader cl = lpparam.classLoader;
         installFakeScreenHooks(cl);
         installCursorLayerHook(cl);
+        installCursorPermissionHook(cl);
         installRefreshRateUnlockHooks(cl);
         installVdRefreshRateHook(cl);
         try {
@@ -2485,6 +2486,52 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             XposedBridge.log(TAG + ": cursor layer hook installed");
         } catch (Throwable t) {
             XposedBridge.log(TAG + ": cursor layer hook failed: " + t);
+        }
+    }
+
+    private static void installCursorPermissionHook(ClassLoader cl) {
+        try {
+            Class<?> policyClass = XposedHelpers.findClass(
+                    "com.android.server.policy.PhoneWindowManager", cl);
+            int hooked = 0;
+            for (final Method method : policyClass.getDeclaredMethods()) {
+                if (!"checkAddPermission".equals(method.getName())) {
+                    continue;
+                }
+                XposedBridge.hookMethod(method, new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        int type = -1;
+                        String packageName = null;
+                        for (Object arg : param.args) {
+                            if (arg instanceof Integer && type < 0) {
+                                type = (Integer) arg;
+                            } else if (arg instanceof String && packageName == null) {
+                                packageName = (String) arg;
+                            } else if (arg != null
+                                    && "android.view.WindowManager$LayoutParams".equals(
+                                    arg.getClass().getName())) {
+                                type = XposedHelpers.getIntField(arg, "type");
+                                Object field = XposedHelpers.getObjectField(arg, "packageName");
+                                if (field instanceof String) {
+                                    packageName = (String) field;
+                                }
+                            }
+                        }
+                        if (type == 2018 && packageName != null
+                                && ("com.libredex".equals(packageName)
+                                || "com.libredex.debug".equals(packageName))) {
+                            param.setResult(0);
+                            XposedBridge.log(TAG + ": cursor TYPE_POINTER allowed pkg="
+                                    + packageName);
+                        }
+                    }
+                });
+                hooked++;
+            }
+            XposedBridge.log(TAG + ": cursor permission hooks installed=" + hooked);
+        } catch (Throwable t) {
+            XposedBridge.log(TAG + ": cursor permission hook failed: " + t);
         }
     }
 

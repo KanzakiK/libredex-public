@@ -84,26 +84,30 @@ public final class CursorSurfaceController {
                 displayContext.getResources(), R.drawable.mouse_cursor));
         cursor.setScaleType(ImageView.ScaleType.FIT_START);
 
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                size, size,
-                WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                        | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
-                        | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
-                PixelFormat.TRANSLUCENT);
-        lp.gravity = Gravity.TOP | Gravity.START;
-        lp.x = Math.round(lastX) - hotspotX;
-        lp.y = Math.round(lastY) - hotspotY;
-        try {
-            wm.addView(cursor, lp);
-            windowManager = wm;
-            view = cursor;
-            params = lp;
-            attachedDisplayId = displayId;
-            State.log(TAG + ": attached display=" + displayId + " size=" + size);
-        } catch (Throwable t) {
-            State.log(TAG + ": attach failed: " + t.getMessage());
+        int[] types = {2018, WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY};
+        for (int type : types) {
+            WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
+                    size, size, type,
+                    WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+                            | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+                            | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+                    PixelFormat.TRANSLUCENT);
+            lp.gravity = Gravity.TOP | Gravity.START;
+            lp.x = Math.round(lastX) - hotspotX;
+            lp.y = Math.round(lastY) - hotspotY;
+            try {
+                wm.addView(cursor, lp);
+                windowManager = wm;
+                view = cursor;
+                params = lp;
+                attachedDisplayId = displayId;
+                State.log(TAG + ": attached display=" + displayId
+                        + " size=" + size + " type=" + type);
+                return;
+            } catch (Throwable t) {
+                State.log(TAG + ": type=" + type + " failed: " + t.getMessage());
+            }
         }
     }
 
