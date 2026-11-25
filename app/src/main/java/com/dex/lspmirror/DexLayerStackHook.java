@@ -2509,13 +2509,12 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
             }
             int hooked = 0;
             Set<Method> hookedMethods = new HashSet<>();
-            for (Class<?> current = policyClass; current != null; current = current.getSuperclass()) {
-                for (final Method method : current.getDeclaredMethods()) {
-                    if (!"checkAddPermission".equals(method.getName())
-                            || !hookedMethods.add(method)) {
-                        continue;
-                    }
-                    XposedBridge.hookMethod(method, new XC_MethodHook() {
+            for (final Method method : policyClass.getMethods()) {
+                if (!"checkAddPermission".equals(method.getName())
+                        || !hookedMethods.add(method)) {
+                    continue;
+                }
+                XposedBridge.hookMethod(method, new XC_MethodHook() {
                         @Override
                         protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                             int type = -1;
@@ -2543,9 +2542,8 @@ public final class DexLayerStackHook implements IXposedHookLoadPackage {
                                         + packageName);
                             }
                         }
-                    });
-                    hooked++;
-                }
+                });
+                hooked++;
             }
             XposedBridge.log(TAG + ": cursor permission hooks installed=" + hooked
                     + " class=" + policyClass.getName());
